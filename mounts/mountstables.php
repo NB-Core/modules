@@ -20,9 +20,6 @@ function mountstables_getmoduleinfo(){
 				"initial"=>"Has initial Mount Name been purchased,bool|0",
 				"name"=>"User's Mount's Name,text|",
 				"dailylimitused"=>"How often swapped today,int|",
-				"Mount Settings,title",
-				"user_showmounttype"=>"Do you want to display the mount type in the name?,bool|1",
-				"Example: NAME the Kyuubi with 'Yes', NAME with 'No',note",			
 				),
 		     );
 	return $info;
@@ -75,7 +72,7 @@ function mountstables_removeStabledMount($intid) {
 }
 
 function mountstables_makeCurrentMount($intid) {
-	global $session;
+	global $session,$playermount;
 	$sql = "SELECT * from ".db_prefix("mountstables")." WHERE id=$intid";
 	$result = db_query($sql);
 	if (db_num_rows($result)==0) {
@@ -84,6 +81,7 @@ function mountstables_makeCurrentMount($intid) {
 	}
 	$row = db_fetch_assoc($result);
 	$session['user']['hashorse'] = $row['mountid'];
+	$playermount = getmount($row['mountid']); // yeah, some hotshot thought it to be cool in core to store the mount info in a global array...just for kicks...
 	set_module_pref("name",$row['mountname'],"mountname");
 	//give mount buff
 	if (get_module_setting("givebuff")==1) {
@@ -99,8 +97,9 @@ function mountstables_makeCurrentMount($intid) {
 }
 
 function mountstables_removeCurrentMount() {
-	global $session;
+	global $session,$playermount;
 	$session['user']['hashorse'] = 0;
+	unset($playermount); //some hotshot thought it to be cool in core to store the mount info in a global array...just for kicks...
 	if (is_module_active("mountname")) {
 		set_module_pref("name","","mountname");
 	}
@@ -120,7 +119,7 @@ function mountstables_currentMountName() {
 	if ($mount == "") {
 		//no user name given, take default
 		$sql = "SELECT * FROM " . db_prefix("mounts") . " WHERE mountid='$mountid'";
-		$result = db_query($sql, "mountdata-$mountid", 3600);
+		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
 		$mount = $row['mountname'];
 	}
@@ -133,7 +132,7 @@ function mountstables_addCurrentMount($force=0) {
 	global $session;
 	$u = $session['user']['acctid'];
 	$mountid = $session['user']['hashorse'];
-	$mount = mountstables_CurrentMountName();
+	$mount = mountstables_currentMountName();
 	$list = mountstables_getMountList();
 	$size = count($list);
 	if ($size >= get_module_setting("stablecount") && $force==0) {
@@ -155,8 +154,9 @@ function mountstables_addCurrentMount($force=0) {
 function mountstables_dohook($hookname,$args){
 	global $session;
 	require_once("lib/debuglog.php");
+	$op = httpget('op');
 	$count = get_module_setting("stablecount");
-	$mount = mountstables_CurrentMountName();
+	$mount = mountstables_currentMountName();
 	switch ($hookname){
 		case "newday":
 			set_module_pref('dailylimitused',0);
@@ -176,7 +176,7 @@ function mountstables_dohook($hookname,$args){
 			if ($size<=$count) {
 				//output("`2You can stable your current mount for a price of `4%s`2. You have `x%i`2 spots left to fill.`n`n",$cost,$count-$size);	
 				output("`2You can stable your current mount here. You have `x%s`2 spots left to fill.`n`n",$count-$size);	
-				if ($session['user']['hashorse']!=0) {
+				if ($session['user']['hashorse']!=0 && $op!="confirmsell") {
 					addnav(array("Stable your %s",$mount),"runmodule.php?module=mountstables&op=stable");
 				} else {
 					// no mount
@@ -185,7 +185,7 @@ function mountstables_dohook($hookname,$args){
 				output("`2You have all stable spots taken. You have to remove a mount to stable again.`n`n");	
 			}
 			if (get_module_setting("givebuff")==0) {
-				output("`yNote: `\$You will not get a rested mount from the stables. We make them rest, so they will come out dosy and need a new day to be able to support you in combat!`2");				
+				output("`yNote: `\$You will not get a rested mount from the stables. We make them rest, so they will come out dosy and need a new day to be able to support you in combat!`2`n");				
 			}
 			$switches = get_module_setting('dailylimit');
 			$cur = get_module_pref('dailylimitused');
@@ -210,7 +210,7 @@ function mountstables_run(){
 	villagenav();
 	addnav("Other");
 	addnav("Back to the stables","stables.php");
-	$mount = mountstables_CurrentMountName();
+	$mount = mountstables_currentMountName();
 	switch ($op){
 		case "stable":
 			output("`2Do you want to stable your %s`2?",$mount);
