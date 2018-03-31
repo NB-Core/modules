@@ -141,7 +141,7 @@ function mountstables_addCurrentMount($force=0) {
 	} elseif ($force==1){
 		debuglog("tried to add mount $mountid to list, but $size spots were already taken. FORCED INSERT");
 	}
-	$sql = "insert into ".db_prefix("mountstables")." (acctid,mountid,mountname,stabledate) VALUES ($u,$mountid,'".mysql_escape_string($mount)."','".date("Y-m-d H:i:s")."');";
+	$sql = "insert into ".db_prefix("mountstables")." (acctid,mountid,mountname,stabledate) VALUES ($u,$mountid,'".db_real_escape_string($mount)."','".date("Y-m-d H:i:s")."');";
 	$result = db_query($sql);
 	$ret = (int) db_affected_rows($result);	
 	debuglog("put $mountid into stable spot, result $ret");
