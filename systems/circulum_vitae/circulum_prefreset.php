@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 
 function circulum_prefreset_getmoduleinfo(){

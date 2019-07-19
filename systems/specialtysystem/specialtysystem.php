@@ -135,7 +135,7 @@ function specialtysystem_dohook($hookname,$args){
 		tlschema("superuser");
 		addnav("Mechanics");
 		tlschema();
-		if (($session['user']['superuser']&SU_IS_MEGAUSER)==SU_IS_MEGAUSER) addnav("Refresh Specialty System Add-Ons","runmodule.php?module=specialtysystem&op=refresh");
+		if (($session['user']['superuser']&SU_MEGAUSER)==SU_MEGAUSER) addnav("Refresh Specialty System Add-Ons","runmodule.php?module=specialtysystem&op=refresh");
 		break;
 	case "newdayintercept":
 		//if other specialties are disabled
@@ -257,7 +257,8 @@ function specialtysystem_dohook($hookname,$args){
 			break;
 		}
 		$current=0;
-		$data=array_shift(specialtysystem_getspecs($data));
+		$temp = specialtysystem_getspecs($data);
+		$data=array_shift($temp);
 		$args['SS'] =translate_inline($data['spec_name']);
 		break;
 	case "specialtymodules": //called in user.php
@@ -316,7 +317,8 @@ function specialtysystem_dohook($hookname,$args){
 		}
 		require_once("modules/specialtysystem/functions.php");
 		$current=specialtysystem_setuses(-$bonus);
-		$data=array_shift(specialtysystem_getspecs($data));
+		$temp = specialtysystem_getspecs($data);
+		$data=array_shift($temp);
 		$name = translate_inline($data['spec_name'],"module-".$data['modulename']);
 		if ($bonus == 1) {
 			output("`n`2Because of your inclination to %s%s`2, you receive `^1`2 extra chakra use for today.`n",$data['spec_colour'], $name);

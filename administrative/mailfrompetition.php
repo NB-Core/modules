@@ -1,23 +1,23 @@
 <?php
 /*
 
-*/
+ */
 
 function mailfrompetition_getmoduleinfo() {
 	$info = array(
-	    "name"=>"Email from petitions",
-		"version"=>"1.0",
-		"author"=>"`2Oliver Brendel",
-		"category"=>"Administrative",
-		"settings" => array(
-			"Settings for Email From Petitions,title",
-			"adminmail"=>"Admin email,text",
-			"adminname"=>"Admin Name (Sender),text",
-			"ccmail"=>"CC Emails,text",
-			"CC mails only and separated by comma (no leading comma),note",
-			),
-	);
-    return $info;
+			"name"=>"Email from petitions",
+			"version"=>"1.0",
+			"author"=>"`2Oliver Brendel",
+			"category"=>"Administrative",
+			"settings" => array(
+				"Settings for Email From Petitions,title",
+				"adminmail"=>"Admin email,text",
+				"adminname"=>"Admin Name (Sender),text",
+				"ccmail"=>"CC Emails,text",
+				"CC mails only and separated by comma (no leading comma),note",
+				),
+		     );
+	return $info;
 }
 
 function mailfrompetition_install() {
@@ -34,23 +34,23 @@ function mailfrompetition_uninstall() {
 function mailfrompetition_dohook($hookname, $args){
 	global $session;
 	switch ($hookname) {
-	
-	case "footer-viewpetition":
-		$op=httpget('op');
-		$setstat=(int)httpget('setstat');
-		if ($setstat!=0) {
-			//inject a commentary about the move
-			$statuses = modulehook("petition-status", array());
-			// attention: do not have ANY module that modifies the petitions only in here...
-			$text=sprintf_translate("/me`0 moved this petition to category '%s`0'",$statuses[$setstat]);
-			emailfrompetitions_insert($text);
-		}
-		if ($op!='view') return $args;
-		$id=httpget('id');
-		addnav("Actions");
-		addnav("Email this user","runmodule.php?module=mailfrompetition&op=mail&petition=$id");
 
-		break;
+		case "footer-viewpetition":
+			$op=httpget('op');
+			$setstat=(int)httpget('setstat');
+			if ($setstat!=0) {
+				//inject a commentary about the move
+				$statuses = modulehook("petition-status", array());
+				// attention: do not have ANY module that modifies the petitions only in here...
+				$text=sprintf_translate("/me`0 moved this petition to category '%s`0'",$statuses[$setstat]);
+				emailfrompetitions_insert($text);
+			}
+			if ($op!='view') return $args;
+			$id=httpget('id');
+			addnav("Actions");
+			addnav("Email this user","runmodule.php?module=mailfrompetition&op=mail&petition=$id");
+
+			break;
 	}
 	return $args;
 }
@@ -111,7 +111,7 @@ function mailfrompetition_run(){
 			$pretext.=$body;
 			rawoutput(sprintf("<input type='input' length='30' name='subject' value='%s'/>",translate_inline("Your petition")));
 			rawoutput("<br/><textarea name='body' cols='80' rows='10'>");
-//			rawoutput(htmlentities($text));
+			//			rawoutput(htmlentities($text));
 			rawoutput("$pretext</textarea><input type='submit' class='button' value='$submit'/>");
 			rawoutput("<input type='hidden' name='email' value='$email'></form>");
 			output("`n`n`\$Note: All email who are sent from here go CC to %s!",$adminmail);
@@ -129,7 +129,7 @@ function mailfrompetition_run(){
 			emailfrompetitions_insert(translate_inline("/me mailed concerning this petition"));
 			invalidatedatacache("petition_counts");			
 			break;
-			
+
 	}
 	page_footer();
 }
@@ -147,28 +147,12 @@ function mailfrompetition_sendmail($to, $body, $subject, $fromaddress, $fromname
 		$ccmails=",$ccmail";
 	} else $ccmails='';
 
-	$eol="\r\n";
-	$mime_boundary=md5(time());
-
-	# Common Headers
-	$headers  = 'MIME-Version: 1.0' . "\r\n";
-	$headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-
-	$headers .= "From: ".$fromname."<".$fromaddress.">".$eol;
-	$headers .= "CC: ".$fromname."<".$fromaddress.">$ccmails".$eol;
-	//$headers .= "Reply-To: ".$fromname."<".$fromaddress.">".$eol;
-	$headers .= "Return-Path: ".$fromname."<".$fromaddress.">".$eol;		// these two to set reply address
-	$headers .= "Message-ID: <".time()."-".$fromaddress.">".$eol;
-	$headers .= "X-Mailer: PHP v".phpversion().$eol;					// These two to help avoid spam-filters
-	
-	$msg=$body;
-	
-	# SEND THE EMAIL
-	ini_set(sendmail_from,$fromaddress);	// the INI lines are to force the From Address to be used !
-	$mail_sent = mail($to, $subject, $msg, $headers);
- 
-	ini_restore(sendmail_from);
- 
+	require_once("lib/sendmail.php");
+	$to_array=array($to=>$to);
+	$from_array=array($fromaddress=>$fromname);
+	$cc_array=array($fromaddress=>$fromname);
+	if (isset($ccmail) && $ccmail!="") $cc_array[$ccmail]=$ccmail;
+	$mail_sent = send_email($to_array,$body,$subject,$from_array,$cc_array,"text/html");
 	return $mail_sent;
 }
 ?>

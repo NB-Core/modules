@@ -6,7 +6,7 @@ function halloween_getmoduleinfo(){
 		"name"=>"`qHallo`Qween `~Surprise`0",
 		"version"=>"1.0",
 		"author"=>"`2Oliver Brendel",
-		"category"=>"PVP",
+		"category"=>"Halloween",
 		"download"=>"",
 
 	);
@@ -28,7 +28,9 @@ function halloween_dohook($hookname,$args){
 	global $session;
 	switch ($hookname) {
 	case "newday":
-		$session['user']['playerfights']=25;
+		if ($session['user']['playerfights']<30) {
+			$session['user']['playerfights']=30;
+		}
 		break;
 	case "pvpmodifytargets":
 		$id=$session['user']['acctid'];
@@ -44,6 +46,7 @@ function halloween_dohook($hookname,$args){
 			db_prefix("accounts") . ".clanid WHERE (locked=0) " . 
 			"AND (slaydragon=0) AND " .
 			"(dragonkills>0 OR pk>0) " .
+		// no regrets
 		//	"AND (alive=1) " .
 //			"AND (laston<'$last' OR loggedin=0) AND (acctid<>$id) " . 
 			"ORDER BY location, level DESC, " .

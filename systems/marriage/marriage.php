@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /*interface to make it compatible for old modules*/
 function marriage_getmoduleinfo() {
@@ -116,19 +116,19 @@ class marriage implements module_base {
 			'from'=>array('name'=>'initiator', 'type'=>'int(11) unsigned'),
 			'to'=>array('name'=>'proposed_to', 'type'=>'int(11) unsigned'),
 			'ring'=>array('name'=>'ring', 'type'=>'int(4) unsigned', 'default'=>'0'),
-			'propose'=>array('name'=>'propose', 'type'=>'text'),
-			'response'=>array('name'=>'response', 'type'=>'text'),
+			'propose'=>array('name'=>'propose', 'type'=>'text', 'default'=>''),
+			'response'=>array('name'=>'response', 'type'=>'text', 'default'=>''),
 			'accepted'=>array('name'=>'accepted', 'type'=>'int(2) unsigned'),
-			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'0000-00-00 00:00:00'),
-			'responsedate'=>array('name'=>'responsedate', 'type'=>'datetime','default'=>'0000-00-00 00:00:00'),
+			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
+			'responsedate'=>array('name'=>'responsedate', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
 			'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'initiator,proposed_to,date'),
 			'key-one'=> array('name'=>'receiver', 'type'=>'key', 'unique'=>'0', 'columns'=>'date'),
 		);
 		$ignored=array(
 			'player'=>array('name'=>'player', 'type'=>'int(11) unsigned'),
 			'target'=>array('name'=>'target', 'type'=>'int(11) unsigned'),
-			'reason'=>array('name'=>'reason', 'type'=>'varchar(1000)'),
-			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'0000-00-00 00:00:00'),
+			'reason'=>array('name'=>'reason', 'type'=>'varchar(1000)', 'default'=>''),
+			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
 			'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'player,target'),
 			
 		);
@@ -136,11 +136,11 @@ class marriage implements module_base {
 			'id'=>array('name'=>'id', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment'),
 			'from'=>array('name'=>'initiator', 'type'=>'int(11) unsigned'),
 			'to'=>array('name'=>'receiver', 'type'=>'int(11) unsigned'),
-			'message'=>array('name'=>'message', 'type'=>'varchar(4000)'), //php5 only up to 65k
-			'response' =>array('name'=>'response', 'type'=>'varchar(4000)'),
+			'message'=>array('name'=>'message', 'type'=>'varchar(4000)', 'default'=>''), //php5 only up to 65k
+			'response' =>array('name'=>'response', 'type'=>'varchar(4000)', 'default'=>''),
 			'successful'=>array('name'=>'successful', 'type'=>'tinyint(4)','default'=>0),
-			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'0000-00-00 00:00:00'),
-			'responsedate'=>array('name'=>'responsedate', 'type'=>'datetime','default'=>'0000-00-00 00:00:00'),
+			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
+			'responsedate'=>array('name'=>'responsedate', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
 			'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'id'),
 			'key-one'=> array('name'=>'initiator', 'type'=>'key', 'unique'=>'0', 'columns'=>'initiator'),
 			'key-two'=> array('name'=>'receiver', 'type'=>'key', 'unique'=>'0', 'columns'=>'receiver'),
@@ -309,6 +309,7 @@ class marriage implements module_base {
 	}
 	
 	private function hook_newday($args) {
+		global $session;
 		set_module_pref('flirts_today',0);
 		$fiancee=get_module_pref('fiancee','marriage');
 		if (((int)$session['user']['marriedto'])!=0) {
@@ -466,9 +467,9 @@ class marriage implements module_base {
 	
 	private function flirtvalue($user) {
 		//list returns array with acctid, charname, points
-		$sql="SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND responsedate!='0000-00-00 00:00:00' GROUP BY b.receiver
+		$sql="SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver
 			UNION 
-			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND responsedate!='0000-00-00 00:00:00' GROUP BY b.receiver ORDER BY name ASC";
+			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver ORDER BY name ASC";
 		$result=db_query($sql);
 		$out=array();
 		while ($row=db_fetch_assoc($result)) {
@@ -739,7 +740,7 @@ class marriage implements module_base {
 				break;
 			case "ring":
 				$target=(int)httpget('target');
-				$sql="SELECT * FROM ".db_prefix('marriage_proposals')." WHERE ((initiator=$user AND proposed_to=$target) OR (initiator=$target AND proposed_to=$user)) AND responsedate='0000-00-00 00:00:00';";
+				$sql="SELECT * FROM ".db_prefix('marriage_proposals')." WHERE ((initiator=$user AND proposed_to=$target) OR (initiator=$target AND proposed_to=$user)) AND responsedate='1970-01-01 00:00:00';";
 				$result=db_query($sql);
 				if (db_num_rows($result)>0) {
 					output("`4\"`yA ring? Yes, a ring and proposal between you two has been already done by me... please visit the meadows for more information.`4\"");
@@ -1009,7 +1010,7 @@ class marriage implements module_base {
 			if (is_array($quote)) $quote=call_user_func_array("sprintf",$quote);
 			output_notl($quote);
 			addnav("Chapel");
-			$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_proposals')." WHERE responsedate='0000-00-00 00:00:00' AND proposed_to=".$user.";";
+			$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_proposals')." WHERE responsedate='1970-01-01 00:00:00' AND proposed_to=".$user.";";
 			$result=db_query($sql);
 			$row=db_fetch_assoc($result);
 			addnav(array("Proposal Overview (`4%s unresponded`0)",(int)$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=checkproposals");				

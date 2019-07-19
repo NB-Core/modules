@@ -68,7 +68,11 @@ function savedays_dohook($hookname,$args){
 			$misseddays=get_module_pref('daysmissed')-1;
 			$multiplier=get_module_setting('turns');
 			$maxgain=get_module_setting('maxturns');
-			if ($misseddays>0) $turnsgained= $misseddays * $multiplier;
+			if ($misseddays>0) {
+				$turnsgained= $misseddays * $multiplier;
+			} else {
+				$turnsgained = 0;
+			}
 			if ($turnsgained>$maxgain) $turnsgained=$maxgain;
 			$session['user']['turns']+=$turnsgained;
 			if ($turnsgained>0) {

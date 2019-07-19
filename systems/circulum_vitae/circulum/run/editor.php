@@ -1,4 +1,4 @@
-<?
+<?php
 page_header("Circulum Vitae Editor");
 require_once("lib/superusernav.php");
 superusernav();

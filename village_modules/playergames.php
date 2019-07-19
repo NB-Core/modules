@@ -36,16 +36,16 @@ function playergames_install(){
 		'module'=>array('name'=>'module', 'type'=>'text'),
 		'gamename'=>array('name'=>'gamename', 'type'=>'text'),
 		'gamedata'=>array('name'=>'gamedata', 'type'=>'text'),
-		'startdate'=>array('name'=>'startdate', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'),
-		'lastactive'=>array('name'=>'lastactive', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'),
-		'enddate'=>array('name'=>'enddate', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'),
+		'startdate'=>array('name'=>'startdate', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'),
+		'lastactive'=>array('name'=>'lastactive', 'type'=>'datetime', 'default'=>'1970-01-01 00:00:00'),
+		'enddate'=>array('name'=>'enddate', 'type'=>'datetime', 'default'=>'2159-01-01 00:00:00'),
 		'didexpire'=>array('name'=>'didexpire', 'type'=>'tinyint(4) unsigned', 'default'=>0),
 		'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'number'),
 		);
 	require_once("lib/tabledescriptor.php");
 	synctable(db_prefix("playergames"), $playergames, true);
 	/*switch support*/
-	$sql="UPDATE ".db_prefix('playergames')." SET lastactive='".date("Y-m-d H:i:s", time())."' WHERE lastactive='0000-00-00 00:00:00';";
+	$sql="UPDATE ".db_prefix('playergames')." SET lastactive='".date("Y-m-d H:i:s", time())."' WHERE lastactive='1970-01-01 00:00:00';";
 	db_query($sql);
 	/*now all updated games won't be closed until they expire*/
 	return true;
@@ -90,10 +90,10 @@ function playergames_run(){
 		case "list":
 			$i=0;
 			if ($mode=='current') {
-				$sql="SELECT * FROM  ".db_prefix("playergames")." WHERE enddate='0000-00-00 00:00:00' order by number DESC limit 50";
+				$sql="SELECT * FROM  ".db_prefix("playergames")." WHERE enddate='2159-01-01 00:00:00' order by number DESC limit 50";
 				$nextorclosed=translate_inline("Next Player");
 			} else {
-				$sql="SELECT * FROM  ".db_prefix("playergames")." WHERE enddate!='0000-00-00 00:00:00' order by number DESC limit 50";
+				$sql="SELECT * FROM  ".db_prefix("playergames")." WHERE enddate!='2159-01-01 00:00:00' order by number DESC limit 50";
 				$nextorclosed=translate_inline("Closing Player");
 			}
 			$result = db_query($sql);
@@ -125,7 +125,7 @@ function playergames_run(){
 				if ($session['user']['acctid']==$row['nextturn'] && $mode=='current') {
 					rawoutput("<a href='runmodule.php?module={$row['module']}&op=resume&number={$row['number']}'>". translate_inline("Play your turn") ."</a>");
 					addnav("","runmodule.php?module={$row['module']}&op=resume&number={$row['number']}");
-				} elseif ($row['enddate']!='0000-00-00 00:00:00')  {
+				} elseif ($row['enddate']!='2159-01-01 00:00:00')  {
 					if ($row['didexpire']==1) {
 						output("`\$Expired!");
 					}
