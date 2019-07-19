@@ -33,7 +33,7 @@ function mountstables_install(){
 			'acctid'=>array('name'=>'acctid', 'type'=>'int(11) unsigned'),
 			'mountid'=>array('name'=>'mountid', 'type'=>'int(11) unsigned'),
 			'mountname'=>array('name'=>'mountname', 'type'=>'varchar(256)'),
-			'stabledate'=>array('name'=>'stabledate', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'),
+			'stabledate'=>array('name'=>'stabledate', 'type'=>'datetime', 'default'=>DATETIME_DATEMIN),
 			'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'id'),
 		    );
 	require_once("lib/tabledescriptor.php");

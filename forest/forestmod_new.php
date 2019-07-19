@@ -10,6 +10,10 @@ function forestmod_new_getmoduleinfo(){
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Forest",
 		"download"=>"http://lotgd-downloads.com",
+		"settings"=>array(
+			"suicide"=>"Let people sucicide till the end?,bool|0",
+			"suicidedk"=>"Min DKs for that?,int|10",
+			),
 
 	);
 	return $info;
@@ -47,11 +51,11 @@ function forestmod_new_dohook($hookname,$args){
 					addnav("Seek out (till the end)","forest.php?op=search&auto=full");
 					addnav("Thrillseeking (till the end)","forest.php?op=search&auto=full&type=thrill");
 					//uncomment the next lines to let players seach suicidally till the end
-					//if (getsetting("suicide", 0)) {
-					//	if (getsetting("suicidedk", 10) <= $session['user']['dragonkills']) {
-					//		//addnav("Suicide (till the end)","forest.php?op=search&auto=full&type=suicide");
-					//	}
-					//}
+					if (getsetting("suicide", 0)) {
+						if (getsetting("suicidedk", 10) <= $session['user']['dragonkills']) {
+							addnav("Suicide (till the end)","forest.php?op=search&auto=full&type=suicide");
+						}
+					}
 								// add buttons 
 					if ($_COOKIE['template']=='Mobile.htm') {
 					rawoutput("<div class='col-xs-12 col-sm8 btn-group mobile hidden-md hidden-lg ' style='margin: 5px 0 5px 0';>

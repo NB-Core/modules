@@ -163,8 +163,8 @@ function circulum_presave_run(){
 				//sort and output the findings
 				ksort($found);
 				foreach ($found as $row) {
-					rawoutput("<a href='runmodule.php?module=charrestore&op=beginrestore&file=".rawurlencode($row['entry'])."'>".$row['name']."</a> (".date("M d, Y",$row['date']).") (".$row['email'].") ".$row['dragonkills']." DKs ID ".$row['acctid']."<br>");
-					addnav("","runmodule.php?module=charrestore&op=beginrestore&file=".rawurlencode($row['entry']));
+					rawoutput("<a href='runmodule.php?module=circulum_presave&op=beginrestore&file=".rawurlencode($row['entry'])."'>".$row['name']."</a> (".date("M d, Y",$row['date']).") (".$row['email'].") ".$row['dragonkills']." DKs ID ".$row['acctid']."<br>");
+					addnav("","runmodule.php?module=circulum_presave&op=beginrestore&file=".rawurlencode($row['entry']));
 					
 				}
 			}

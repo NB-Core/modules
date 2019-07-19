@@ -23,6 +23,7 @@ function lodgenonexpiration_install(){
 	module_addhook("lodge");
 	module_addhook("motd-link");
 	module_addhook("pointsdesc");
+	module_addhook("newday"); // yeah, I know
 	return true;
 }
 
@@ -36,6 +37,15 @@ function lodgenonexpiration_dohook($hookname,$args){
 	$bought = get_module_pref("bought");
 	
 	switch($hookname){
+		case "newday":
+			if ($bought==1) {
+				//check
+				debuglog("trying to set superuser from ".$session['user']['superuser']." to ".SU_NEVER_EXPIRE);
+				$session['user']['superuser'] = (int)$session['user']['superuser'] | SU_NEVER_EXPIRE;
+				$sql = "UPDATE accounts SET superuser = ".((int)$session['user']['superuser'])." WHERE acctid=".$session['user']['acctid'];
+				db_query($sql);
+			}
+			break;
 		case "lodge":
 			addnav("Permanency!");
 			if ($bought!=1)
@@ -89,6 +99,9 @@ function lodgenonexpiration_run(){
 		output("`7You feel a bit better now, knowing you won't have to login to keep your name in this world anymore.");
 		debuglog("Bought Immortality");
 		$session['user']['superuser'] = $session['user']['superuser'] | SU_NEVER_EXPIRE;
+		//you need to set this here by sql, else it will not be saved (security feature)
+		$sql = "UPDATE accounts SET superuser = ".((int)$session['user']['superuser'])." WHERE acctid=".$session['user']['acctid'];
+		db_query($sql);
 	}
 	page_footer();
 }

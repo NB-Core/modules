@@ -58,7 +58,7 @@ function specialtysystem_increment($modulename,$value=1) {
 function specialtysystem_get($modulename=false,$user=false){
 	$get=unserialize(stripslashes(get_module_pref("data","specialtysystem",$user)));
 	if ($modulename==false) return $get;
-	if ($get[$modulename]!='')
+	if (isset($get[$modulename]) && $get[$modulename]!='')
 		return $get[$modulename];
 		else
 		return false;

@@ -206,7 +206,7 @@ function ladyerwin_runevent($type,$link) {
 			switch ($randomchance) {
 				case 1:
 					output("`$ Lady Erwin`@ is accepting your offer and eats happily. You are in a good mood now!");
-					$gainedff=e_rand(1,get_module_setting(maxff));
+					$gainedff=e_rand(1,get_module_setting("maxff"));
 					$fftext=($gainedff==1? translate_inline("fight"):translate_inline("fights"));
 					output("`n`nYou gain `^%s`@ forest %s!",$gainedff,$fftext);
 					$session['user']['turns']+=$gainedff;

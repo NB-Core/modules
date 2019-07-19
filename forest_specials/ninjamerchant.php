@@ -212,7 +212,18 @@ function ninjamerchant_sellitems() {
 	$inventory=db_prefix('inventory');
 	$item=db_prefix('item');
 	$mod=0.6;
-	$sql="SELECT $item.name as name, $item.itemid as itemid, round($item.gold*$mod) as gold, round($item.gems*$mod) as gems, count($item.itemid) as quantity FROM $item RIGHT JOIN $inventory ON $item.itemid=$inventory.itemid WHERE $item.sellable=1 AND $inventory.userid={$session['user']['acctid']} GROUP BY $item.itemid ORDER BY $item.class DESC, $item.name DESC;";
+	$user=$session['user']['acctid'];
+	//$sql="SELECT $item.name as name, $item.itemid as itemid, round($item.gold*$mod) as gold, round($item.gems*$mod) as gems, count($item.itemid) as quantity FROM $item RIGHT JOIN $inventory ON $item.itemid=$inventory.itemid WHERE $item.sellable=1 AND $inventory.userid={$session['user']['acctid']} GROUP BY $item.itemid ORDER BY $item.class DESC, $item.name DESC;";
+	$sql = "SELECT $item.name as name, $item.itemid as itemid, round($item.gold*$mod) as gold, round($item.gems*$mod) as gems, inv.quantity as quantity, inv.charges as charges, inv.sellvaluegold as sellgoldvalue, inv.sellvaluegems as sellvaluegems FROM $item INNER JOIN (
+				SELECT itemid, COUNT($inventory.itemid) AS quantity, SUM($inventory.charges) AS charges, $inventory.sellvaluegold AS sellvaluegold, $inventory.sellvaluegems AS sellvaluegems
+				FROM $inventory
+				WHERE $inventory.userid = $user
+				GROUP BY $inventory.itemid,$inventory.sellvaluegold,$inventory.sellvaluegems ) AS inv
+				ON $item.itemid = inv.itemid
+				WHERE $item.sellable=1
+				ORDER BY
+					$item.class DESC,
+					$item.name DESC";
 	$result=db_query($sql);
 	$out=array();
 	while ($row=db_fetch_assoc($result)) {

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 
 function circulum_uchiha_getmoduleinfo(){
