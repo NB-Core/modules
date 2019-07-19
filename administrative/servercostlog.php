@@ -14,7 +14,7 @@ function servercostlog_install(){
 	module_addhook_priority("superuser", 70);
 	$table=array(
 		'servercostid'=>array('name'=>'servercostid', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment'),
-		'date'=>array('name'=>'date', 'type'=>'datetime', 'default'=>'0000-00-00 00:00:00'),
+		'date'=>array('name'=>'date', 'type'=>'datetime', 'default'=>DATETIME_DATEMIN),
 		'type'=>array('name'=>'type', 'type'=>'tinyint(3) unsigned', 'default'=>'0'),
 		'amount'=>array('name'=>'amount', 'type'=>'float(9,2)', 'default'=>'0.0'),
 		'comment'=>array('name'=>'comment', 'type'=>'text'),

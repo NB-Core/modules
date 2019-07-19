@@ -34,6 +34,7 @@ function petitionfixnavs_dohook($hookname, $args){
 	
 	case "footer-viewpetition":
 		$op=httpget('op');
+		$statuses=array();
 		$setstat=(int)httpget('setstat');
 		if ($setstat!=0) {
 			//inject a commentary about the move
@@ -52,14 +53,15 @@ function petitionfixnavs_dohook($hookname, $args){
 		$nextrow=db_fetch_assoc($nextresult);
 		if ($nextrow){
 			$nextid=$nextrow['petitionid'];
-			$s=$nextrow['status'];
-			$status=$statuses[$s];
+//what does this do again? I don't get it what I wanted at that time
+//			$s=$nextrow['status'];
+//			$status=$statuses[$s];
 			addnav("Close and next","runmodule.php?module=petitionfixnavs&op=cnext&id=$id&nextid=$nextid");
 			addnav("Fix,close and next","runmodule.php?module=petitionfixnavs&op=cfnext&id=$id&nextid=$nextid");
 			addnav("Notify done,close,next","runmodule.php?module=petitionfixnavs&op=ncnext&id=$id&nextid=$nextid");
 		}
 		addnav("Notify done,close","runmodule.php?module=petitionfixnavs&op=ncnext&id=$id&nextid=0");
-		if (($session['user']['superuser'] & SU_EDIT_USER)==SU_EDIT_USER) {
+		if (($session['user']['superuser'] & SU_EDIT_USERS)==SU_EDIT_USERS) {
 			$sql="SELECT author,petitionid FROM ".db_prefix('petitions')." WHERE petitionid='$id';";
 			$result=db_query($sql);
 			$row=db_fetch_assoc($result);
