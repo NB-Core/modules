@@ -51,7 +51,7 @@ function mountstables_getMountList($id=0) {
 	if ($id!=0) {
 		$add = " AND id=$id ";
 	}
-	$sql = "SELECT * from ".db_prefix("mountstables")." WHERE acctid=$u".$add." ORDER BY stabledate DESC";
+	$sql = "SELECT ms.*, m.mountname as originalname from ".db_prefix("mountstables")." AS ms LEFT JOIN ".db_prefix("mounts")." AS m ON ms.mountid=m.mountid WHERE ms.acctid=$u".$add." ORDER BY stabledate DESC";
 	$result = db_query($sql);
 	if (db_num_rows($result)==0) return array();
 	$list=array();
@@ -116,13 +116,14 @@ function mountstables_currentMountName() {
 	if (is_module_active("mountname")) {
 		$mount = get_module_pref("name","mountname");
 	}
-	if ($mount == "") {
+//following could have strange results, leave it
+/*	if ($mount == "") {
 		//no user name given, take default
 		$sql = "SELECT * FROM " . db_prefix("mounts") . " WHERE mountid='$mountid'";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
 		$mount = $row['mountname'];
-	}
+	}*/
 //debug($mountid);
 //debug($row);
 	return $mount;
@@ -173,7 +174,7 @@ function mountstables_dohook($hookname,$args){
 			//debug($list);
 			$size = count($list);
 			addnav("Spots");
-			if ($size<=$count) {
+			if ($size<$count) {
 				//output("`2You can stable your current mount for a price of `4%s`2. You have `x%i`2 spots left to fill.`n`n",$cost,$count-$size);	
 				output("`2You can stable your current mount here. You have `x%s`2 spots left to fill.`n`n",$count-$size);	
 				if ($session['user']['hashorse']!=0 && $op!="confirmsell") {
@@ -192,7 +193,12 @@ function mountstables_dohook($hookname,$args){
 			$no_swap = ($switches<=$cur); // no swap possible
 			addnav("Swap");
 			foreach ($list as $row) {
-				addnav(array("Swap to %s",$row['mountname']),($no_swap?"":"runmodule.php?module=mountstables&op=swap&intid=".$row['id']));
+				if ($row['mountname']=="") {
+					$display=$row['originalname'];
+				} else{
+					$display=$row['mountname'];
+				}	
+				addnav(array("Swap to %s",$display),($no_swap?"":"runmodule.php?module=mountstables&op=swap&intid=".$row['id']));
 			}
 
 			break;
@@ -218,10 +224,14 @@ function mountstables_run(){
 			addnav("Yes","runmodule.php?module=mountstables&op=stable_yes");
 			break;
 		case "stable_yes":
-			mountstables_addCurrentMount();
-			$id = $session['user']['hashorse'];
-			mountstables_removeCurrentMount();
-			output("`2Your %s`2 was stabled.",$mount);
+			$result = mountstables_addCurrentMount();
+			if ($result === 0) {
+				output("Something weird happened, we couldn't stable your mount. Please send in a petition.");
+			} else {
+				$id = $session['user']['hashorse'];
+				mountstables_removeCurrentMount();
+				output("`2Your %s`2 was stabled.",$mount);
+			}
 			break;
 		case "swap":
 			$intid = httpget('intid');

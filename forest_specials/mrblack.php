@@ -176,7 +176,7 @@ function mrblack_runevent($type,$link)
 			case 9:case 10:
 			output("`@You try to approach him, but he seems to sense evil intentions from you (true or not) and looks at you angrily!");
 			output("`n`nYou don't know why, but you start to run. You run and run and run... finally, you stop to catch your breath.  You lose a forest fight.`n`n");
-			$session['user']['turns']--;
+			if ($session['user']['turns']>0) $session['user']['turns']--;
 			if (e_rand(1,2)==1 && $session['user']['gems']>0)
 			{
 			output("You have `$ lost`@ a gem during your escape!");

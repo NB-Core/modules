@@ -146,11 +146,13 @@ function elessasfall_runevent($type,$link) {
 			output("'`4 I'll take your gold as a lesson, now get out of my sight, little %s.`@'",$sex);
 			output("`n`nYou have `$ lost`@ all your gold and some %s.",$sexiness);
 			$session['user']['gold']=0;
-			$session['user']['charm']--;
+			if ($session['user']['charm']>=1) 
+				$session['user']['charm']--;
 			} else {
 			output("'`4 You don't even have money to pay for my disgrace. Go... now...'`@");
 			output("`n`nYou feel very depressed... you `$ lose`@ two charm points");
-			$session['user']['charm']-=2;
+			if ($session['user']['charm']>=2) 
+				$session['user']['charm']-=2;
 			}
 		break;
 		}
@@ -216,12 +218,14 @@ function elessasfall_runevent($type,$link) {
 					output("'`4 I'll take your gold as a lesson, now get out of my sight, little girl.`@'");
 					output("`n`nYou have `$ lost`@ all your gold and some womanliness.");
 					$session['user']['gold']=0;
-					$session['user']['charm']--;
+					if ($session['user']['charm']>=1) 
+						$session['user']['charm']--;
 					addnews("%s`0 was stripped of all gold for insulting an elven maiden in the woods!",$session['user']['name']);
 				} else {
 					output("'`4You don't even have money nor gems to pay for my disgrace. Go... now...`@'");
 					output("`n`nYou feel very depressed... you `$ lose`@ two charm points");
-					$session['user']['charm']-=2;
+					if ($session['user']['charm']>=2) 
+						$session['user']['charm']-=2;
 				}
 			break;
 			}

@@ -118,7 +118,7 @@ class marriage implements module_base {
 			'ring'=>array('name'=>'ring', 'type'=>'int(4) unsigned', 'default'=>'0'),
 			'propose'=>array('name'=>'propose', 'type'=>'text', 'default'=>''),
 			'response'=>array('name'=>'response', 'type'=>'text', 'default'=>''),
-			'accepted'=>array('name'=>'accepted', 'type'=>'int(2) unsigned'),
+			'accepted'=>array('name'=>'accepted', 'type'=>'int(2) unsigned', 'default'=>0),
 			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
 			'responsedate'=>array('name'=>'responsedate', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
 			'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'initiator,proposed_to,date'),
@@ -331,7 +331,7 @@ class marriage implements module_base {
 		if (is_module_active('alignment')) {
 			require_once("modules/alignment/func.php");
 			if (is_evil()) {
-				apply_buff('marriage-buff',
+				apply_buff('marriage_buff',
 						array(
 							"name"=>array("`gVigorous feelings for %s",$name),
 							"rounds"=>$this->buffrounds,
@@ -342,7 +342,7 @@ class marriage implements module_base {
 							"schema"=>"module-marriage"
 						));
 			} elseif (is_good()) {
-				apply_buff('marriage-buff',
+				apply_buff('marriage_buff',
 						array(
 							"name"=>array("`gHonest feelings for %s",$name),
 							"rounds"=>$this->buffrounds,
@@ -352,7 +352,7 @@ class marriage implements module_base {
 							"schema"=>"module-marriage"
 						));
 			} else {
-				apply_buff('marriage-buff',
+				apply_buff('marriage_buff',
 						array(
 							"name"=>array("`gFeelings for %s",$name),
 							"rounds"=>$this->buffrounds,
@@ -364,7 +364,7 @@ class marriage implements module_base {
 						));
 			}
 		} else {
-			apply_buff('marriage-buff',
+			apply_buff('marriage_buff',
 					array(
 						"name"=>array("`gFeelings for %s",$name),
 						"rounds"=>$this->buffrounds,
@@ -673,7 +673,7 @@ class marriage implements module_base {
 					$session['user']['gold']-=$gold;
 					$session['user']['gems']-=$gems;
 					$proposal=$this->mystrip(httppost('proposal'));
-					$sql="INSERT INTO ".db_prefix('marriage_proposals')." (initiator,proposed_to,ring,propose,date) VALUES ('$user','$target','$ring','".addslashes($proposal)."','".date("Y-m-d H:i:s")."');";
+					$sql="INSERT INTO ".db_prefix('marriage_proposals')." (initiator,proposed_to,ring,propose,date,response) VALUES ('$user','$target','$ring','".addslashes($proposal)."','".date("Y-m-d H:i:s")."','');";
 					db_query($sql);
 					require_once("lib/systemmail.php");
 					systemmail($target,array("`R`bProposal!`b"),array("

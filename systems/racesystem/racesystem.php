@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 function racesystem_getmoduleinfo(){
 	$info = array(
@@ -309,9 +309,11 @@ function racesystem_dohook($hookname,$args){
 						$sql =  "SELECT name FROM " . db_prefix("accounts") .
 							" WHERE acctid='$new'";
 						$result = db_query_cached($sql, "newest-".$race['city']);
-						$row = db_fetch_assoc($result);
-						$args['newestplayer'] = $row['name'];
-						$args['newestid']=$new;
+						if (db_num_rows($result)>0) {
+							$row = db_fetch_assoc($result);
+							$args['newestplayer'] = $row['name'];
+							$args['newestid']=$new;
+						}
 					} else {
 						$args['newestplayer'] = $new;
 						$args['newestid']="";

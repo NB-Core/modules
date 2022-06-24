@@ -2,10 +2,10 @@
 
 function xmasdiscount_getmoduleinfo(){
 	$info = array(
-			"name"=>"Xmas Discount on mounts",
+			"name"=>"Xmas Discount on mounts (timelocked)",
 			"version"=>"1.0",
 			"author"=>"Oliver Brendel",
-			"category"=>"Christmas",
+			"category"=>"Holidays|Christmas",
 			"download"=>"",
 			"vertxtloc"=>"",
 			"settings"=>array(

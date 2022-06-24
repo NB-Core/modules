@@ -58,7 +58,7 @@ function servercostlog_run(){
 	addnav("Check Monthly Balance","runmodule.php?module=servercostlog&op=balance");
 	addnav("Months");
 	$ic=db_prefix('servercostlog');		
-	$sql = "SELECT substring(date,1,7) AS month, sum(amount) AS servercost FROM $ic GROUP BY month DESC";
+	$sql = "SELECT substring(date,1,7) AS month, sum(amount) AS servercost FROM $ic GROUP BY month ORDER BY month DESC";
 	$result=db_query($sql);
 	//deep look at paylog.php
 	while ($row = db_fetch_assoc($result)){
@@ -68,13 +68,13 @@ function servercostlog_run(){
 		case "balance":
 			$ic=db_prefix('servercostlog');
 			$pl=db_prefix('paylog');
-			$sql = "SELECT substring(date,1,7) AS month, sum(amount) AS servercost FROM $ic GROUP BY month DESC";
+			$sql = "SELECT substring(date,1,7) AS month, sum(amount) AS servercost FROM $ic GROUP BY month order by month DESC";
 			$result = db_query($sql);
 			$payments=array();
 			while ($row=db_fetch_assoc($result)) {
 				$payments[date("M Y",strtotime($row['month']."-01"))]['costs']=$row['servercost'];
 			}
-			$sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM $pl GROUP BY month DESC";
+			$sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM $pl GROUP BY month order by month DESC";
 			$result=db_query($sql);
 			while ($row = db_fetch_assoc($result)){
 				$payments[date("M Y",strtotime($row['month']."-01"))]['income']=$row['profit'];
@@ -90,12 +90,12 @@ function servercostlog_run(){
 				$date=$key;
 				output_notl($date);
 				rawoutput("</td><td>");
-				$month=$row['income']-$row['costs'];
+				$month=(isset($row['income'])?$row['income']:0)-(isset($row['costs'])?$row['costs']:0);
 				$total+=$month;
 				if ($month>0) $col="`2";
 					elseif ($month==0) $col="`)";
 					else $col='`$';
-				output_notl($col.getsetting('paypalcurrency','USD')." ".$month."`0");
+				output_notl($col.getsetting('paypalcurrency','USD')." ".number_format($month,2)."`0");
 				rawoutput("</td></tr>");
 			}
 			$i++;

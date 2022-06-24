@@ -235,6 +235,8 @@ function invitationzones_run(){
 			invitationzones_desc($row['zonetype']);
 
 			$section="fzone-".$id;
+			$message="comments";
+			$talkline="";
 			viewcommentary($section,$message,25,$talkline,"module-invitationzones",true);
 			break;		
 
@@ -242,7 +244,7 @@ function invitationzones_run(){
 
 			if ($id==0) {
 				output("`b`i`c`!Fighting Zone`c`i`b`n`n");
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length HOUR)>=NOW() ORDER BY a.date asc;";
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date asc;";
 				$result=db_query($sql);
 				addnav("Private Active Fights");
 				while ($row=db_fetch_assoc($result)){
@@ -254,14 +256,14 @@ function invitationzones_run(){
 					addnav(array("%s`4 VS %s`4 (%s)",$row['challenger'],$row['opponent'],$row['time']),$link."op=spectate&battleid=".((int)$row['battleid']));
 				}			
 
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND NOT (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].")AND DATE_ADD(date, INTERVAL length HOUR)>=NOW() ORDER BY a.date desc;";
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND NOT (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].")AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date desc;";
 				$result=db_query($sql);
 				addnav("Active Fights");
 				while ($row=db_fetch_assoc($result)){
 					addnav(array("%s`4 VS %s`4",$row['challenger'],$row['opponent']),$link."op=spectate&battleid=".((int)$row['battleid']));
 				}
 
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators=0 AND (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length HOUR)<NOW() ORDER BY a.date desc;";
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators=0 AND (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length+14 DAY)<NOW() ORDER BY a.date desc;";
 				$result=db_query($sql);
 				output("`c`b`lPrivate Archived Fights`c`b`0");
 				$notrans = translate_inline("Battle");
@@ -293,7 +295,7 @@ function invitationzones_run(){
 
 				/*				
 				 */				
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND DATE_ADD(date, INTERVAL length DAY)<NOW() ORDER BY a.date desc;";
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND DATE_ADD(date, INTERVAL length+14 DAY)<NOW() ORDER BY a.date desc;";
 				$result=db_query($sql);
 
 				output("`c`b`lPublic Archived Fights`c`b`0");

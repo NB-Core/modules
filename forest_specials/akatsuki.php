@@ -112,21 +112,22 @@ function akatsuki_runevent($type,$link)
 		break;
 	case "combatready":
 		require_once("lib/battle-skills.php");
-		$extraatt=e_rand(5,round($session['user']['level']+$session['user']['dragonkills']/2,0));
+		$extraatt=round(e_rand(5,5+round($session['user']['level']+$session['user']['dragonkills']/2,0)),0);
 		$extradef=$extraatt+2;
 		$extrahp=$extraatt*20;
 		$badguy = array(
 		"creaturename"=>translate_inline($akatsuki." members"), //not so good for translation purposes if they switch the name often, but well
 		"creaturelevel"=>$session['user']['level']+e_rand(1,3),
-		"creatureweapon"=>translate_inline("many deadly weapons"),
+		"creatureweapon"=>translate_inline("Many deadly weapons"),
 		"creatureattack"=>$session['user']['level']+$session['user']['dragonkills']+$extraatt,
 		"creaturedefense"=>$session['user']['level']+$session['user']['dragonkills']+$extradef,
 		"creaturehealth"=>$session['user']['level']*10+50+$extrahp,
 		"diddamage"=>0,);
 		if (httpget('over')) { //attack+defence depends on the dks... the more, the bigger the thread, the harder they fight... and win with it usually
-			$extrahp=round(e_rand($session['user']['level']+50,($session['user']['maxhitpoints']-$session['user']['level']*10)));
-			$extraatt=e_rand(10,$session['user']['dragonkills']+25);
-			$extradef=e_rand(10,$session['user']['dragonkills']+25);
+// those 3 were never used (badguy is defined above)
+//			$extrahp=round(e_rand($session['user']['level']+50,($session['user']['maxhitpoints']-$session['user']['level']*10)));
+//			$extraatt=e_rand(10,$session['user']['dragonkills']+25);
+//			$extradef=e_rand(10,$session['user']['dragonkills']+25);
 			$badguy['creaturename']=$chief.translate_inline("`2 and ").$badguy['creaturename'];
 			if ($city!='Iwagakure') $badguy['creatureweapon']=translate_inline("One-eyed Mangekyou Sharingan and ").$badguy['creatureweapon'];
 				else $badguy['creatureweapon']=translate_inline("Two vicious whips and ").$badguy['creatureweapon'];
