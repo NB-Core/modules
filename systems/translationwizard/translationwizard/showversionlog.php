@@ -1,8 +1,7 @@
 <?php
 require_once("lib/pullurl.php");
 $log=file("modules/translationwizard/versions.txt");
-while (list($key,$val) = each ($log))
-	{
+foreach($log as $val) {
 	rawoutput($val);
 	output_notl("`n");
 	}

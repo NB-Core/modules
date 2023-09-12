@@ -2,10 +2,13 @@
 
 global $session,$badguy;
 if ($session['user']['dragonkills']>=8) {
-	if ($badguy['initialsetup']!=1) {
+	if (!isset($badguy['initialsetup']) || $badguy['initialsetup']!=1) {
 		$badguy['jutsupoints']=$session['user']['level']+3;
-	}debug($badguy);
-	if (((int)$badguy['jutsurounds'])>0) {
+		$badguy['initialsetup']=1;
+		$badguy['jutsurounds']=0;
+		$badguy['jutsuactive']=0;
+	}
+	if (isset($badguy['jutsurounds']) && ((int)$badguy['jutsurounds'])>0 && isset($badguy['jutsuactive'])) {
 		switch($badguy['jutsuactive']) {
 			case 'Mizuchi':
 				$msg=translate_inline('`$%s`3 gets sliced up by %s`3 for %s`3 points!`n');
@@ -40,16 +43,16 @@ if ($session['user']['dragonkills']>=8) {
 					$badguy['jutsuactive']='Genbu';
 					$badguy['jutsupoints']-=3;
 					apply_buff('vampirelord_bride_genbu',
-						array(
-							"name"=>"`4M`jumyou `4J`jinpuuryu `4S`jatsujin Ken!",
-							"rounds"=>4,
-							"atkmod"=>0.7,
-							"badguyatkmod"=>1.3,
-							"minioncount"=>1,
-							"expireafterfight"=>1,
-							"effectmsg"=>"`)You are hindered by the serpents!",
-							"schema"=>"module-vampirelord_bride",
-							));
+							array(
+								"name"=>"`4M`jumyou `4J`jinpuuryu `4S`jatsujin Ken!",
+								"rounds"=>4,
+								"atkmod"=>0.7,
+								"badguyatkmod"=>1.3,
+								"minioncount"=>1,
+								"expireafterfight"=>1,
+								"effectmsg"=>"`)You are hindered by the serpents!",
+								"schema"=>"module-vampirelord_bride",
+							     ));
 					$chosen=1;
 					break;
 				case 3:
@@ -67,7 +70,7 @@ if ($session['user']['dragonkills']>=8) {
 								"minioncount"=>$session['user']['level'],
 								"effectmsg"=>"`\$You are burnt for {damage} damage!",
 								"schema"=>"module-vampirelord_bride",
-							));
+							     ));
 					$chosen=1;
 					break;				
 				default:

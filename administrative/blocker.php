@@ -73,6 +73,7 @@ function blocker_dohook($hookname, $args){
 			}
 			break;
 		case "check-create":
+			if (!isset($args['email'])) return $args; // nothing to do obviously...
 			/* just do this if we have an old version previously who put stuff into the setting */
 			if (get_module_setting('blockedmails','blocker')!='') {
 				//legacy support, fill the table
@@ -83,13 +84,9 @@ function blocker_dohook($hookname, $args){
 			while ($row=db_fetch_assoc($result)) {
 				$merge[]=$row['emailaddress'];
 			}
-			//get from central archive
 			$args['email']=strtolower(trim($args['email'])); //remove spaces and make lower case
 			$args['email']=hash('sha512',$args['email'].get_module_setting('email_hash_salt','charrestore')); // hash it
-			require_once("lib/pullurl.php");
-			$accounts= pullurl("http://documents.todestanz.de/email.txt");
-			if (strpos($accounts[0],"Verified")!==false) $accounts[0]='';
-				else $accounts=array();
+			$accounts=array();
 				
 			//done
 			

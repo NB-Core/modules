@@ -1,6 +1,6 @@
 <?php
 function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
-// made by the incomparable genius Edorian, master of the realms and destroyer of souls
+	// made by the incomparable genius Edorian, master of the realms and destroyer of souls
 	if(!is_file($filepath))
 	{
 		die("Fatal Error ! Could not find File.");
@@ -40,7 +40,7 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 	// Initalise Arrays
 	$tlschema_stack = array();
 	$return = array();
-	
+
 	// Linecount
 	$line = 1;
 
@@ -53,7 +53,7 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 	$addnews_len           = strlen("addnews");
 	$page_header_len       = strlen("page_header");
 	$sprintf_translate_len = strlen("sprintf_translate");
-	
+
 	// Initalise Stringlens used for skipping
 	$output_skip            = $output_len - 1;
 	$output_notl_skip       = $output_notl_len - 1;
@@ -63,10 +63,10 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 	$addnews_skip           = $addnews_len - 1;
 	$page_header_skip       = $page_header_len - 1;
 	$sprintf_translate_skip = $sprintf_translate_len - 1;
-	
-	
+
+
 	// Start parse
-	for($i=0;$str[$i]!="";$i++)
+	for($i=0;$i<strlen($str);$i++)
 	{
 		if($str[$i] == "\n")
 		{
@@ -372,7 +372,7 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 			{
 				$escape_flag = true;
 				$escape_justset = true;
-				
+
 			}
 			else if($str[$i] == "\$" && $escape_flag == false)
 			{
@@ -392,7 +392,7 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 				$current_translate .= $str[$i];
 			}
 		}
-		
+
 		if($escape_flag == true)
 		{
 			if($escape_justset == true)
@@ -418,24 +418,24 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 
 function wizard_insertfile($delrows,$languageschema,$serialized=false) {
 	if (is_array($delrows))  //setting for any intexts you might receive
-		{
+	{
 		$insertrows = $delrows;
-		}else
-		{
+	}else
+	{
 		if ($delrows) $insertrows  = array($insertrows);
 		else 
-			{
-			$insertrows = array();
-			}
-		}
-	while (list($key,$val) = each ($insertrows))
 		{
+			$insertrows = array();
+		}
+	}
+	foreach($insertrows as $key=>$val)
+	{
 		if ($serialized) {
 			$val=unserialize(rawurldecode($val));
 		}	//else $val = split("[||||]", $val);
 		$sql="Insert IGNORE INTO ".db_prefix("untranslated")." Values ('".addslashes($val['text'])."','$languageschema','".addslashes($val['schema'])."');";
 		db_query($sql);
-		}
+	}
 }
 
 function wizard_skipcommentary($str,&$i,&$line)

@@ -113,7 +113,7 @@ function playergames_run(){
 				output_notl($row['playeronename']);
 				rawoutput("</td><td>");
 				$names=getnames($row['players']);
-				while (list($key,$val)=each($names)) {
+				foreach($names as $val) {
 					output_notl($val['name']);
 					output_notl("`n");
 				}
@@ -172,7 +172,7 @@ function playergames_run(){
 			if ($maxgames>0) output("You can see %s tables here, ready for play.",$maxgames-$gamecount);
 			output_notl("`n`n");
 			addnav("Games");
-			while (list($key,$row)=each($games)) {
+			foreach($games as $row) {
 				$fee=get_module_setting("fee",$row['module']);
 				$min=get_module_setting("minplayers",$row['module']);
 				$max=get_module_setting("maxplayers",$row['module']);

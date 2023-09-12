@@ -50,7 +50,7 @@ function chipmunks_runevent($type,$link){
 				//addnav("Navigation");
 				//addnav("Continue",$from."op=continue");
 			} else {
-				output("`qYou suddenly feel a pull and before you realize a `gC`lhipmunk`q rallies out of your pocket! Gladly you had no cash with you!`0`n`n", $gold);
+				output("`qYou suddenly feel a pull and before you realize a `gC`lhipmunk`q rallies out of your pocket! Gladly you had no cash with you!`0`n`n");
 			}
 			$session['user']['specialinc'] = "";
 	}

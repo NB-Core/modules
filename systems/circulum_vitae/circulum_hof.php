@@ -79,7 +79,7 @@ function circulum_hof_run(){
 	page_header("Most Oro Kills Lost in Kekkei Genkai");
 	$select="AND (a.locked=0 AND (a.superuser & ".SU_HIDE_FROM_LEADERBOARD.") = 0)ORDER BY b.value+0 DESC;";
 	$sql="SELECT a.name as name, a.level as level, b.value as data1, b.value as data2 FROM ".db_prefix("accounts")." AS a INNER JOIN ".db_prefix("module_userprefs")." AS b ON a.acctid=b.userid WHERE b.modulename='circulum_hof' AND b.value>0 AND b.setting='$setting' $select";
-	circulum_hof_display_table(translate_inline($title),$sql,false,false,array($label));
+	circulum_hof_display_table($label,$sql,false,false,array($label));
 	addnav("Back to HOF","hof.php");
 	addnav("Refresh","runmodule.php?module=circulum_hof&op=$op");
 	page_footer();

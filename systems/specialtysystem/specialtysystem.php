@@ -73,7 +73,7 @@ function specialtysystem_uninstall(){
 function specialtysystem_showfightnav($script,$force=false) {
 	global $session;
 	$check=unserialize(stripslashes(get_module_pref("cache","specialtysystem")));
-	if ($check['system']=='specialtysystem' && !$force) {
+	if (isset($check['system']) && $check['system']=='specialtysystem' && !$force) {
 		$specs=$check['data'];
 		$colours=$check['colours'];
 	} else {
@@ -236,7 +236,8 @@ function specialtysystem_dohook($hookname,$args){
 			break;
 		}
 		$spec=specialtysystem_getspecs($specs);
-		$args['SS'] = $spec['spec_colour'];
+		if (isset($spec['spec_colour'])) $args['SS'] = $spec['spec_colour'];
+			else $args['SS']='SpecialtySystem';
 		break;
 	case "specialtynames": //same here, yet bio.php needs it too, so I have to make a nasty thing
 		global $SCRIPT_NAME;
@@ -248,7 +249,7 @@ function specialtysystem_dohook($hookname,$args){
 		} else {
 			$user=$session['user'];
 		}
-		if ($user['specialty']!="SS") break;
+		if (!isset($user['specialty']) || $user['specialty']!="SS") break;
 		require_once("modules/specialtysystem/datafunctions.php");
 		require_once("modules/specialtysystem/functions.php");
 		$data=specialtysystem_get("active",$user['acctid']);

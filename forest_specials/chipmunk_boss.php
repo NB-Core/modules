@@ -111,7 +111,7 @@ function chipmunk_boss_runevent($type,$link) {
 	if ($op == "fight"){
 		$battle = true;
 	}
-	if ($battle){
+	if (isset($battle) && $battle){
 		include("battle.php");
 			if ($victory){
 				//You win! Steal some of the riches before they come after you again.

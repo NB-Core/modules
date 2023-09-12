@@ -2,7 +2,7 @@
 
 rawoutput("<br>");
 output("`n`bBeware of the autologoff-timeout!`b`n`n");
-while (list($key,$trans)=each($transintext))
+foreach($transintext as $trans) 
 	{
 		output("Text:");
 		output_notl("`n");

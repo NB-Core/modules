@@ -94,6 +94,7 @@ function wizard_showvalidfiles($dosubmit=true,$onlymodules=0,$showselectbox=true
 			}else{
 				$namesp=$key1.$entry;
 				array_push($outputfiles,$namesp);
+				$selected = ''; // if we later do a default or anything
 				if ($showselectbox) rawoutput("<option value='".htmlentities($namesp,ENT_COMPAT,$coding)."' $selected>".htmlentities($namesp,ENT_COMPAT,$coding)."</option>");
 				$legal_files["$key2$entry"]=true;
 			}

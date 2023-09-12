@@ -74,7 +74,7 @@ case "push":
 				array_push($pusharray,$rows['uri']);
 				}
 			}
-		while (list($key,$rowspace) = each ($pusharray))
+		foreach($pusharray as $key=>$rowspace)
 			{
 			$end="'),".chr(13).chr(10);
 			$sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$rowspace."' AND language='".$selectedlanguage."' ORDER BY intext;";

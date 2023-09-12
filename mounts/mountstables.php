@@ -67,7 +67,7 @@ function mountstables_removeStabledMount($intid) {
 	$sql = "delete from ".db_prefix("mountstables")." WHERE acctid=$u AND id=$intid;";
 	$result = db_query($sql);
 	$ret = (int) db_affected_rows($result);	
-	debuglog("removed $mountid result $ret");
+	debuglog("removed $intid result $ret");
 	return $ret;
 }
 
@@ -93,7 +93,7 @@ function mountstables_makeCurrentMount($intid) {
 		apply_buff('mount',unserialize($mount['mountbuff']));
 	}
 	debuglog("made ".$row['mountid']." slot $intid current mount");
-	return $ret;
+	return 1;
 }
 
 function mountstables_removeCurrentMount() {

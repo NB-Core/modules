@@ -230,6 +230,7 @@ function ninjamerchantstore_sellitems() {
 function ninjamerchantstore_getitems($class=false) {
 	$forbidden=get_module_setting('forbidden','ninjamerchantstore');
 	if ($forbidden!='') $forbid="AND itemid NOT IN ($forbidden)";
+		else $forbid='';
 	if (!$class)
 		$sql="SELECT * FROM ".db_prefix("item")." WHERE buyable=1 $forbid ORDER BY RAND() DESC;";
 		else

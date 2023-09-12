@@ -45,7 +45,7 @@ function circulum_presave_dohook($hookname,$args){
 
 			//set up the user's account table fields
 			//reduces storage footprint.
-			while (list($key,$val)=each($row)){
+			foreach($row as $key=>$val){
 				$user['account'][$key] = $val;
 			}
 
@@ -195,7 +195,7 @@ function circulum_presave_run(){
 			"level"=>"Level",
 			"gentimecount"=>"Total hits",
 		);
-		while (list($key,$val)=each($vars)){
+		foreach($vars as $key=>$val){
 			output("`^$val: `#%s`n",$user['account'][$key]);
 		}
 		rawoutput("<input type='submit' value='$yes' class='button'>");
@@ -220,7 +220,7 @@ function circulum_presave_run(){
 			$keys = array();
 			$vals = array();
 
-			while (list($key,$val)=each($user['account'])){
+			foreach($user['account'] as $key=>$val){
 				if ($key=="laston"){
 					array_push($keys,$key);
 					array_push($vals,"'".date("Y-m-d H:i:s",strtotime("-1 day"))."'");
@@ -245,10 +245,10 @@ function circulum_presave_run(){
 					output("`#The account was restored.`n");
 				}
 				output("`#Now working on module preferences.`n");
-				while (list($modulename,$values)=each($user['prefs'])){
+				foreach($user['prefs'] as $modulename=>$values){
 					output("`3Module: `2%s`3...`n",$modulename);
 					if (is_module_installed($modulename)){
-						while (list($prefname,$value)=each($values)){
+						foreach($values as $prefname=>$value){
 							set_module_pref($prefname,$value,$modulename,$id);
 						}
 					}else{

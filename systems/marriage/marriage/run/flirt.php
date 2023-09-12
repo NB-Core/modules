@@ -44,11 +44,16 @@ switch ($subop) {
 			$message=stripslashes($text);
 			output("Preview:`n`n");
 			output_notl("`c".$this->mystrip($message)."`c`n`n");
-		}
+		} else $message = '';
 		$id=(int)httpget('id');
 		$sql="SELECT a.name,a.acctid FROM ".db_prefix('accounts')." AS a INNER JOIN ".db_prefix('marriage_actions')." AS b ON a.acctid=b.initiator WHERE b.id=$id LIMIT 1;";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
+		if (!isset($row['name'])) {
+			// no account there anymore 
+			output("Sorry, but this player is no longer with us... :(");
+			break;
+		}
 		rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=responseto' method='POST'><center>");
 		addnav("","runmodule.php?module=marriage&op=flirt&subop=responseto");
 		output("`RPlease enter your response to %s`R...`n`n",$row['name']);
@@ -75,11 +80,12 @@ switch ($subop) {
 		
 	case "response":
 		output("`RHere are the people who tried flirting with you (click to answer):`n`n");
-		$sql="SELECT a.name as name,b.id as id,b.message as message FROM ".db_prefix('marriage_actions')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON a.acctid=b.initiator WHERE responsedate='0000-00-00 00:00:00' AND receiver=".$user." ORDER BY initiator ASC;";
+		$sql="SELECT a.name as name,b.id as id,b.message as message FROM ".db_prefix('marriage_actions')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON a.acctid=b.initiator WHERE responsedate='1970-01-01 00:00:00' AND receiver=".$user." ORDER BY initiator ASC;";
 		$result=db_query($sql);debug($sql);
 		$name=translate_inline("Name");
 		$message=translate_inline("Message");
 		rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td><td>$message</td></tr>");
+		$class='trlight';
 		while ($row=db_fetch_assoc($result)) {
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
@@ -104,7 +110,7 @@ switch ($subop) {
 		if (httppost('send')) {
 			$message=httppost('message');
 			$target=(int)httppost('target');
-			$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE initiator=".$user." AND receiver=$target AND responsedate='0000-00-00 00:00:00';";
+			$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE initiator=".$user." AND receiver=$target AND responsedate='1970-01-01 00:00:00';";
 			$result=db_query($sql);debug($sql);
 			if (db_num_rows($result)>0) {
 				output("`xYou must be some kind of flirt maniac... wait for a response first...`n`n");
@@ -117,7 +123,7 @@ switch ($subop) {
 			require_once("lib/systemmail.php");
 			$me=$session['user']['name'].translate_inline(" approached you... please respond to this in the meadows flirt section. `n`4Now the message:`0`n`n").$message;
 			systemmail($target,array("`RSomebody approached you..."),$me);
-			$sql="INSERT INTO ".db_prefix('marriage_actions')." (initiator,receiver,message,date) VALUES (".$user.",$target,'".addslashes($message)."','".date("Y-m-d H:i:s")."');";
+			$sql="INSERT INTO ".db_prefix('marriage_actions')." (initiator,receiver,message,date,successful) VALUES (".$user.",$target,'".addslashes($message)."','".date("Y-m-d H:i:s")."',0);";
 			db_query($sql);
 			output("`4Message delivered... you can only hope for a positive response... if you want to send flowers or a card, remember Tsubaki...`n`n");
 			increment_module_pref('flirts_today',1);
@@ -156,7 +162,7 @@ switch ($subop) {
 		}				
 		
 		//check if already a flirt is awaiting an answer
-		$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE initiator=".$user." AND receiver=$target AND responsedate='0000-00-00 00:00:00';";
+		$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE initiator=".$user." AND receiver=$target AND responsedate='1970-01-01 00:00:00';";
 		$result=db_query($sql);
 		if (db_num_rows($result)>0) {
 			output("`xYou must be some kind of flirt maniac... wait for a response first...`n`n");
@@ -173,6 +179,7 @@ switch ($subop) {
 		$box='message';
 		marriage_charsleft($box);
 		$l=3000;
+		if (!isset($message)) $message="";
 		rawoutput("<br><table><tr><td colspan='2'><textarea name='$box' id='input$box' onKeyUp='previewtext$box(document.getElementById(\"input$box\").value,$l);' cols='50' rows='20' size='3000' wrap='soft'>$message</textarea></td></tr>");
 		rawoutput("<input type='hidden' name='target' value='$target'>");
 		$submit=translate_inline("Flirt!");
@@ -184,9 +191,10 @@ switch ($subop) {
 	case "search":
 		$gender=httpget('gender');
 		output("`xAs you roam through the meadows, you catch some sentences from people who might be interesting...if you want more, just visit the meadows yourself...`n`n");
-		$sql="SELECT DISTINCT a.name as name,a.acctid as acctid,b.comment as comment,c.acctid as optout FROM ".db_prefix('commentary')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON a.acctid=b.author LEFT JOIN ".db_prefix('marriage_optout')." AS c ON b.author=c.acctid WHERE a.sex=$gender AND a.acctid!=".$user." AND b.section LIKE 'meadow-%' ORDER BY commentid DESC LIMIT $limit;";
+		$sql="SELECT DISTINCT a.name as name,a.acctid as acctid,b.comment as comment,b.commentid, c.acctid as optout FROM ".db_prefix('commentary')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON a.acctid=b.author LEFT JOIN ".db_prefix('marriage_optout')." AS c ON b.author=c.acctid WHERE a.sex=$gender AND a.acctid!=".$user." AND b.section LIKE 'meadow-%' ORDER BY b.commentid DESC LIMIT $limit;";
 		//$result=db_query_cached($sql,"meadows-search-$gender",60);
 		$result=db_query($sql);
+		$lastlines='';
 		while ($row=db_fetch_assoc($result)) {
 			if (((int)$row['optout'])>0) continue; //target not interested in flirting
 			$link="<a href='runmodule.php?module=marriage&op=flirt&subop=flirt&target=".$row['acctid']."'>".$row['name']."</a>";
@@ -224,6 +232,7 @@ switch ($subop) {
 				$name=translate_inline("Name");
 				$message=translate_inline("Message");
 				rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td></tr>");//<td>$message</td></tr>");
+				$class='trlight';
 				while ($row=db_fetch_assoc($result)) {
 					$class=($class=='trlight'?'trdark':'trlight');
 					rawoutput("<tr class='$class'><td>");
@@ -257,7 +266,7 @@ switch ($subop) {
 		output("`4So you want to block off somebody who constantly tries to approach you... well, please enter the name of the person you want to ignore:`n`n");
 		rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=ignoreprecisely' method='POST'>");
 		addnav("","runmodule.php?module=marriage&op=flirt&subop=ignoreprecisely");
-		rawoutput("<input type='input' length='50' name='target' value='".addslashes($target)."'><br>");
+		rawoutput("<input type='input' length='50' name='target' value=''><br>");
 		$submit=translate_inline("Search!");
 		rawoutput("<input type='submit' class='button' value='$submit'>");
 		rawoutput("</form>");
@@ -372,9 +381,9 @@ switch ($subop) {
 			UNION 
 			SELECT a.name AS name,a.acctid AS acctid FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' ORDER BY name ASC";
 */	
-		$sql="SELECT name,acctid,sum(med) as medi,sum(counter) as counteri FROM (SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, count(b.date) as counter FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND responsedate!='0000-00-00 00:00:00' GROUP BY b.receiver
+		$sql="SELECT name,acctid,sum(med) as medi,sum(counter) as counteri FROM (SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, b.receiver as party, count(b.date) as counter FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver
 			UNION ALL
-			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, count(b.date) as counter FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND responsedate!='0000-00-00 00:00:00' GROUP BY b.initiator ORDER BY name ASC) AS maintable GROUP BY acctid";
+			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, b.initiator as party, count(b.date) as counter FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.initiator ORDER BY name ASC) AS maintable GROUP BY name,acctid";
 		$result=db_query_cached($sql,"marriage_flirtpartnerlist_$user");debug($sql);
 		$name=translate_inline("Name");
 		$view=translate_inline("View Flirt");
@@ -388,6 +397,8 @@ switch ($subop) {
 		$averagerating=get_module_setting('m_pointsneeded');
 		$old=0;
 		while ($row=db_fetch_assoc($result)) {
+			if ($row['name']=='') $row['name']="Deleted User";
+			if ($row['acctid']==null) $row['acctid']=0;
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
 			output_notl($row['name']);
@@ -424,9 +435,9 @@ switch ($subop) {
 		rawoutput("</table></center>");
 		break;				
 	case "flirtlist":
-		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND b.responsedate!='0000-00-00 00:00:00' 
+		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND b.responsedate!='1970-01-01 00:00:00' 
 		UNION 
-		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND b.responsedate!='0000-00-00 00:00:00' ORDER BY name,date,responsedate ASC";
+		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND b.responsedate!='1970-01-01 00:00:00' ORDER BY name,date,responsedate ASC";
 		$result=db_query($sql);debug($sql);
 		$name=translate_inline("Name");
 		$date=translate_inline("Date");
@@ -469,9 +480,10 @@ switch ($subop) {
 		output("`xHere are the details:`n`n");
 		$target=(int)httppost('target');
 		$active=httppost('active');
-		$sql="SELECT a.name AS name,a.acctid AS acctid,c.name AS receivername,c.acctid AS receiveracctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id,b.message AS message, b.response AS response FROM ".db_prefix('accounts')." AS c RIGHT JOIN ".db_prefix('marriage_actions')." AS b ON c.acctid=b.receiver LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE ((b.receiver='$user' AND b.initiator='$target') OR (b.initiator='$user' AND b.receiver='$target')) AND responsedate!='0000-00-00 00:00:00' ORDER BY b.date,b.responsedate ASC";
+		$sql="SELECT a.name AS name,a.acctid AS acctid,c.name AS receivername,c.acctid AS receiveracctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id,b.message AS message, b.response AS response FROM ".db_prefix('accounts')." AS c RIGHT JOIN ".db_prefix('marriage_actions')." AS b ON c.acctid=b.receiver LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE ((b.receiver='$user' AND b.initiator='$target') OR (b.initiator='$user' AND b.receiver='$target')) AND responsedate!='1970-01-01 00:00:00' ORDER BY b.date,b.responsedate ASC";
 		$result=db_query($sql);debug($sql);
 		$none=translate_inline("No words spoken...");
+		$from=0;
 		while ($row=db_fetch_assoc($result)) {
 			output("`\$%s `4(%s)`2 flirted with `1%s `4(%s)`2 ... the flirt (",$row['name'],$row['date'],$row['receivername'],$row['responsedate']);
 			rawoutput("<img src='modules/marriage/smileys/smiley-".$row['successful'].".gif' alt='reaction'>");
@@ -495,9 +507,9 @@ switch ($subop) {
 				</form></td></tr>");				
 		break;
 	case "unrespondedstatus":
-		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND b.responsedate='0000-00-00 00:00:00' 
+		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND b.responsedate='1970-01-01 00:00:00' 
 		UNION 
-		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND b.responsedate='0000-00-00 00:00:00' ORDER BY name,date,responsedate ASC";
+		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND b.responsedate='1970-01-01 00:00:00' ORDER BY name,date,responsedate ASC";
 		$result=db_query($sql);
 		$name=translate_inline("Name");
 		$date=translate_inline("Date");
@@ -642,7 +654,7 @@ switch ($subop) {
 			rawoutput("</td><td>");
 			output_notl($row['responsedate']);
 			rawoutput("</td><td>");
-			if ($row['responsedate']=='0000-00-00 00:00:00') {
+			if ($row['responsedate']=='1970-01-01 00:00:00') {
 				rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=proposalrespond' method='POST'>");
 				addnav("","runmodule.php?module=marriage&op=flirt&subop=proposalrespond");
 				rawoutput("<input type='hidden' name='target' value='".($row['acctid'])."'>");
@@ -725,7 +737,7 @@ switch ($subop) {
 			$message=stripslashes($text);
 			output("Preview:`n`n");
 			output_notl("`c".$message."`c`n`n");
-		}
+		} else $message = '';
 
 		output("`xHere are the details:`n`n");
 		$target=(int)httppost('target');
@@ -750,6 +762,7 @@ switch ($subop) {
 		$submit=translate_inline("Accept!");
 		$reject=translate_inline("Reject!");
 		$preview=translate_inline("Preview!");
+		$value="";
 		if ($this->ismarried() || $this->isengaged()) $value="disabled";
 		rawoutput("<tr><td><input type='submit' class='button' name='accept' $value value='$submit'></td><td align='center'><input type='submit' class='button' name='preview' value='$preview'></td><td align='right'><input type='submit' class='button' name='reject' value='$reject'></td></tr></table>");
 		rawoutput("</center></form>");
@@ -767,13 +780,13 @@ switch ($subop) {
 		addnav("Display Flirtpartners","runmodule.php?module=marriage&op=flirt&subop=flirtpartnerlist");				
 		
 		//fetch incoming and not responded flirts
-		$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_actions')." WHERE responsedate='0000-00-00 00:00:00' AND receiver=".$user.";";
+		$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_actions')." WHERE responsedate='1970-01-01 00:00:00' AND receiver=".$user.";";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
 		if ($row['counter']>0) {
 			addnav(array("Response to flirts (`4%s incoming`0)",$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=response");					
 		}
-		$sql="SELECT count(receiver) as counter FROM ".db_prefix('marriage_actions')." WHERE responsedate='0000-00-00 00:00:00' AND initiator=".$user.";";
+		$sql="SELECT count(receiver) as counter FROM ".db_prefix('marriage_actions')." WHERE responsedate='1970-01-01 00:00:00' AND initiator=".$user.";";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
 		if ($row['counter']>0) {
@@ -781,7 +794,7 @@ switch ($subop) {
 		}
 		//fetch incoming and not responded proposals
 		addnav("More Serious...");
-		$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_proposals')." WHERE responsedate='0000-00-00 00:00:00' AND proposed_to=".$user.";";
+		$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_proposals')." WHERE responsedate='1970-01-01 00:00:00' AND proposed_to=".$user.";";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
 		addnav(array("Proposal Overview (`4%s unresponded`0)",(int)$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=checkproposals");					

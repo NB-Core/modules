@@ -232,7 +232,7 @@ function ladyerwin_runevent($type,$link) {
 						"wearoff"=>"You feel normal again.",
 						"atkmod"=>0.5,
 						"minioncount"=>1,
-						"survivenewday"=>$buffsurvive,
+						"survivenewday"=>$buffsurvives,
 						"roundmsg"=>"`)You feel very sad about `$ Lady Erwin `)!",
 						"schema"=>"module-ladyerwin"
 						));

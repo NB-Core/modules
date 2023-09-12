@@ -1,5 +1,5 @@
 <?php
-while (list($key,$trans)=each($transintext))
+foreach($transintext as $key=>$trans)
 	{
 	$intext = addslashes(rawurldecode($transintext[$key]));  //addslashes because  this comes in encoded and only plain text ... it's from the checkboxes directly
 	$outtext = $intext;

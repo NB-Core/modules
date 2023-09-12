@@ -238,7 +238,7 @@ function mrblack_runevent($type,$link)
 		"creatureweapon"=>translate_inline("Teeth from Hell"),
 		"creatureattack"=>$session['user']['attack']*1.33,
 		"creaturedefense"=>$session['user']['defense']*1.95,
-		"creaturehealth"=>round($session['user']['maxhitpoints']*(1.5+e_rand(1.80)/100)),
+		"creaturehealth"=>round($session['user']['maxhitpoints']*(1.5+e_rand(1,80)/100)),
 		"diddamage"=>0,);
 		$session['user']['badguy'] = createstring($badguy);
 		require_once("lib/battle-skills.php");

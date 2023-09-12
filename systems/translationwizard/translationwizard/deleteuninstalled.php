@@ -4,7 +4,7 @@ switch ($what) {
 
 	case "delete":
 		$modules=unserialize(stripslashes(rawurldecode(httpget('delmodule'))));
-		while (list($key,$modulename)=each($modules)){
+		foreach($modules as $modulename){
 			$sql="DELETE FROM ".db_prefix('translations')." WHERE uri='module-".$modulename."';";
 			$result=db_query($sql); //debug($sql);
 			output("Translations for module `^%s`0 deleted from db`n",$modulename);
@@ -17,7 +17,7 @@ switch ($what) {
 		if (!is_array($post)) $post=array($post);
 		output("You just deinstalled:");
 		output_notl("`n`n");
-		while (list($key,$modulename)=each($post)){
+		foreach($post as $modulename) {
 			output("Module: `^%s`0`n",$modulename);
 		}
 		output_notl("`n`n");

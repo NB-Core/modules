@@ -78,6 +78,7 @@ function evil_punishers_runevent($type,$link)
 		output_notl("`n`n");
 		if ($ali==0) {
 			$gender=(!$session['user']['sex']?translate_inline("guy"):translate_inline("girl"));
+			$over=0;
 			if (e_rand(1,get_module_setting('overwhelm'))==1) {
 				output("`3Oh no! You seem to have attracted the most skilled of their kind!`n");
 				output("They are led by the famous %s`3 who is staring at you angrily with both whips drawn!`n`n",$chief);
@@ -129,6 +130,7 @@ function evil_punishers_runevent($type,$link)
 			output_notl("`n`n");
 			if ($ali==0) {
 				$gender=(!$session['user']['sex']?translate_inline("guy"):translate_inline("girl"));
+				$over=0;
 				if (e_rand(1,get_module_setting('overwhelm'))==1) {
 					output("`3Oh no! You seem to have attracted the most skilled of their kind!`n");
 					output("They are led by the famous %s`3 who is staring at you angrily with both whips drawn!`n`n",$chief);

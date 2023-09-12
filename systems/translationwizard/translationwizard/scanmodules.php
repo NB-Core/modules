@@ -98,7 +98,7 @@ if (!httpget('how')=='multi') {
 	//$transintext = lib files etc
 	$ausgabe=wizard_scanfile($lookfor,false,$alternate); //main file
 	//now merge the libs with the alternate scheme to the main
-	while (list($key,$val)=each($transintext)) {
+	foreach($transintext as $val) {
 		$ausgabe=array_merge($ausgabe,wizard_scanfile($val,false,$alternate));
 	}
 }
@@ -112,8 +112,7 @@ rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Namespace") ."</
 $sql="SELECT tid,outtext FROM ".db_prefix("translations")." WHERE ";
 $wasthereanuntranslated=0;
 //end
-while (list($key,$row)=each($ausgabe))
-{
+foreach($ausgabe as $key=>$row) {
 		$result=db_query($sql."intext='".addslashes($row['text'])."' AND language='".$languageschema."' AND uri='".$row['schema']."';");
 		if (db_num_rows($result)==0) {
 			$alreadytranslated=translate_inline("No");
@@ -237,7 +236,7 @@ output_notl("`n`n");
 rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
 rawoutput("<tr class='trhead'><td></td><td>".translate_inline("File")."</td></tr>");	
 $two=wizard_showvalidfiles(false,2,false);
-while(list($key,$val)=each($two)) {
+foreach($two as $key=>$val) {
 	rawoutput("<tr class='".($key%2?"trlight":"trdark")."'><td>");
 	rawoutput("<input type='checkbox' name='transtext[]' value='$val' >");
 	rawoutput("</td><td>");

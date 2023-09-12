@@ -31,7 +31,7 @@ case "header-modules":
 					else $modules = array();
 			}
 			reset($modules);
-			while (list($key,$module)=each($modules)){
+			foreach($modules as $module) {
 				$content=wizard_scanfile("modules/$module.php");
 				wizard_insertfile($content,$languageschema);
 			}

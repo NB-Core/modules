@@ -1,5 +1,5 @@
 <?php
-while (list($key,$trans)=each($transintext)) {
+foreach($transintext as $key=>$trans) {
 	if ($transintext[$key]<>"")
 		{
 		$intext = addslashes(rawurldecode($transintext[$key]));

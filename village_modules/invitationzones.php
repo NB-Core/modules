@@ -112,7 +112,7 @@ function invitationzones_run(){
 					$spectators=(int)httppost('spectators');
 					$spectatorpost=(int)httppost('spectatorpost');
 
-					$individualtext=str_replace(array("`n","\"","`b","`c"),array("","","","`b","`c"),$individualtext);
+					//$individualtext=str_replace(array("`n","\"","`b","`c"),array("","","","`b","`c"),$individualtext);
 
 					if ($prefix==0) {
 						$arrive="";
@@ -247,11 +247,12 @@ function invitationzones_run(){
 				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date asc;";
 				$result=db_query($sql);
 				addnav("Private Active Fights");
+				$olddate = '';
 				while ($row=db_fetch_assoc($result)){
 					$date=$row['olddate'];
 					if ($olddate!=$date) {
 						addnav_notl($date);
-						$date=$olddate;
+						$olddate=$date;
 					}
 					addnav(array("%s`4 VS %s`4 (%s)",$row['challenger'],$row['opponent'],$row['time']),$link."op=spectate&battleid=".((int)$row['battleid']));
 				}			

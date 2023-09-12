@@ -18,7 +18,7 @@ switch ($mode)
 			else
 			{$minmax="max";}
 		debug ($minmax);
-		$sql= "SELECT count(  tid  )  AS counter, ".$minmax."(tid) as tid, intext, uri,language FROM ".db_prefix("translations")." GROUP  BY BINARY intext, uri, language HAVING counter >1;";
+		$sql= "SELECT count(  tid  )  AS counter, ".$minmax."(tid) as tid, intext, uri,language FROM ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
 		output("`bOperation commenced, %s rows found, this make take some time, please wait`b`n`n",db_num_rows($result));
 		if (db_num_rows($result)>0)
@@ -32,14 +32,14 @@ switch ($mode)
 				}
 			}
 		output("`b`nOperation finished, %s rows deleted`b`n`n",db_num_rows($result));
-		$sql= "SELECT  count(  tid  )  AS counter, ".$minmax."(tid) as tid, intext, uri,language FROM ".db_prefix("translations")." GROUP  BY BINARY intext, uri, language HAVING counter >1;";
+		$sql= "SELECT  count(  tid  )  AS counter, ".$minmax."(tid) as tid, intext, uri,language FROM ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
 		output("Now there are %s rows who are still non-unique",db_num_rows($result));
 		if (db_num_rows($result)>0) output("`n`n`bYou have to repeat the operation to kill the non-unique rows who are still left.`b");
 	break;
 
 	case "listing":  //if the user hits the button to work on a list, one by one
-		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY BINARY intext, uri, language HAVING counter >1;";
+		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
 		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
 		$i = 0;
@@ -77,7 +77,7 @@ switch ($mode)
 	break;
 
 	case "deleteall":
-		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY BINARY intext, uri, language HAVING counter >1;";
+		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
 		rawoutput("<form action='runmodule.php?module=translationwizard&op=check&mode=delete' method='post'>");
 		addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
@@ -98,7 +98,7 @@ switch ($mode)
 	break;
 
 	default:  //if the user hits the button just to check for duplicates
-		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY BINARY intext, uri, language HAVING counter >1;";
+		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
 		rawoutput("<form action='runmodule.php?module=translationwizard&op=check&mode=delete' method='post'>");
 		addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");

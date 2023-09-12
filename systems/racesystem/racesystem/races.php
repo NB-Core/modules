@@ -164,7 +164,7 @@ $races = array(
 			\"schema\"=>\"module-racelightning\",
 			)
 		);",
-		"text"=>array("`^`c`b%s, Home of the Lightning `b`c`n`6You stand on the hidden entrance of this village.  %s rises about you, appearing to be one with the surrounding. You enter silently and evade the many nin protecting the city... `n", $lightning, $round),
+		"text"=>array("`^`c`b%s, Home of the Lightning `b`c`n`6You stand on the hidden entrance of this village.  %s rises about you, appearing to be one with the surrounding. You enter silently and evade the many nin protecting the city... `n", $lightning, $sound),
 		"clock"=>"`n`6You hear someone telling the time: It seems to be `^%s`6 at present.`n",
 		"calendar"=>"`n`6A shadowy herold shouts, \"`^Today is `&%3\$s %2\$s`^, `&%4\$s`^.  It is `&%1\$s`^.`6\"`n",
 		"title"=> array("%s", $lightning),

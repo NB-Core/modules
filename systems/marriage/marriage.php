@@ -116,8 +116,8 @@ class marriage implements module_base {
 			'from'=>array('name'=>'initiator', 'type'=>'int(11) unsigned'),
 			'to'=>array('name'=>'proposed_to', 'type'=>'int(11) unsigned'),
 			'ring'=>array('name'=>'ring', 'type'=>'int(4) unsigned', 'default'=>'0'),
-			'propose'=>array('name'=>'propose', 'type'=>'text', 'default'=>''),
-			'response'=>array('name'=>'response', 'type'=>'text', 'default'=>''),
+			'propose'=>array('name'=>'propose', 'type'=>'text' ),
+			'response'=>array('name'=>'response', 'type'=>'text'),
 			'accepted'=>array('name'=>'accepted', 'type'=>'int(2) unsigned', 'default'=>0),
 			'date'=>array('name'=>'date', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
 			'responsedate'=>array('name'=>'responsedate', 'type'=>'datetime','default'=>'1970-01-01 00:00:00'),
@@ -179,16 +179,21 @@ class marriage implements module_base {
 		$fiancee=(int)get_module_pref('fiancee','marriage',$args['acctid']);
 		if (((int)$row['marriedto'])!=0) {
 			if (!get_module_pref('user_spousesecret','marriage',$args['acctid'])) {
-				$partner="`iSecret`i";
+				$partner=translate_inline("`iSecret`i");
 			} else {
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=".$row['marriedto'].";";
-				$result=db_query_cached($sql,"spouse-".$row['marriedto']);
-				$row2=db_fetch_assoc($result);
-				$partner=$row2['name'];
 				if ($row['marriedto']==INT_MAX) {
 					require_once("lib/partner.php");
 					$partner=get_partner(false);
-					$partner="`iSecret`i";
+					$partner=translate_inline("`iSecret`i");
+				} else {
+				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=".$row['marriedto'].";";
+				$result=db_query_cached($sql,"spouse-".$row['marriedto']);
+				if (db_num_rows($result)>0) {
+					$row2=db_fetch_assoc($result);
+					$partner=$row2['name'];
+				} else {
+					$partner=translate_inline("`iLost in the annals`i");
+				}
 				}
 			}
 			output("`^Spouse: `2%s`n",$partner);
@@ -198,8 +203,13 @@ class marriage implements module_base {
 			} else {
 				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=".get_module_pref('fiancee','marriage',$args['acctid']).";";
 				$result=db_query($sql);
-				$fiancee=db_fetch_assoc($result);
-				output("`^Fiancée: `2%s`n",$fiancee['name']);
+				if (db_num_rows($result)>0) {
+					$row2=db_fetch_assoc($result);
+					$fiancee=$row2['name'];
+				} else {
+					$fiancee=translate_inline("`iLost in the annals`i");
+				}
+				output("`^Fiancée: `2%s`n",$fiancee);
 			}
 			
 		}
@@ -216,6 +226,7 @@ class marriage implements module_base {
 	}
 	
 	private function hook_footer_inn($args) {
+		global $session;
 		if (httpget('op')=='' && ((int)$session['user']['marriedto'])!=0 && ((int)$session['user']['marriedto'])!=INT_MAX && is_module_active('lovers')) {
 			addnav("Things to do");
 			blocknav("runmodule.php?module=lovers&op=flirt",true);
@@ -250,6 +261,12 @@ class marriage implements module_base {
 		$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$acctid LIMIT 1;";
 		$result=db_query($sql);
 		$row=db_fetch_assoc($result);
+
+		if (!isset($row['acctid'])) {
+			//if, for some reason, the char has already been removed.
+			//I think it is safe to assume we don't need to do all of this again
+			return $args;
+		}
 		$min=0;
 		$sql="SELECT * FROM ".db_prefix('marriage_flirtpoints')." WHERE flirtpoints>$min AND receiver=$acctid OR initiator=$acctid";
 		//select all above a certain level to notify of the tragic death of the player
@@ -269,7 +286,10 @@ class marriage implements module_base {
 		$message=array(translate_inline("`4I am very sorry to notify you about tragic events that have occurred! %s`4 has last been seen entering the woods and has not been seen since! We have not given up hope, but we fear for the worst."),$row['name']);
 		require_once('lib/systemmail.php');
 		foreach ($notify as $to) {
-			systemmail($to,$subject,$message);
+			$sql2="SELECT acctid FROM ".db_prefix('accounts')." WHERE acctid=$to LIMIT 1;";
+			$result2=db_query($sql2);
+			if (db_num_rows($result2)>0) //only send if those are not yet deleted themselves
+				systemmail($to,$subject,$message);
 		}
 		
 		/*set the user and spouse to "unmarried", he has to marry again, else we have problems... one married, the other not*/
@@ -291,7 +311,7 @@ class marriage implements module_base {
 			if ($fields=='') $fields=array_keys($row);
 			$save.="INSERT INTO ".db_prefix('marriage_actions')." (".implode(",",$fields)." VALUES ('".addslashes(implode("','",$row))."');";
 		}
-		set_module_pref('restoresave',$save,'marriage');
+		set_module_pref('restoresave',$save,'marriage',$args['acctid']);
 		/*save all flirt info except ignores*/
 
 		$sql="DELETE FROM ".db_prefix('marriage_optout')." WHERE acctid=$acctid";
@@ -690,7 +710,7 @@ class marriage implements module_base {
 					$message=stripslashes($text);
 					output("Preview:`n`n");
 					output_notl("`c".$message."`c`n`n");
-				}
+				} else $message = '';
 			
 				$ring=(int)httpget('ring');
 				if ($ring===0) $ring=(int) httppost('ring');
@@ -791,7 +811,7 @@ class marriage implements module_base {
 		
 			case "marry_no":
 				require_once("lib/systemmail.php");
-				$target=(int)$target;
+				$target=(int)$this->isengaged();
 				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
 				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
 				$row=db_fetch_assoc($result);
@@ -842,7 +862,7 @@ class marriage implements module_base {
 				
 				output("`xAfter you have entered the chapel, all gets a bit blurry - and you have the wedding you always wanted (you know how this looks like, so TELL others how it was ^^) ... `n`n%s`x clears her throat and says, \"`qI hereby pronounce you %s and %s!`x\"",$this->chapelwatcher,$fianceegender,$gender);
 				
-				systemmail($fiancee,array("`)Yes!"),array("`R%s`R has accepted the wedding offer and given you the consent for matrimony! You should think of a proper honeymoon ^^`n`nRegards, %s",$session['user']['name'],$this->chapelwatcher));
+				systemmail($target,array("`)Yes!"),array("`R%s`R has accepted the wedding offer and given you the consent for matrimony! You should think of a proper honeymoon ^^`n`nRegards, %s",$session['user']['name'],$this->chapelwatcher));
 				
 				addnews("`R%s`\$ and `R%s`\$ have been joined in matrimony today!",$session['user']['name'],$fianceename);
 				
@@ -851,7 +871,7 @@ class marriage implements module_base {
 			
 			case "marryconfirm":
 				require_once("lib/systemmail.php");
-				$target=(int)$target;
+				$target=(int)$this->isengaged();
 				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
 				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
 				$row=db_fetch_assoc($result);
@@ -870,7 +890,7 @@ class marriage implements module_base {
 				break;
 		
 			case "marry":
-				$target=(int)httpget('target');
+				$target=(int)$this->isengaged();
 				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
 				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
 				$row=db_fetch_assoc($result);
@@ -948,7 +968,7 @@ class marriage implements module_base {
 				addnav("`\$Really `0get divorced?","runmodule.php?module=marriage&op=chapel&subop=confirmdivorceplayer");				
 				break;
 			case "confirmdivorceplayer":
-				$sql= "SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid=".$session['user']['marriedto'].";";
+				$sql= "SELECT acctid,name,login FROM ".db_prefix('accounts')." WHERE acctid=".$session['user']['marriedto'].";";
 				$result=db_query($sql);
 				if (db_num_rows($result)==0) {
 					output("Sorry, there was an error, please report to your admin.");

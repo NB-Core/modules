@@ -1,6 +1,6 @@
 <?php
 $alrighty=true;
-while (list($key,$trans)=each($transintext)) {
+foreach($transintext as $key=>$trans) {
 	if ($transouttext[$key]<>"")
 		{
 		$intext = $trans; //this comes in from the textarea and mustn't be decoded

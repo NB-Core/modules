@@ -228,7 +228,6 @@ function wedgieman_runevent($type,$link){
 							output("`n`nYou eat some of the bugs and gain 5 hitpoints (this might exceed your maximum amount for the time being.");
 						}else{
 							output("`n`nYou around screaming, and frantically try to fling them off. You get dirty in the process.");
-							$session['user']['charisma']--;
 						}
 					break;
 					case "4":

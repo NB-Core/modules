@@ -11,8 +11,9 @@ switch ($mode) {
 		$sql="SELECT * from ".db_prefix("accounts")." LIMIT 1"; //get one row
 		$result=db_query($sql);
 		$fields=array();
-		for ($i=0;$i<mysql_num_fields($result);$i++) {
-			$t=array(mysql_field_name($result,$i)=>httppost(mysql_field_name($result,$i)));
+		for ($i=0;$i<mysqli_num_fields($result);$i++) {
+			$field = mysqli_fetch_field_direct($result,$i);
+			$t=array($field->name=>httppost($field->name));
 			$fields=array_merge($fields,$t);
 		}
 		circulum_save_account_nochanges($fields);
@@ -24,9 +25,10 @@ switch ($mode) {
 		$sql="SELECT * from ".db_prefix('accounts')." LIMIT 1"; //get one row
 		$result=db_query($sql);
 		$fields=array("justafield"=>"Name of the field - You want to keep it?,note");
-		$numberoffields=mysql_num_fields($result);
+		$numberoffields=mysqli_num_fields($result);
 		for ($i=0;$i<$numberoffields;$i++) {
-			$t=array(mysql_field_name($result,$i)=>mysql_field_name($result,$i).",bool");
+			$field = mysqli_fetch_field_direct($result,$i);
+			$t=array($field->name=>$field->name.",bool");
 			$fields=array_merge($fields,$t);
 		}
 		output("Select the fields you want to keep in your accounts table. The rest will be set to a default value.");
@@ -107,7 +109,7 @@ switch ($mode) {
 			rawoutput("<tr class='trhead'><td>$ops</td><td>$dks</td><td>$mtit</td><td>$ftit</td></tr>");
 			$titlearray=circulum_get_arraytitle();
 			$k=0;
-			while (list($key,$i) = each ($titlearray)) {
+			foreach ($titlearray as $key=>$i) {
 				$k=!$k;
 				rawoutput("<tr class='".($k?"trlight":"trdark")."'>");
 				rawoutput("<td>[<a href='runmodule.php?module=circulum&op=editor&mode=titleeditor&title=edit&id=$i'>$edit</a>|<a href='runmodule.php?module=circulum&op=editor&mode=titleeditor&title=delete&id=$i' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");

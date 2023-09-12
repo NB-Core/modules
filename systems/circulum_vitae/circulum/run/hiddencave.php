@@ -17,10 +17,10 @@ switch ($subop) {
 		$name=$session['user']['name'];
 		// make SURE no buffs are active that do any tempstat nasty stuff
 		require_once("lib/buffs.php");
-		restore_buff_fields;
+		restore_buff_fields();
 		circulum_do_reset();
 		//give a new day
-		$sql = "UPDATE ".db_prefix('accounts')." SET lasthit='0000-00-00 00:00:00' WHERE acctid='{$session['user']['acctid']}'";
+		$sql = "UPDATE ".db_prefix('accounts')." SET lasthit='".DATETIME_DATEMIN."' WHERE acctid='{$session['user']['acctid']}'";
 		db_query($sql);
 		blocknav("forest.php");
 		require_once("lib/debuglog.php");
@@ -67,7 +67,7 @@ switch ($subop) {
 		} else {
 			rawoutput("<table style='border-spacing:0px'>");
 			foreach ($kekkei as $category=>$cat) {
-				$class=='';
+				$class='';
 				addnav_notl($category);
 				//output("`0`c`@~~~~~~~~~~~~%s~~~~~~~~~~~~`0`c`4",$category);
 				output_notl("<tr style='background-color:#000000'><td style='font-size:large;text-align:center;font-family:fantasy,Times,serif;color:#FA00FA;'>~~~~~~~~~~~~%s~~~~~~~~~~~~</td></tr>",sanitize($category),true);

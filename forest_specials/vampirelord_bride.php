@@ -116,7 +116,7 @@ function vampirelord_bride_runevent($type,$link) {
 			if (is_module_active('inventory')) {
 				require_once("modules/inventory/lib/itemhandler.php");
 				$limit=4;
-				$sql="SELECT itemid,name FROM ".db_prefix('item')." WHERE class='Loot' OR class='Potion' ORDER BY RAND() LIMIT $limit;";
+				$sql="SELECT itemid,name,uniqueforplayer FROM ".db_prefix('item')." WHERE class='Loot' OR class='Potion' ORDER BY RAND() LIMIT $limit;";
 				$result=db_query($sql);
 				$row=db_fetch_assoc($result);
 				output("`3She hands you a bag... you search through it while she takes her leave...`n`n");
@@ -125,7 +125,7 @@ function vampirelord_bride_runevent($type,$link) {
 					$amount=e_rand(1,3);
 					if ($row['uniqueforplayer']) {
 						$amount=1;
-						if (get_inventory_item($row['itemid'])) continue;
+						if (check_qty_by_id((int)$row['itemid'])>0) continue;
 					}
 					output("`n`n`7You receive %s x %s`7!",$amount,$row['name']);
 					$bagempty=0;
@@ -151,7 +151,11 @@ function vampirelord_bride_runevent($type,$link) {
 			$halloween= $halloween || (date("m-d")=="10-31"?1:0);
 			
 		
-			vampirelord_bride_addimage('wedding_kiss.jpg');
+			if (!$halloween) {
+				vampirelord_bride_addimage('wedding_kiss.jpg');
+			} else {
+				vampirelord_bride_addimage('release.jpg');
+			}
 			output("`4Without another word, she takes your head and presses herself against you, so much you nearly stumble.`n`n");
 			output("The world begins to spin in bitter sweetness brought by her cold hot lips... you see only whit flakes dancing in front of you eyes... ");
 
@@ -244,16 +248,15 @@ function vampirelord_bride_runevent($type,$link) {
 				if (is_module_active('inventory')) {
 					require_once("modules/inventory/lib/itemhandler.php");
 					$limit=4;
-					$sql="SELECT itemid,name FROM ".db_prefix('item')." WHERE class='Loot' OR class='Scroll' ORDER BY RAND() LIMIT $limit;";
+					$sql="SELECT itemid,name,uniqueforplayer FROM ".db_prefix('item')." WHERE class='Loot' OR class='Scroll' ORDER BY RAND() LIMIT $limit;";
 					$result=db_query($sql);
-					$row=db_fetch_assoc($result);
 					output("`n`nShe leaves some stuff behind:`n`n");
 					$bagempty=1;
 					while ($row=db_fetch_assoc($result)) {
 						$amount=e_rand(1,3);
-						if ($row['uniqueforplayer']) {
+						if ($row['uniqueforplayer']==1) {
 							$amount=1;
-							if (get_inventory_item($row['itemid'])) continue;
+							if (get_inventory_item((int)$row['itemid'])) continue;
 						}
 						output("`n`n`7You receive %s x %s`7!",$amount,$row['name']);
 						$bagempty=0;

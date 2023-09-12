@@ -64,7 +64,7 @@ case "radioinsert": //insert all first occurences
 	//debug($_POST);
 	$table=($central?"temp_translations":"translations");	 
 	$alrighty=true;
-	while (list($key,$val) = each ($_POST)) {
+	foreach($_POST as $key=>$val) {
 		$original=unserialize($key);
 		$translation=$val;
 		//debug($original);

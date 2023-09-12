@@ -16,9 +16,9 @@ function specialtysystem_availableuses($modulename=false) {
 
 function specialtysystem_getskillpoints($modulename=false) {
 	require_once("modules/specialtysystem/datafunctions.php");
+	$ret=0;
 	if ($modulename==false) {
 		$data=specialtysystem_get();
-		$ret=0;
 		if (!is_array($data)) return 0;
 		foreach ($data as $key=>$value) {
 			//$value=unserialize($value);
@@ -30,7 +30,7 @@ function specialtysystem_getskillpoints($modulename=false) {
 		}//debug($ret);
 	} else {
 		$data=specialtysystem_get($modulename);//debug("SKILL2");debug($data);
-		$ret=$data['skillpoints'];
+		if ($data!==false) $ret=$data['skillpoints'];
 	}
 	return $ret;
 }

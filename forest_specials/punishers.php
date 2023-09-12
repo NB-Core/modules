@@ -49,6 +49,7 @@ function punishers_runevent($type,$link)
 	$punishers=get_module_setting("name");
 	$chief=get_module_setting("chiefname");
 	require_once("./modules/alignment/func.php");
+	$over = 0;
 	switch ($op)
 	{
 	case "":

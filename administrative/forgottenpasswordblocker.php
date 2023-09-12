@@ -86,7 +86,7 @@ function forgottenpasswordblocker_selfreferral() {
 	$sql = "SELECT uniqueid FROM " . db_prefix("accounts") . " WHERE login='$who'";
 	$result = db_query($sql);
 	$ref = db_fetch_assoc($result);
-	if ($_COOKIE['lgi']==$ref['uniqueid']) 
+	if (isset($_COOKIE['lgi']) && $_COOKIE['lgi']==$ref['uniqueid']) 
 		return true;
 		else
 		return false;

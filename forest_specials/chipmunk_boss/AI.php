@@ -3,7 +3,7 @@
 //Kabuto
 global $session,$badguy;debug($badguy);
 
-if (!$badguy['turns']) {
+if (!isset($badguy['turns']) || !$badguy['turns']) {
 	$badguy['turns']=1;
 	$badguy['maxhp']=$badguy['creaturehealth'];
 	$badguy['prevhp']=$badguy['creaturehealth'];

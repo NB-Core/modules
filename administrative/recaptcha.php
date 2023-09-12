@@ -64,7 +64,7 @@ function recaptcha_dohook($hookname, $args){
 			$captcha_success=json_decode($verify);
 
 			if (!$captcha_success->{'success'}) {
-				if (!is_array($answer->{'error-codes'})) {
+				if (!isset($answer) || !is_array($answer->{'error-codes'})) {
 					$errorcodes=array('not-available');
 				} else {
 					$errorcodes=$answer->{'error-codes'};

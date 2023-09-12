@@ -28,7 +28,7 @@
 			addnav(array("Truncate untranslated table %s",""),"runmodule.php?module=translationwizard&op=truncate");
 			addnav(array("Delete empty namespace rows from untranslated %s",""),"runmodule.php?module=translationwizard&op=deleteempty");
 		}
-	if ($viewsimple & !get_module_setting('blockcentral')) {
+	if ($viewsimple && !get_module_setting('blockcentral')) {
 		addnav("Central Translations");
 		addnav("Pull","runmodule.php?module=translationwizard&op=pull");
 		addnav("Push","runmodule.php?module=translationwizard&op=push");

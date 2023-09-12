@@ -83,14 +83,14 @@ function racesystem_dohook($hookname,$args){
 			$r=$args['race'];
 			$keys=array_keys($races);
 			if (in_array($r,$keys)) {	
-				if ($races[$r]['pvpadjust']) eval($races[$r]['pvpadjust']);
+				if (isset($races[$r]['pvpadjust']) && $races[$r]['pvpadjust']) eval($races[$r]['pvpadjust']);
 			}
 			break;
 		case"adjuststats":
 			$r=$args['race'];
 			$keys=array_keys($races);
 			if (in_array($r,$keys)) {
-				if ($races[$r]['adjuststats']) eval($races[$r]['adjuststats']);
+				if (isset($races[$r]['adjuststats']) && $races[$r]['adjuststats']) eval($races[$r]['adjuststats']);
 			}
 			break;			
 		case "racenames":
@@ -99,15 +99,15 @@ function racesystem_dohook($hookname,$args){
 			}
 			break;
 		case "raceminedeath":
-			if ($session['user']['race'] == $race) {
+/*			if ($session['user']['race'] == $race) {
 				$args['chance'] = get_module_setting("minedeathchance");
 				$args['racesave'] = "Fortunately your skill let you escape unscathed.`n";
 				$args['schema'] = "module-racesystem_";
 			}
 			break;
-		case "changesetting":
+*/		case "changesetting":
 			// Ignore anything other than villagename setting changes for myself
-			if ($args['setting'] == "worldname" && $args['module']=="racesystem") {
+			if (isset($args['setting']) && $args['setting'] == "worldname" && $args['module']=="racesystem") {
 				if ($session['user']['location'] == $args['old']) $session['user']['location'] = $args['new'];
 				$sql = "UPDATE ".db_prefix('accounts')." SET location='".addslashes($args['new'])."' WHERE location='".addslashes($args['old'])."'";
 				db_query($sql);
@@ -205,7 +205,7 @@ function racesystem_dohook($hookname,$args){
 				if ($session['user']['race']==$race['id']){
 					$session['user']['race']=$name;
 					output_notl("%s %s",$race['colour'],translate_inline($race['setracedesc']));
-					if ($race['raceeval']) eval($race['raceeval']);
+					if (isset($race['raceeval']) && $race['raceeval']) eval($race['raceeval']);
 					if (is_module_active("cities")) {
 						if ($session['user']['dragonkills']==0 &&
 								$session['user']['age']==0){
@@ -257,7 +257,6 @@ function racesystem_dohook($hookname,$args){
 				$cities[$race['city']]=0;
 			}
 			$cities=array_keys($cities);
-			$hotkey = substr($city, 0, 1);
 			tlschema("module-cities");
 			$args = modulehook("count-travels", array('available'=>0,'used'=>0));
 			$free = max(0, $args['available'] - $args['used']);
