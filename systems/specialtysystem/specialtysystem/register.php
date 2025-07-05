@@ -9,7 +9,14 @@ function specialtysystem_register() {
 	if (!is_array($args)||$args==array()) return;
 	$sql="INSERT INTO ".db_prefix('specialtysystem')." (spec_name,spec_colour,spec_shortdescription,spec_longdescription,modulename,fightnav_active,newday_active,dragonkill_active,dragonkill_minimum_requirement,stat_requirements,race_requirements,noaddskillpoints,basic_uses) VALUES ";
 	$insert=array();
-	foreach ($args as $key=>$data) {
+	foreach ($args as $key=>$data){
+		if (!isset($data['dragonkill_active'])) $data['dragonkill_active'] = 0;
+		if (!isset($data['dragonkill_minimum_requirement'])) $data['dragonkill_minimum_requirement'] = 0;
+		if (!isset($data['stat_requirements'])) $data['stat_requirements'] = array();
+		if (!isset($data['race_requirements'])) $data['race_requirements'] = array();
+		if (!isset($data['noaddskillpoints'])) $data['noaddskillpoints'] = 0;
+		if (!isset($data['basic_uses'])) $data['basic_uses'] = 0;
+
 		$insert[]=" ('".addslashes($data['spec_name'])."','{$data['spec_colour']}','".addslashes($data['spec_shortdescription'])."','".addslashes($data['spec_longdescription'])."','{$data['modulename']}','{$data['fightnav_active']}','{$data['newday_active']}','{$data['dragonkill_active']}','{$data['dragonkill_minimum_requirement']}','".addslashes(serialize($data['stat_requirements']))."','".addslashes(serialize($data['race_requirements']))."','{$data['noaddskillpoints']}','{$data['basic_uses']}')";
 	}
 	if ($insert==array()) return;

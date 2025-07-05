@@ -54,7 +54,9 @@ function beggarslane_run(){
 	page_header("The Beggars Lane");
 	output("`b`i`c`\$The `1Beggars `vLane`c`i`b`n");
 	addcommentary();
+	addnav("Navigation");
 	villagenav();
+	addnav("Actions");
 	switch ($op) {
 		case "alms":
 			$sql="SELECT a.author FROM ".db_prefix("commentary")." as a LEFT JOIN ".db_prefix("module_userprefs")." as b ON a.author=b.userid WHERE b.modulename='beggarslane' AND b.setting='receive' AND (b.value is null OR b.value<2*".get_module_setting("daily").") AND a.section='beggarslane' ORDER BY a.commentid DESC LIMIT 1;";

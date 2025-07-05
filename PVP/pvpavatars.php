@@ -59,31 +59,25 @@ function pvpavatars_run () {
 function pvpavatars_picture($user) {
 	require_once("avatar/func.php");
 	if (get_module_pref("validated","avatar",$user) && get_module_pref("avatar","avatar",$user)!='') {
-		$picname = get_module_pref("avatar","avatar",$user);
+		$url = get_module_pref("avatar","avatar",$user);
+		$image = "";
 		try {
-			$check = avatar_checkRemoteFile($picname);
-			if (!$check['exists']) {
-				//set_module_pref('validated',0,'avatar',$user);
-				return "<p>Error while fetching picture<br/>".$check['code']." -- ".$check['description']."!";
+			
+			$check = addimage_checkRemoteFile($url);
+			if ($check['exists']) {
+				if (get_module_setting("restrictsize")) {
+					$maxwidth = get_module_setting("maxwidth");
+					$maxheight = get_module_setting("maxheight");
+					$image = addimage_getimage($url,"Preview",true,$maxwidth,$maxheight);
+				}
+			} else {
+				// bad file
+				$image="<img align='left' src='".$url."' /><p>".$check['code']." -- ".$check['description']."</p>";
 			}
-			$imageBlob = file_get_contents($picname);
-			$imagick = new Imagick();
-			$imagick->readImageBlob($imageBlob);
-			$pic_height = $imagick->getImageHeight();
-			$pic_width = $imagick->getImageWidth();
 		} catch (Throwable $e) {
 			output("Sorry, something went wrong getting that pic: %s", $e->getMessage());
 			return '';
 		}
-		$image="<img align='center' src='".get_module_pref("avatar","avatar",$user)."' ";
-		if (get_module_setting("restrictsize","avatar")) {
-			//stripped lines from Anpera's avatar module =)
-			$maxwidth = get_module_setting("maxwidth","avatar");
-			$maxheight = get_module_setting("maxheight","avatar");
-			if ($pic_width > $maxwidth) $image.=" width=\"$maxwidth\" ";
-			if ($pic_height > $maxheight) $image.=" height=\"$maxheight\" ";
-		}
-		$image.=">";
 		return $image;
 	} else return '';
 }

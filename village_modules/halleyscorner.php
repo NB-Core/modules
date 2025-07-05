@@ -5,7 +5,7 @@ function halleyscorner_getmoduleinfo(){
 		"name"=>"Halleys Corner (PvP->Travel)",
 		"author"=>"`2Oliver Brendel",
 		"version"=>"1.0",
-		"category"=>"Village",
+		"category"=>"Village|Shops",
 		"download"=>"",
 		"settings"=>array(
 			"Corner Settings,title",

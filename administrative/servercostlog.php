@@ -48,43 +48,43 @@ function servercostlog_run(){
 	global $session;
 	$op=httpget('op');
 	page_header("Servercost Log");
-	addnav("Superuser");
 	require_once("lib/superusernav.php");
 	superusernav();
-	addnav("Navigation");
+	addnav("Servercostlog");
 	addnav("Back to the Servercostlog","runmodule.php?module=servercostlog&op=view");
 	addnav("Actions");
 	addnav("Enter Payment","runmodule.php?module=servercostlog&op=enter");
 	addnav("Check Monthly Balance","runmodule.php?module=servercostlog&op=balance");
 	addnav("Months");
 	$ic=db_prefix('servercostlog');		
-	$sql = "SELECT substring(date,1,7) AS month, sum(amount) AS servercost FROM $ic GROUP BY month ORDER BY month DESC";
+	$sql = "SELECT substring(date,1,7) AS month, substring(date,1,4) AS year, sum(amount) AS servercost FROM $ic GROUP BY month,year ORDER BY year,month DESC";
 	$result=db_query($sql);
 	//deep look at paylog.php
 	while ($row = db_fetch_assoc($result)){
-		addnav(array("%s %s %s", date("M Y",strtotime($row['month']."-01")), getsetting("paypalcurrency", "USD"), $row['servercost']),"runmodule.php?module=servercostlog&op=view&month={$row['month']}");
+		addnav(array("%s %s %s", date("Y m",strtotime($row['month']."-01")), getsetting("paypalcurrency", "USD"), $row['servercost']),"runmodule.php?module=servercostlog&op=view&month={$row['month']}");
 	}
 	switch ($op) {
 		case "balance":
 			$ic=db_prefix('servercostlog');
 			$pl=db_prefix('paylog');
-			$sql = "SELECT substring(date,1,7) AS month, sum(amount) AS servercost FROM $ic GROUP BY month order by month DESC";
+			$sql = "SELECT substring(date,1,7) AS month, substring(date,1,4) AS year, sum(amount) AS servercost FROM $ic GROUP BY month,year ORDER BY year,month DESC";
 			$result = db_query($sql);
 			$payments=array();
 			while ($row=db_fetch_assoc($result)) {
-				$payments[date("M Y",strtotime($row['month']."-01"))]['costs']=$row['servercost'];
+				$payments[date("Y m",strtotime($row['month']."-01"))]['costs']=$row['servercost'];
 			}
-			$sql = "SELECT substring(processdate,1,7) AS month, sum(amount)-sum(txfee) AS profit FROM $pl GROUP BY month order by month DESC";
+			$sql = "SELECT substring(processdate,1,7) AS month, substring(processdate,1,4) AS year, sum(amount)-sum(txfee) AS profit FROM $pl GROUP BY year,month order by year,month DESC";
 			$result=db_query($sql);
 			while ($row = db_fetch_assoc($result)){
-				$payments[date("M Y",strtotime($row['month']."-01"))]['income']=$row['profit'];
+				$payments[date("Y m",strtotime($row['month']."-01"))]['income']=$row['profit'];
 			}
 			//deep look at paylog.php
 			$total=0;
 			$i=0;
+			krsort($payments);
 			rawoutput("<table border='0' cellpadding='2' cellspacing='0' width='100%'>");
 			rawoutput("<tr class='trhead'><td>". translate_inline("Month") ."</td><td>". translate_inline("Profit")."</td></tr>");
-			while (list ($key,$row)=each($payments)){
+			foreach($payments as $key=>$row){
 				$i++;
 				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
 				$date=$key;
@@ -167,8 +167,8 @@ function servercostlog_run(){
 			rawoutput("</select><br><br>");
 			output("Currency: ");
 			output_notl("$paycurrency`n`n");
-			output("Amount:`n");
-			rawoutput("<input type='input' class='input' maxlength=12 length=20 name='amount'><br><br>");
+            output("Amount:`n");
+            rawoutput("<input type='number' step='0.01' class='input' maxlength=12 name='amount'><br><br>");
 			output("Details:`n");
 			rawoutput("<textarea name='comment' cols='50' rows='10' wrap='virtual' ></textarea><br><br><br>");
 			$submit=translate_inline("Submit");

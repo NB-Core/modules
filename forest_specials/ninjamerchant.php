@@ -14,11 +14,11 @@ function ninjamerchant_getmoduleinfo() {
 		"settings"=>array(
 			"The Ninja Merchant - Preferences, title",
 			"maxshopping"=>"How many items can be bought per day?,floatrange,1,10,1|3",
-			"forbiddencategories"=>"What categories are forbidden(seperate by comma),text",
+			"forbiddencategories"=>"What categories are forbidden(separate by comma),text",
 			"forbidden"=>"Internal Array,viewonly",
 		),
 		"preferences"=>array(
-			"The Ninja Merchant - User Prefences, title",
+			"The Ninja Merchant - User Preferences, title",
 			"today"=>"Shopped today how often?,int",
 			"todaysell"=>"Shopped today how often?,int",
 		),

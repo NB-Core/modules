@@ -200,7 +200,7 @@ function madmax_run(){
 					$datanow=array("sentence"=>$sentence,"lifepoints"=>$lifearray,"newround"=>1);
 					enterdata($number,$datanow);
 					$counter=0;
-					while (list($key,$val)=each($lifearray)) {
+					foreach($lifearray as $val) {
 						if ($val>0) $counter++;
 					}
 					blockplayernav();					
@@ -263,7 +263,7 @@ function madmax_run(){
 				$datanow=array("sentence"=>$sentence,"lifepoints"=>$lifearray,"newround"=>1);
 				enterdata($number,$datanow);
 				$counter=0;
-				while (list($key,$val)=each($lifearray)) {
+				foreach($lifearray as $val) {
 					if ($val>0) $counter++;
 				}
 				blockplayernav();					
@@ -299,7 +299,7 @@ function madmax_run(){
 					$datanow=array("sentence"=>$sentence,"lifepoints"=>$lifearray,"newround"=>1);
 					enterdata($number,$datanow);
 					$counter=0;
-					while (list($key,$val)=each($lifearray)) {
+					foreach($lifearray as $val) {
 						if ($val>0) $counter++;
 					}
 					blockplayernav();					
@@ -332,7 +332,7 @@ function madmax_run(){
 					enterdata($number,$datanow);
 					$counter=0;
 					blockplayernav();					
-					while (list($key,$val)=each($lifearray)) {
+					foreach($lifearray as $val) {
 						if ($val>0) $counter++;
 					}
 					if ($lifearray["s".$prevplayer]<1) {
@@ -391,7 +391,7 @@ function madmax_run(){
 			$players=explode(",",$alldata['players']);
 			array_push($players,$alldata['playerone']);
 			$lifearray=array();
-			while (list($key,$val)=each($players)) {
+			foreach($players as $val) {
 				$lifearray=array_merge($lifearray,array("s".$val=>$points));
 			}
 			$datanow=array("sentence"=>$sentence,"lifepoints"=>$lifearray,"newround"=>1);

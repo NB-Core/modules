@@ -116,7 +116,7 @@ function circulum_presave_run(){
 		if ($login.$start.$end > ""){
 			$path = circulum_presave_getstorepath();
 			debug($path);
-			$d = dir($path);
+			$d = dir(__DIR__."/".$path);
 			$count = 0;
 			while (($entry = $d->read())!==false){
 				$e = explode("|",$entry);

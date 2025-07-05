@@ -57,7 +57,7 @@ function forestmod_new_dohook($hookname,$args){
 						}
 					}
 					// add buttons 
-					if ($_COOKIE['template']=='Mobile.htm') {
+					if (isset($_COOKIE['template']) && $_COOKIE['template']=='Mobile.htm') {
 						rawoutput("<div class='col-xs-12 col-sm8 btn-group mobile hidden-md hidden-lg ' style='margin: 5px 0 5px 0';>
 								<button id='js_slum'   type='button' class='col-xs-4 btn btn-default'>Slumber</button>
 								<button id='js_seek'   type='button' class='col-xs-4 btn btn-default'>Seek out</button>

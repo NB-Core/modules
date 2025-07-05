@@ -12,7 +12,7 @@ function circulum_prefreset_getmoduleinfo(){
 			"Circulum Vitae - Preferences,title",
 				"Note: Separate via comma and use the filename of the module - like lover or ella or dag,note",
 				"reset"=>"Which module preferences should be deleted when somebody does a CV?,text|",
-				"inventoryreset"=>"Reset (if installed!) the inventory of a user who walks teh fame?,bool|1",
+                                "inventoryreset"=>"Reset (if installed!) the inventory of a user who walks the fame?,bool|1",
 			),		
 		"requires"=>array(
 			"circulum"=>"1.0|Circulum Vitae by `2Oliver Brendel",

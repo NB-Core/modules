@@ -300,8 +300,8 @@ function specialtysystem_dohook($hookname,$args){
 		set_module_pref("cache",'',"specialtysystem");
 		break;
 	case "fightnav-specialties":
-			$script=$args['script'];
-			specialtysystem_showfightnav($script);
+		$script=$args['script'];
+		specialtysystem_showfightnav($script);
 		break;
 	case "newday":
 		if ($session['user']['specialty'] != "SS") break;

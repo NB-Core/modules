@@ -17,7 +17,7 @@ function thegrinch_getmoduleinfo(){
 				"Grinch - modified Elite Forest - Settings,title",
 				"specialchance"=>"Chance for special event in the forest Hook,int|10",
 				"categories"=>"What categorys can the creatures be from,text|grinch",
-				"type the categories in single quote marks seperated by commas,note",
+				"type the categories in single quote marks separated by commas,note",
 				"grinch"=>"Name of the Grinch,text|`2T`@he `2G`@rinch",
 				"maxseen"=>"How often per day?,int|3",
 				),
@@ -315,7 +315,7 @@ function thegrinch_run(){
 
 				} else {
 					require_once("lib/forestoutcomes.php");
-					if ($packofmonsters == true) {
+					if (isset($packofmonster) && $packofmonsters == true) {
 						$initialbadguy = db_fetch_assoc($result);
 						$prefixs = array("Elite","Dangerous","Lethal","Savage","Deadly","Malevolent","Malignant");
 						for($i=0;$i<$multi;$i++) {
@@ -542,6 +542,7 @@ function thegrinch_run(){
 			  } else {
 			  $where=translate_inline($where);
 			  }*/
+			$where = "Grinchy-Place"; // not used before
 			$deathmessage=select_deathmessage_array(true,array("{where}"),array($where));
 			if ($deathmessage['taunt']==1) {
 				addnews("%s`n%s",$deathmessage['deathmessage'],$taunt);

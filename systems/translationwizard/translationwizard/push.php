@@ -123,6 +123,7 @@ default:
 	output_notl("`n");
 	rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
 	rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Namespace") ."</td><td>".translate_inline("# of rows")."</td><td>".translate_inline("Actions")."</td></tr>");
+	$i=0;
 	while ($row = db_fetch_assoc($result))
 		{
 		rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");

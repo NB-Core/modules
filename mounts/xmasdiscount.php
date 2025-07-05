@@ -18,6 +18,9 @@ function xmasdiscount_getmoduleinfo(){
 			),
 			"prefs"=>array(
 			),
+			"requires"=>array(
+				"datemanager"=>"1.0|By Oliver Brendel",
+			),
 		);
 	return $info;
 }
@@ -33,6 +36,16 @@ function xmasdiscount_uninstall(){
 
 function xmasdiscount_dohook($hookname,$args){
 	global $session;
+
+	// Check if the date is in the range
+	require_once("modules/datemanager.php");
+	$start = get_module_setting("start");
+	$end = get_module_setting("end");
+	$check=datemanager_datecheck($start,$end,0);
+
+	//check for activation date
+	if ($check!=1) return $args;
+
 	$discount_gems = get_module_setting("discount_gems");
 	$discount_gems = (1 - ($discount_gems/100));
 	$discount_gold = get_module_setting("discount_gold");
@@ -40,22 +53,9 @@ function xmasdiscount_dohook($hookname,$args){
 	
 	switch($hookname){
 		case "mount-modifycosts":
-			$mytime = get_module_setting("start");
-			list($smonth,$sday) = explode("-",$mytime);
-			$smonth=(int)$smonth;
-			$sday=(int)$sday;
-			$mytime = get_module_setting("end");
-			list($emonth,$eday) = explode("-", $mytime);
-			$emonth = (int)$emonth;
-			$eday = (int)$eday;
-			$month = (int)date("m");
-			$day = (int)date("d");
-			if ($month >= $smonth && $month <= $emonth &&
-					$day >= $sday && $day <= $eday) {
-				output("`\$M`2erry `\$X`2-mas ... you get a discount of %s %% for gold and %s %% for gem cost!!`n`n",(1-$discount_gold)*100,(1-$discount_gems)*100);
-				$args['mountcostgold']=max(0,round($args['mountcostgold']*$discount_gold));
-				$args['mountcostgems']=max(0,round($args['mountcostgems']*$discount_gems));
-			}
+			output("`\$M`2erry `\$X`2-mas ... you get a discount of %s %% for gold and %s %% for gem cost!!`n`n",(1-$discount_gold)*100,(1-$discount_gems)*100);
+			$args['mountcostgold']=max(0,round($args['mountcostgold']*$discount_gold));
+			$args['mountcostgems']=max(0,round($args['mountcostgems']*$discount_gems));
 		break;
 	}
 	

@@ -92,6 +92,7 @@ function akatsuki_runevent($type,$link)
 		output("`3After a few minutes you are surrounded by `^%s`3 members in combat ready stance... you have to fight your way through.",$akatsuki);
 		output_notl("`n`n");
 		$gender=(!$session['user']['sex']?translate_inline("buddy"):translate_inline("lassie"));
+		$over = 0;
 		if (e_rand(1,get_module_setting('overwhelm'))==1) {
 			output("`3Oh no! You seem to have attracted the most skilled of their kind!`n");
 			output("They are lead by the famous %s`3 who is staring at you angrily!`n`n",$chief);

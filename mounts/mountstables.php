@@ -112,20 +112,21 @@ function mountstables_currentMountName() {
 	global $session;
 	$mountid = $session['user']['hashorse'];
 	if ($mountid==0) return "";
-	$mountname = "Dummy";
+	$mount = "";
 	if (is_module_active("mountname")) {
 		$mount = get_module_pref("name","mountname");
 	}
 //following could have strange results, leave it
-/*	if ($mount == "") {
+debug($mountid);
+	if ($mount == "") {
 		//no user name given, take default
 		$sql = "SELECT * FROM " . db_prefix("mounts") . " WHERE mountid='$mountid'";
 		$result = db_query($sql);
+		if (db_num_rows($result) == 0) return 'Ghost Empress II';
 		$row = db_fetch_assoc($result);
 		$mount = $row['mountname'];
-	}*/
-//debug($mountid);
-//debug($row);
+debug($row);
+	}
 	return $mount;
 }
 
@@ -235,11 +236,16 @@ function mountstables_run(){
 			break;
 		case "swap":
 			$intid = httpget('intid');
-			$list=mountstables_getMountList();
+			$list=mountstables_getMountList($intid);
 			$row = array_shift($list);
 			$switches = get_module_setting('dailylimit');
 			$cur = get_module_pref('dailylimitused');
-			output("`2Do you want to swap your %s`2 to %s`2?`n`n`xYou can so for another %s times today!",$mount,$row['mountname'],$switches-$cur);
+			if ($mount == "") {
+				// no mount right now
+				output("`2Do you want to swap to %s`2?`n`n`xYou can so for another %s times today!",$row['mountname'],$switches-$cur);
+			} else {
+				output("`2Do you want to swap your %s`2 to %s`2?`n`n`xYou can so for another %s times today!",$mount,$row['mountname'],$switches-$cur);
+			}
 			addnav("Actions");
 			addnav("Yes","runmodule.php?module=mountstables&op=swap_yes&intid=$intid");
 			break;

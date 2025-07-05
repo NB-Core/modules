@@ -81,7 +81,7 @@ function chipmunk_boss_runevent($type,$link) {
 	switch ($op) {
 	case "":
 		output("`qYou casually stroll through the forest, taking in the beautiful sights, the trees, flowers, a cute little `gC`lhipmunk`q, a pony.. WAIT! A `gC`lHIPMUNK`q!");
-		output("You quickly dive divehind a tree, clutching your gold tightly, knowing of their reputation for stealing the hard earned gold of many a poor shinobi.");
+		output("You quickly dive behind a tree, not up, not farther away, which would be really dumb because it would be out in the open. Also not to the side, which make jumping farther away again a better idea in terms of visibility. `nAlas, you are clutching your gold tightly, knowing of their reputation for stealing the hard earned gold of many a poor shinobi.");
 		output("As you peek out from your hiding space, you let out a deep sigh of relief, as the `gC`lhipmunk`q seems not to have noticed you. You do however notice it carrying the meek treasure of some poor shinobi.");
 		output("\"All that gold must go somewhere,\" you think. Maybe if you follow the wee creature, you can find their hoard and keep it for yourself, cause really, how hard could it be to take some gold from some tiny little `gC`lhipmunks`q?");
 		addnav("Options");

@@ -8,7 +8,7 @@ function adminpvp_getmoduleinfo(){
 		"download"=>"",
 		 "settings"=>array(
 					"PvP Admin Immunity - Preferences, title",
-					"who"=>"Enter here seperated by comma the acctid of the admins, text|1,7",
+					"who"=>"Enter here separated by comma the acctid of the admins, text|1,7",
 					),
 	);
 	return $info;

@@ -8,7 +8,7 @@ function pvpquotes_getmoduleinfo(){
 		"download"=>"",
 		"prefs"=>array(
 			"PvP Quotes Preferences,title",
-			"user_win"=>"Give quotes you want to have displayed to the enemy if you attack somebody and defeat him (quotes seperated by ; please),text|",
+			"user_win"=>"Give quotes you want to have displayed to the enemy if you attack somebody and defeat him (quotes separated by ; please),text|",
 			"user_defeat"=>"Give quotes you want to have displayed to the enemy if somebody attacks you and you defeat him (quotes separated by ; please),text|",
 		
 			),

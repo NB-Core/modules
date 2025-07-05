@@ -8,8 +8,8 @@ function advertisingtracker_getmoduleinfo(){
 		"download"=>"",
 		"settings"=>array(
 					"Ad Tracker - Preferences, title",
-					"who"=>"Enter here seperated by comma the acctid of the admins who should be excluded (secure mail), text|1,7",
-					"searches"=>"What other keywords to you want to search for in mails (seperate by comma!),text|",
+					"who"=>"Enter here separated by comma the acctid of the admins who should be excluded (secure mail), text|1,7",
+					"searches"=>"What other keywords to you want to search for in mails (separate by comma!),text|",
 					),
 	);
 	return $info;
@@ -572,7 +572,7 @@ function advertisingtracker_run(){
 			} else {
 				$mail=db_prefix("mail");
 			}
-			if ($section=='') $searchsection='';
+			if (!isset($section) || $section=='') $searchsection='';
 				else $searchsection="AND $mail.section LIKE '$section'";
 			if ($limit=='') $limit=50;
 			addnav("Actions");

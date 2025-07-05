@@ -2,10 +2,10 @@
 //module requires inventory
 function pumpkin_getmoduleinfo(){
 	$info = array(
-		"name"=>"Halloween Pumpkin!",
+		"name"=>"Halloween Pumpkin! (timelocked)",
 		"author"=>"`2Oliver Brendel",
 		"version"=>"1.0",
-		"category"=>"Halloween",
+		"category"=>"Holidays|Halloween",
 		"download"=>"",
 		"settings"=>array(
 			"Pumpkin  Settings,title",
@@ -14,9 +14,12 @@ function pumpkin_getmoduleinfo(){
 			"Pumpkins"=>"Amount of pumpkins given out,int|3",
 			"MaxDK"=>"Max DKs for first time pumpkin receivers,int|10",
 			"rewarddp"=>"Reward of DP after end,int|500",
+			"start"=>"Start Date MM-DD,string|10-29",
+			"end"=>"End Date MM-DD,string|11-02",
 			),
 		"requires"=>array(
 			"inventory"=>"1.0|Inventory Module by XChrisX",
+			"datemanager"=>"1.0|By Oliver Brendel",
 			),
 	);
 	return $info;
@@ -49,6 +52,19 @@ function pumpkin_uninstall(){
 
 function pumpkin_dohook($hookname,$args){
 	global $session;
+
+	// Check if the date is in the range
+	require_once("modules/datemanager.php");
+	$start=get_module_setting("start");
+	$end=get_module_setting("end");
+	$check=datemanager_datecheck($start,$end,0);
+
+	//check for activation date
+	if ($check!=1) {
+		if ($hookname != "superuser")
+			return $args;
+	}
+
 	$name="`xH`qalloween `xP`qumpkin";
 //debug($name);
 	switch($hookname){
@@ -94,7 +110,7 @@ debug($sql);
 						addnav(array("Attack the %s`0-holder %s`0!",$name,$who),"pvp.php?op=fight");
 					}
 				}
-			} elseif (get_module_setting('race')==1) {
+			} elseif (get_module_setting('race','pumpkin')==1) {
 				//the end of this period
 //				$sql="UPDATE ".db_prefix('modules')." SET active=0 WHERE modulename='pumpkin' LIMIT 1;";
 //				db_query($sql);
@@ -107,6 +123,7 @@ debug($sql);
 				if (!is_array($settings)) $settings=array();
 				$sql="SELECT DISTINCT a.acctid FROM ".db_prefix("accounts")." AS a INNER JOIN ".db_prefix("inventory")." AS b ON a.acctid=b.userid INNER JOIN ".db_prefix("item")." AS i ON b.itemid=i.itemid WHERE i.name='$name';";
 				while ($row=db_fetch_assoc(db_query($sql))) {
+					if (!isset($settings[date("Y-n")]))  $settings[date("Y-n")]="";
 					$settings[date("Y-n")].=$row['acctid']."|";
 					require_once("lib/systemmail.php");
 					$subject = array("Congratulations! You are a winner!");
@@ -174,7 +191,7 @@ debug($sql);
 				if ($result) {
 					output("`\$No! You lost the %s`\$! Now... if you are quick, you can snatch it away again... but be quick or somebody else will do this!`0`n",$name);
 					require_once("lib/systemmail.php"); //mail the victim
-					systemmail($args['badguy']['acctid'],array("The %s",$name),array("`vOh yes! You have won the %s`v in PVP from %s`v as you searched the attacker after the futile attempt to kill you!",$name,$args['badguy']['name']));
+					systemmail($args['badguy']['acctid'],array("The %s",$name),array("`vOh yes! You have won the %s`v in PVP from %s`v as you searched the attacker after the futile attempt to kill you!",$name,$session['user']['acctid']));
 					}
 			}
 			break;

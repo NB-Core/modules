@@ -18,7 +18,7 @@ function wedgieman_getmoduleinfo(){
    "dexterity"=>"The level Dexterity needed to avoid Punishment,int|35",
    "constitution"=>"The level Constitution needed to avoid Punishment,int|35",
    "intelligence"=>"The level Intelligence needed to avoid Punishment,int|20",
-	"strength"=>"The difficulty of a strenght test to avoid punishment,int|40",
+	"strength"=>"The difficulty of a strength test to avoid punishment,int|40",
   ),
   );
  return $info;

@@ -60,7 +60,7 @@ case "delete": //to delete one via the delete button
 	redirect("runmodule.php?module=translationwizard&op=known$redirect"); //just redirecting so you go back to the previous page after the deletion
 break;
 
-case "radioinsert": //insert all first occurences
+case "radioinsert": //insert all first occurrences
 	//debug($_POST);
 	$table=($central?"temp_translations":"translations");	 
 	$alrighty=true;

@@ -17,7 +17,7 @@ function circulum_do_reset() {
 		if (array_key_exists($row['Field'],$nochange) && $nochange[$row['Field']]) {
 			//don't change it
 			//debug($row['Field']." not reset");
-		}elseif (!$nochange[$row['Field']]){
+		}elseif (isset($nochange[$row['Field']]) && !$nochange[$row['Field']]){
 			//debug($row['Field']." reset");
 			$session['user'][$row['Field']] = $row['Default'];
 		}
