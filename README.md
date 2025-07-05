@@ -8,7 +8,7 @@ These modules extend nearly every aspect of the game ranging from administrative
 
 Directories group modules by purpose:
 
-- **PVP/** – player versus player extensions and events
+- **pvp/** – player versus player extensions and events
 - **administrative/** – tools for admins and moderation
 - **forest/** – general forest related tweaks
 - **forest_specials/** – additional forest encounters and bosses
