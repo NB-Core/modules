@@ -182,6 +182,7 @@ function translationwizard_run(): void{
                 }
                 redirect("runmodule.php?module=translationwizard&error=".$error);
         } elseif ($op == 'multichecked') {
+                $namespace = httppost('namespace');
                 $success = WizardService::saveBatchTranslations(
                         $languageschema,
                         $namespace,
