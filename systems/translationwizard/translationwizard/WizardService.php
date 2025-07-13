@@ -249,25 +249,27 @@ class WizardService {
                 output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", db_num_rows($result));
                 $i = 0;
                 output("`n`nFollowing rows have no namespace:");
-                rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-                rawoutput("<tr class='trhead'><td>" . translate_inline('Language') . "</td><td>" . translate_inline('Namespace') . "</td><td>" . translate_inline('Original') . "</td><td>" . translate_inline('Actions') . "</td></tr>");
+                tw_table_open([
+                    translate_inline('Language'),
+                    translate_inline('Namespace'),
+                    translate_inline('Original'),
+                    translate_inline('Actions')
+                ]);
                 while ($row = db_fetch_assoc($result)) {
                     $i++;
-                    rawoutput("<tr class='" . ($i % 2 ? 'trlight' : 'trdark') . "'><td>");
-                    rawoutput(htmlentities($row['language'], ENT_COMPAT, $coding));
-                    rawoutput("</td><td>");
-                    rawoutput(htmlentities($row['namespace'], ENT_COMPAT, $coding));
-                    rawoutput("</td><td>");
-                    rawoutput(htmlentities($row['intext'], ENT_COMPAT, $coding));
-                    rawoutput("</td><td>");
-                    rawoutput("<a href='runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language'] . "'>" . translate_inline('Delete') . "</a>");
+                    $delete = "<a href='runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language'] . "'>" . translate_inline('Delete') . "</a>";
                     addnav('', "runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language']);
-                    rawoutput("</td></tr>");
+                    tw_table_row([
+                        htmlentities($row['language'], ENT_COMPAT, $coding),
+                        htmlentities($row['namespace'], ENT_COMPAT, $coding),
+                        htmlentities($row['intext'], ENT_COMPAT, $coding),
+                        $delete
+                    ], $i%2==1);
                     if ($i > $page) {
                         break;
                     }
                 }
-                rawoutput('</table>');
+                tw_table_close();
                 break;
 
             default:

@@ -101,7 +101,7 @@ default:
         output("Choose the language you want to push:");
         output_notl("`n");
         output("Select language and namespaces to push:");
-        rawoutput("<form action='runmodule.php?module=translationwizard&op=push' name='pushi' method='post'>");
+        tw_form_open('push');
 	addnav("", "runmodule.php?module=translationwizard&op=push");	
 	rawoutput("<select name='pushlanguage' onChange='this.form.submit()'>");
 	$sql = "SELECT language,count(*) AS c FROM " . db_prefix("translations") . " GROUP BY language ORDER BY language ASC";
@@ -145,6 +145,6 @@ default:
                 ], $i%2==1);
                 }
         tw_table_close();
-	rawoutput("</form>");
+        tw_form_close();
 }
 ?>

@@ -80,13 +80,13 @@ case "saveedited":
 	break;
 	
 case "scan":
-if (!httpget('how')=='multi') {
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan' name='listenauswahl' method='post'>");
+if (httpget('how') != 'multi') {
+        tw_form_open('scanmodules&mode=scan');
 	addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan");
 	$one=TranslationWizard::showValidFiles();
 	output("`nChoose alternate scheme (valid for main file+libs, i.e. 'module-translationwizard'):`n");
 	rawoutput("<input id='input' name='alternate' width=55>");
-	rawoutput("</form>");
+        tw_form_close();
 	$lookfor=httppost('lookfor');
 	$alternate=httppost('alternate');
 	if ($alternate) $ausgabe=TranslationWizard::scanFile($lookfor,false,$alternate);
@@ -109,12 +109,16 @@ if (!httpget('how')=='multi') {
 		$ausgabe=array_merge($ausgabe,TranslationWizard::scanFile($val,false,$alternate));
 	}
 }
-rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=insert' name='editfeld' method='post' >");
+tw_form_open('scanmodules&mode=insert');
 addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=insert");
 output("%s rows have been found.",sizeof($ausgabe));
 output_notl("`n`n");
-rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Namespace") ."</td><td>". translate_inline("Intext")."</td><td>".translate_inline("Translated")."</td></tr>");	
+tw_table_open([
+    '',
+    translate_inline('Namespace'),
+    translate_inline('Intext'),
+    translate_inline('Translated')
+]);
 //prepare sql
 $sql="SELECT tid,outtext FROM ".db_prefix("translations")." WHERE ";
 $wasthereanuntranslated=0;
@@ -152,7 +156,7 @@ foreach($ausgabe as $key=>$row) {
 		output_notl($alreadytranslated);
 		rawoutput("</td></tr>");
 		}
-		rawoutput("</table>");
+                tw_table_close();
 	//some check/uncheck all
 	$all=translate_inline("Check all");
 	$none=translate_inline("Uncheck all");
@@ -200,7 +204,7 @@ foreach($ausgabe as $key=>$row) {
 	output_notl("`n");
 	if (sizeof($ausgabe)>0) rawoutput("<input type='submit' name='replacechecked' value='". translate_inline("Insert Selected into your untranslated table") ."' class='button'>");
 	if (sizeof($ausgabe)>0) rawoutput("<input type='submit' name='insertandeditchecked' value='". translate_inline("Translate Checked") ."' class='button'>");
-	rawoutput("</form>");	
+        tw_form_close();
 	break;
 
 default:
@@ -217,12 +221,12 @@ output(" You may then decide to edit and insert them.");
 output_notl("`n");
 output("Do `bnot`b scan any library files modules are including. This will result in double and useless entries!");
 output_notl("`n`n");
-rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan' name='listenauswahl' method='post'>");
+tw_form_open('scanmodules&mode=scan');
 addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan");
 $one=TranslationWizard::showValidFiles();
 output("`nChoose alternate scheme (valid for main file+libs, i.e. 'module-translationwizard'):`n");
 rawoutput("<input id='input' name='alternate' width=55>");
-rawoutput("</form>");
+tw_form_close();
 
 output_notl("`n`n");
 output("The function below does a bit more.");
@@ -232,14 +236,13 @@ output_notl("`n`n");
 output("`^Note: if you select a main file where a folder exists with the same name, the wizard `bautomatically selects all files`b therein.`0");
 output_notl("`n`n");
 
-rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan&how=multi' name='secondscan' method='post'>");
+tw_form_open('scanmodules&mode=scan&how=multi');
 addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan&how=multi");
 $two=TranslationWizard::showValidFiles(false,1,true,true);
 output("`nChoose alternate scheme (valid for main file+libs, i.e. 'module-translationwizard'):`n");
 rawoutput("<input id='input' name='alternate' width=55>");
 output_notl("`n`n");
-rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-rawoutput("<tr class='trhead'><td></td><td>".translate_inline("File")."</td></tr>");	
+tw_table_open(['', translate_inline('File')]);
 $two=TranslationWizard::showValidFiles(false,2,false);
 foreach($two as $key=>$val) {
 	rawoutput("<tr class='".($key%2?"trlight":"trdark")."'><td>");
@@ -272,7 +275,8 @@ if (cbb[i].search(shortentry)!=-1) {cbb[i].checked=true;}
 					//  End -->
 				</script>");
 	//end	
-rawoutput("</table></form>");
+tw_table_close();
+tw_form_close();
 /*rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan' method='post'>");
 addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan");
 rawoutput("<input id='input' name='lookfor' width=55>");

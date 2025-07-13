@@ -82,7 +82,7 @@ switch($mode) {
                 output("Choose a mirror if you don't want to use the normal central DB:");
                 output_notl("`n");debug($mymirror);
                 output("Select a mirror and directory to pull from:");
-                rawoutput("<form action='runmodule.php?module=translationwizard&op=pull' name='listenauswahl' method='post'>");
+                tw_form_open('pull');
 		addnav("", "runmodule.php?module=translationwizard&op=pull");	
 		rawoutput("<select name='mirror' onchange='this.form.submit()'>");
 		rawoutput("<option value=''>---</option>");
@@ -153,38 +153,43 @@ switch($mode) {
 		output("Following namespace were found on your LotGD:`n");
 		rawoutput("<input type='submit' name='pulluntranslated' value='". translate_inline("Pull only for those in the untranslated") ."' class='button'>");
 		rawoutput("<input type='submit' name='pullchecked' value='". translate_inline("Pull checked") ."' class='button'>");
-		rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-		rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Namespace") ."</td><td>".translate_inline("Moduledate")."</td><td>".translate_inline("Last Pulled")."</td><td>".translate_inline("Server Date")."</td><td>".translate_inline("Actions")."</td><td></td><td></td></tr>");
+                tw_table_open([
+                    '',
+                    translate_inline("Namespace"),
+                    translate_inline("Moduledate"),
+                    translate_inline("Last Pulled"),
+                    translate_inline("Server Date"),
+                    translate_inline("Actions"),
+                    '',
+                    ''
+                ]);
 		$i=0;
 		$rmymirror=rawurlencode($mymirror);
 		$rselecteddir=rawurlencode($selecteddir);		
 		foreach ($listing as $val) {
 			$i=!$i;
 			$rval=rawurlencode($val);
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-			rawoutput("<input type='checkbox' name='moduletext[]' value='".$rval."' >");
-			rawoutput("</td><td>");
-			rawoutput($val);
-			rawoutput("</td><td>");
-			rawoutput(get_module_objpref("namespaces", 1, $val, "translationwizard"));
-			rawoutput("</td><td>");
-			rawoutput(get_module_objpref("namespaces", 0, $val, "translationwizard"));
-			rawoutput("</td><td>");
-			rawoutput(get_module_objpref("namespaces", 2, $val, "translationwizard"));
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=pull&mode=pull&pulldir=".$rselecteddir."&mirror=".$rmymirror."&ns=".$rval."'>". translate_inline("Pull")."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=pull&mode=pull&pulldir=".$rselecteddir."&mirror=".$rmymirror."&ns=".$rval);
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=push&mode=push&ns=". $rval."'>". translate_inline("Push")."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&ns=". $rval);
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=pull&pulldir=".$rselecteddir."&mirror=".$rmymirror."&getdate=1&ns=". $rval."'>". translate_inline("Pull Date")."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=pull&pulldir=".$rselecteddir."&mirror=".$rmymirror."&getdate=1&ns=". $rval);
-			rawoutput("</td></tr>");
-		}
-		rawoutput("</table>");
+                        $checkbox = "<input type='checkbox' name='moduletext[]' value='$rval' >";
+                        $pull = "<a href='runmodule.php?module=translationwizard&op=pull&mode=pull&pulldir=$rselecteddir&mirror=$rmymirror&ns=$rval'>" . translate_inline("Pull") . "</a>";
+                        addnav('', "runmodule.php?module=translationwizard&op=pull&mode=pull&pulldir=".$rselecteddir."&mirror=".$rmymirror."&ns=".$rval);
+                        $push = "<a href='runmodule.php?module=translationwizard&op=push&mode=push&ns=$rval'>" . translate_inline("Push") . "</a>";
+                        addnav('', "runmodule.php?module=translationwizard&op=push&mode=push&ns=".$rval);
+                        $date = "<a href='runmodule.php?module=translationwizard&op=pull&pulldir=$rselecteddir&mirror=$rmymirror&getdate=1&ns=$rval'>" . translate_inline("Pull Date") . "</a>";
+                        addnav('', "runmodule.php?module=translationwizard&op=pull&pulldir=".$rselecteddir."&mirror=".$rmymirror."&getdate=1&ns=".$rval);
+                        tw_table_row([
+                            $checkbox,
+                            $val,
+                            get_module_objpref("namespaces", 1, $val, "translationwizard"),
+                            get_module_objpref("namespaces", 0, $val, "translationwizard"),
+                            get_module_objpref("namespaces", 2, $val, "translationwizard"),
+                            $pull,
+                            $push,
+                            $date
+                        ], $i%2==1);
+                }
+                tw_table_close();
 		rawoutput("<input type='submit' name='pulluntranslated' value='". translate_inline("Pull only for those in the untranslated") ."' class='button'>");
 		rawoutput("<input type='submit' name='pullchecked' value='". translate_inline("Pull checked") ."' class='button'>");
-		rawoutput("</form>");
+                tw_form_close();
 }
 ?>

@@ -88,7 +88,7 @@ case "del": //to delete one via the delete button
 	break;
 default: //if there is any other mode, i.e. "" go on and display what's necessary including checkboxes and so on, just the main list
         output("Select texts to translate or delete:");
-        rawoutput("<form action='runmodule.php?module=translationwizard&op=list' name='listenauswahl' method='post'>");
+        tw_form_open('list');
 	addnav("", "runmodule.php?module=translationwizard&op=list");
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 	$result = db_query($sql);
@@ -172,5 +172,5 @@ if (!$mode=="save" && $namespace<>"")
 	rawoutput("<input type='submit' name='editchecked' value='". translate_inline("Edit selected") ."' class='button'>");
 	rawoutput("<input type='submit' name='deletechecked' value='". translate_inline("Delete selected") ."' class='button'>");
 	}
-rawoutput("</form>");
+tw_form_close();
 ?>

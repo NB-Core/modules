@@ -210,75 +210,74 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
 				}
 			output("All rows have been inserted.");
 			} else {
-			rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-			rawoutput("<tr class='trhead'><td>". translate_inline("Language") ."</td><td>". translate_inline("Original") ."</td><td>".translate_inline("Module")."</td><td>".translate_inline("Translation")."</td><td>".translate_inline("Author")."</td></tr>");	
-			while($row=db_fetch_assoc($fastinsert))
-				{
-				if ($row['t']==$row['u'] && $row['t']==$languageschema && $alttext<>$row['intext'])
-				{
-				$i++;
-				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-				rawoutput(htmlentities($row['t'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['intext'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['namespace'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['outtext'],ENT_COMPAT,$coding));				
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['author'],ENT_COMPAT,$coding));
-				rawoutput("</td></tr>");
-				$alttext=$row['intext'];					
-				}
-				}
-			}
-			rawoutput("</table>");
+                        tw_table_open([
+                            translate_inline('Language'),
+                            translate_inline('Original'),
+                            translate_inline('Module'),
+                            translate_inline('Translation'),
+                            translate_inline('Author')
+                        ]);
+                        while($row=db_fetch_assoc($fastinsert))
+                                {
+                                if ($row['t']==$row['u'] && $row['t']==$languageschema && $alttext<>$row['intext'])
+                                {
+                                $i++;
+                                tw_table_row([
+                                    htmlentities($row['t'], ENT_COMPAT, $coding),
+                                    htmlentities($row['intext'], ENT_COMPAT, $coding),
+                                    htmlentities($row['namespace'], ENT_COMPAT, $coding),
+                                    htmlentities($row['outtext'], ENT_COMPAT, $coding),
+                                    htmlentities($row['author'], ENT_COMPAT, $coding)
+                                ], $i%2==1);
+                                $alttext=$row['intext'];
+                                }
+                                }
+                        }
+                        tw_table_close();
 		
 	    } else if (db_num_rows($result)>0) {
                 tw_form_open("known&mode=radioinsert$redirect");
 		addnav("", "runmodule.php?module=translationwizard&op=known&mode=radioinsert$redirect");
-		rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-		rawoutput("<tr class='trhead'><td>". translate_inline("Language") ."</td><td>". translate_inline("Original") ."</td><td>".translate_inline("Module / Translation")."</td><td>".translate_inline("Author")."</td><td>".translate_inline("Actions")."</td><td></td></tr>");			
+                tw_table_open([
+                    translate_inline('Language'),
+                    translate_inline('Original'),
+                    translate_inline('Module / Translation'),
+                    translate_inline('Author'),
+                    translate_inline('Actions'),
+                    ''
+                ]);
 		while($row=db_fetch_assoc($result))	{
 			if ($row['t']==$row['u'] && $row['t']==$languageschema)	{
 				if ($alttext<>$row['intext']) {
-					//$i++;
-					rawoutput("<tr class='trdark'>");
-					rawoutput("<td>");
-					rawoutput(htmlentities($row['t'],ENT_COMPAT,$coding));
-					rawoutput("</td><td>");
-					rawoutput(htmlentities($row['intext'],ENT_COMPAT,$coding));
-					rawoutput("</td><td>");
-					rawoutput(htmlentities($row['namespace'],ENT_COMPAT,$coding));								
-					rawoutput("</td><td>");
-					//rawoutput(htmlentities($row['author'],ENT_COMPAT,$coding));
-					rawoutput("</td><td>");
-					rawoutput("<a href='runmodule.php?module=translationwizard&op=known$redirect&mode=delete&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."'>". translate_inline("Delete") ."</a>");
-					addnav("", "runmodule.php?module=translationwizard&op=known$redirect&mode=delete&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));				
-					rawoutput("</td><td>");
-					rawoutput("</td></tr>");
+                                          $delete = "<a href='runmodule.php?module=translationwizard&op=known$redirect&mode=delete&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>" . translate_inline('Delete') . "</a>";
+                                          addnav('', "runmodule.php?module=translationwizard&op=known$redirect&mode=delete&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
+                                          tw_table_row([
+                                              htmlentities($row['t'], ENT_COMPAT, $coding),
+                                              htmlentities($row['intext'], ENT_COMPAT, $coding),
+                                              htmlentities($row['namespace'], ENT_COMPAT, $coding),
+                                              '',
+                                              $delete,
+                                              ''
+                                          ], false);
 				}
 				$alttext=$row['intext'];					
-				rawoutput("<tr class='trlight'>");
-				rawoutput("<td>");
-				rawoutput(htmlentities($row['t'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput("<input type='radio' name='".serialize(array($row['t'],$row['namespace'],rawurlencode($row['intext'])))."' value='".$row['tid']."' class='button'>");
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['outtext'],ENT_COMPAT,$coding));								
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['author'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput("<a href='runmodule.php?module=translationwizard&op=known$redirect&mode=picked&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']) ."'>". translate_inline("Choose") ."</a>");
-				addnav("", "runmodule.php?module=translationwizard&op=known$redirect&mode=picked&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']));
-				rawoutput("</td><td>");
-				rawoutput("<a href='runmodule.php?module=translationwizard&op=edit_single&mode=save&from=".rawurlencode("module=translationwizard&op=known$redirect&ns=".$row['namespace'])."&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']) ."'>". translate_inline("Edit+Insert") ."</a>");
-				addnav("", "runmodule.php?module=translationwizard&op=edit_single&mode=save&from=".rawurlencode("module=translationwizard&op=known$redirect&ns=".$row['namespace'])."&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']));	
-				rawoutput("</td></tr>");
+                                $radio = "<input type='radio' name='" . serialize([$row['t'], $row['namespace'], rawurlencode($row['intext'])]) . "' value='" . $row['tid'] . "' class='button'>";
+                                $choose = "<a href='runmodule.php?module=translationwizard&op=known$redirect&mode=picked&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']) ."'>" . translate_inline('Choose') . "</a>";
+                                addnav('', "runmodule.php?module=translationwizard&op=known$redirect&mode=picked&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']));
+                                $editinsert = "<a href='runmodule.php?module=translationwizard&op=edit_single&mode=save&from=".rawurlencode("module=translationwizard&op=known$redirect&ns=".$row['namespace'])."&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=". rawurlencode($row['version']) ."'>" . translate_inline('Edit+Insert') . "</a>";
+                                addnav('', "runmodule.php?module=translationwizard&op=edit_single&mode=save&from=".rawurlencode("module=translationwizard&op=known$redirect&ns=".$row['namespace'])."&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext'])."&outtext=". rawurlencode($row['outtext'])."&author=". rawurlencode($row['author'])."&version=" . rawurlencode($row['version']));
+                                tw_table_row([
+                                    htmlentities($row['t'], ENT_COMPAT, $coding),
+                                    $radio,
+                                    htmlentities($row['outtext'], ENT_COMPAT, $coding),
+                                    htmlentities($row['author'], ENT_COMPAT, $coding),
+                                    $choose,
+                                    $editinsert
+                                ], true);
 				//if ($i>$page) break;  //would need previous/next page and one more if which needs too much time. better to get all now
 			}
 			}
-                        rawoutput("</table>");
+                        tw_table_close();
                         rawoutput("<input type='submit' value='". translate_inline("Insert checked translations") ."' class='button'>");
                         tw_form_close();
                 }
