@@ -60,7 +60,7 @@ case "insert":
                 tw_form_open("scanmodules&mode=saveedited");
 		addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=saveedited");
 		//rawoutput("<input type='submit' class='button' value='". translate_inline("Show") ."'>"); //no longer necessary
-		require("./modules/translationwizard/editchecked.php"); //if you want to edit some translations at a time
+               require __DIR__ . '/editchecked.php'; //if you want to edit some translations at a time
 	}
 	break;
 
