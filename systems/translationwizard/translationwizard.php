@@ -118,7 +118,7 @@ function translationwizard_dohook(string $hookname, array $args): array{
 function translationwizard_run(): void{
 	global $session,$logd_version,$coding;
 	check_su_access(SU_IS_TRANSLATOR); //check again Superuser Access
-	$op = httpget('op');
+        $op = basename(httpget('op'));
 	page_header("Translation Wizard");
 	//get some standards
 	$languageschema=get_module_pref("language","translationwizard");
@@ -145,7 +145,7 @@ function translationwizard_run(): void{
 		else $transouttext = array();
 	}
 	//end of the header
-	if ($op=="")  $op="default";
+        if ($op=="")  $op="default";
         if($op!='scanmodules') require("./modules/translationwizard/errorhandler.php");
         if ($op == 'randomsave') {
                 $intext = httppost('intext');
@@ -164,8 +164,55 @@ function translationwizard_run(): void{
                         $error = $success ? 5 : 4;
                 }
                 redirect("runmodule.php?module=translationwizard&error=".$error);
+        } elseif ($op == 'save_single') {
+                $intext = httppost('intext');
+                $outtext = httppost('outtext');
+                $namespace = httppost('namespace');
+                $language = httppost('language');
+                if ($outtext !== '') {
+                        $success = WizardService::saveTranslation(
+                                $language,
+                                $namespace,
+                                $intext,
+                                $outtext,
+                                $session['user']['login'],
+                                $logd_version
+                        );
+                        $error = $success ? 5 : 4;
+                }
+                redirect("runmodule.php?module=translationwizard&error=".$error);
+        } elseif ($op == 'multichecked') {
+                $namespace = httppost('namespace');
+                $success = WizardService::saveBatchTranslations(
+                        $languageschema,
+                        $namespace,
+                        WizardService::ensureArray($transintext),
+                        WizardService::ensureArray($transouttext),
+                        WizardService::ensureArray(httppost('nametext')),
+                        WizardService::ensureArray(httppost('translatedtid')),
+                        $session['user']['login'],
+                        $logd_version
+                );
+                $error = $success ? 5 : 4;
+                redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
+        } elseif ($op == 'copychecked') {
+                $namespace = httppost('namespace');
+                $success = WizardService::copyCheckedTranslations(
+                        $languageschema,
+                        $namespace,
+                        WizardService::ensureArray($transintext),
+                        $session['user']['login'],
+                        $logd_version
+                );
+                $error = $success ? 5 : 4;
+                redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
         } else {
-                require("./modules/translationwizard/$op.php");
+                $file = __DIR__ . "/translationwizard/{$op}.php";
+                if (file_exists($file)) {
+                        require($file);
+                } else {
+                        output("Unknown operation: %s", $op);
+                }
         }
 	require_once("lib/superusernav.php");
 	superusernav();
