@@ -206,6 +206,12 @@ function translationwizard_run(): void{
                 );
                 $error = $success ? 5 : 4;
                 redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
+        } elseif ($op == 'deleteempty') {
+                WizardService::deleteEmpty($mode, (int)$page, $coding);
+        } elseif ($op == 'switchview') {
+                WizardService::toggleView($viewsimple, $from);
+        } elseif ($op == 'insert_central') {
+                WizardService::insertCentral($mode, $namespace, $languageschema);
         } else {
                 $file = __DIR__ . "/translationwizard/{$op}.php";
                 if (file_exists($file)) {

@@ -171,5 +171,189 @@ class WizardService {
         }
         return $ok;
     }
+
+    /**
+     * Delete selected untranslated rows.
+     *
+     * @param string $language  Target language
+     * @param string $namespace Namespace of the texts
+     * @param array  $texts     Array of rawurlencoded texts to delete
+     *
+     * @return void
+     */
+    public static function deleteCheckedRows(string $language, string $namespace, array $texts): void {
+        foreach ($texts as $text) {
+            if ($text !== '') {
+                $intext = addslashes(rawurldecode($text));
+                $sql = "DELETE FROM " . db_prefix("untranslated") .
+                       " WHERE BINARY intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
+                db_query($sql);
+            }
+        }
+    }
+
+    /**
+     * Toggle the view preference and redirect back to the caller.
+     *
+     * @param bool   $currentView Current view flag
+     * @param string $from        Query string to redirect back to
+     *
+     * @return void
+     */
+    public static function toggleView(bool $currentView, string $from): void {
+        set_module_pref('view', !$currentView, 'translationwizard');
+        redirect("runmodule.php?$from");
+    }
+
+    /**
+     * Handle deletion of rows without a namespace.
+     *
+     * This replicates the legacy deleteempty.php behaviour.
+     *
+     * @param string $mode   Current mode
+     * @param int    $page   Page size from module settings
+     * @param string $coding Character set used for output
+     *
+     * @return void
+     */
+    public static function deleteEmpty(string $mode, int $page, string $coding): void {
+        if (httppost('listing')) {
+            $mode = 'listing';
+        }
+        if (httppost('deleteall')) {
+            $mode = 'delete';
+        }
+
+        switch ($mode) {
+            case 'del':
+                $intext = rawurldecode(httpget('intext'));
+                $language = httpget('deletelanguage');
+                $sql = "DELETE FROM " . db_prefix('untranslated') .
+                       " WHERE intext = '$intext' AND namespace='' AND language='$language'";
+                if ($intext !== '') {
+                    db_query($sql);
+                }
+                redirect("runmodule.php?module=translationwizard&op=deleteempty&mode=listing");
+                break;
+
+            case 'delete':
+                $sql = "DELETE FROM " . db_prefix('untranslated') . " WHERE namespace=''";
+                $result = db_query($sql);
+                output("`bOperation commenced, %s rows found and deleted`b`n`n", db_affected_rows($result));
+                break;
+
+            case 'listing':
+                $sql = "SELECT intext, language FROM  " . db_prefix('untranslated') .
+                       " WHERE namespace='' GROUP  BY BINARY intext, language";
+                $result = db_query($sql);
+                output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", db_num_rows($result));
+                $i = 0;
+                output("`n`nFollowing rows have no namespace:");
+                rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
+                rawoutput("<tr class='trhead'><td>" . translate_inline('Language') . "</td><td>" . translate_inline('Namespace') . "</td><td>" . translate_inline('Original') . "</td><td>" . translate_inline('Actions') . "</td></tr>");
+                while ($row = db_fetch_assoc($result)) {
+                    $i++;
+                    rawoutput("<tr class='" . ($i % 2 ? 'trlight' : 'trdark') . "'><td>");
+                    rawoutput(htmlentities($row['language'], ENT_COMPAT, $coding));
+                    rawoutput("</td><td>");
+                    rawoutput(htmlentities($row['namespace'], ENT_COMPAT, $coding));
+                    rawoutput("</td><td>");
+                    rawoutput(htmlentities($row['intext'], ENT_COMPAT, $coding));
+                    rawoutput("</td><td>");
+                    rawoutput("<a href='runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language'] . "'>" . translate_inline('Delete') . "</a>");
+                    addnav('', "runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language']);
+                    rawoutput("</td></tr>");
+                    if ($i > $page) {
+                        break;
+                    }
+                }
+                rawoutput('</table>');
+                break;
+
+            default:
+                $sql = "SELECT intext, language FROM  " . db_prefix('untranslated') .
+                       " WHERE namespace='' GROUP  BY BINARY intext, language";
+                $result = db_query($sql);
+                tw_form_open('deleteempty&mode=delete');
+                addnav('', 'runmodule.php?module=translationwizard&op=deleteempty&mode=delete');
+                rawoutput("<input type='hidden' name='op' value='check'>");
+                output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", db_num_rows($result));
+                if (db_num_rows($result) == 0) {
+                    output("Congratulations! Your untranslated table does not have any rows with an empty namespace!");
+                    tw_form_close();
+                    break;
+                }
+                output("What do you want to do?`n`n`n`n");
+                rawoutput("<input type='submit' name='deleteall' value='" . translate_inline('Delete multiple automatically') . "' class='button'>");
+                rawoutput("<input type='submit' name='listing' value='" . translate_inline('Delete manually') . "' class='button'>");
+                tw_form_close();
+                output("`b`i`$ Attention, no additional confirmation`i`b`0");
+                break;
+        }
+    }
+
+    /**
+     * Insert rows from the temporary pull table into translations.
+     *
+     * @param string $mode       Operation mode
+     * @param string $namespace  Current namespace
+     * @param string $language   Current language schema
+     *
+     * @return void
+     */
+    public static function insertCentral(string $mode, string $namespace, string $language): void {
+        switch ($mode) {
+            case 'continue':
+                output('Commencing...');
+                $sql = "DELETE from " . db_prefix('temp_translations') .
+                       " using " . db_prefix('translations') .
+                       " inner join " . db_prefix('temp_translations') .
+                       " on  " . db_prefix('translations') . ".intext=" . db_prefix('temp_translations') . ".intext AND " .
+                       db_prefix('translations') . ".language=" . db_prefix('temp_translations') . ".language AND " .
+                       db_prefix('translations') . ".uri=" . db_prefix('temp_translations') . ".uri;";
+                $result = db_query($sql);
+                debug('Result for the delete:' . $result);
+                $sql = "Select language,uri,intext,outtext,author,version from " . db_prefix('temp_translations') . ";";
+                $result = db_query($sql);
+                if (db_num_rows($result) <> 0) {
+                    $copyrows = "INSERT INTO " . db_prefix('translations') . " (language, uri, intext, outtext, author, version) VALUES ";
+                    while ($row = db_fetch_assoc($result)) {
+                        $copyrows .= "('" . $row['language'] . "','" . $row['uri'] . "','" . addslashes($row['intext']) . "','" . addslashes($row['outtext']) . "','" . addslashes($row['author']) . "','" . $row['version'] . "'),";
+                    }
+                    $res = db_query(substr($copyrows, 0, -1) . ';');
+                    invalidatedatacache('translations-' . $namespace . '-' . $language);
+                    db_query('TRUNCATE ' . db_prefix('temp_translations') . ';');
+                    output("%s rows have been inserted and the pulled translations table has been cleared.", db_num_rows($result));
+                    output_notl("`n`n");
+                    output("The insert has been %s.", ($res == 1 ? translate_inline('successful') : translate_inline('`$ not successful`0')));
+                    output_notl("`n");
+                    output("Please `%fix`0 your untranslated table now.");
+                } else {
+                    output('The pulled translations is now empty, all pulled rows are already in your translations table.');
+                }
+                break;
+
+            default:
+                output('You may hereby insert `b`$ ALL `0`b rows from the pulled translations table who are not in your current translations yet.');
+                output_notl(' ');
+                output('This would be wise if you just installed the game and pulled a few translations down.');
+                output_notl('`n`n');
+                $sql = 'Select * from ' . db_prefix('temp_translations') . ';';
+                $result = db_query($sql);
+                if (db_num_rows($result)) {
+                    output('You have %s entries in your pulled translations table.', db_num_rows($result));
+                    output_notl('`n');
+                    output('This may take some time.');
+                    output_notl('`n`n');
+                    tw_form_open('insert_central&mode=continue');
+                    addnav('', 'runmodule.php?module=translationwizard&op=insert_central&mode=continue');
+                    rawoutput("<input type='submit' name='continue' value='" . translate_inline('Commence the process') . "' class='button'>");
+                    tw_form_close();
+                } else {
+                    output('The pulled translations is empty, there is nothing to do!');
+                }
+                break;
+        }
+    }
 }
 ?>
