@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 // Okay, someone wants to use this outside of normal game flow.. no real harm
 if(!defined('OVERRIDE_FORCED_NAV')) define("OVERRIDE_FORCED_NAV",true);
-require_once("modules/translationwizard/TranslationWizard.php");
-require_once("modules/translationwizard/form_helpers.php");
-require_once("modules/translationwizard/WizardService.php");
+require_once __DIR__ . '/translationwizard/TranslationWizard.php';
+require_once __DIR__ . '/translationwizard/form_helpers.php';
+require_once __DIR__ . '/translationwizard/WizardService.php';
 
 /**
  * Return module metadata for the Translation Wizard.
