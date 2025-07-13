@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 rawoutput("<br>");
 output("`n`bBeware of the autologoff-timeout!`b`n`n");
-foreach($transintext as $trans) 
+output("Edit the translations below:");
+foreach($transintext as $trans)
 	{
 		output("Text:");
 		output_notl("`n");

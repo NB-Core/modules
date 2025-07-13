@@ -79,9 +79,10 @@ switch($mode) {
 		$linklist=pullurl($path."files.txt"); debug($path."files.txt");
 		$mirrors=pullurl($masterpath."mirrors.txt");
 		if (is_array($mirrors)) sort ($mirrors);
-		output("Choose a mirror if you don't want to use the normal central DB:");
-		output_notl("`n");debug($mymirror);
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=pull' name='listenauswahl' method='post'>");
+                output("Choose a mirror if you don't want to use the normal central DB:");
+                output_notl("`n");debug($mymirror);
+                output("Select a mirror and directory to pull from:");
+                rawoutput("<form action='runmodule.php?module=translationwizard&op=pull' name='listenauswahl' method='post'>");
 		addnav("", "runmodule.php?module=translationwizard&op=pull");	
 		rawoutput("<select name='mirror' onchange='this.form.submit()'>");
 		rawoutput("<option value=''>---</option>");
