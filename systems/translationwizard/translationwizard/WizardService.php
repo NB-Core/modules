@@ -10,12 +10,24 @@ class WizardService {
     }
 
     public static function createTranslation(string $language, string $namespace, string $intext, string $outtext, string $author, string $version) {
+        // db_query() has no support for parameterized queries, so manually escape values
+        $language = addslashes($language);
+        $namespace = addslashes($namespace);
+        $intext = addslashes($intext);
+        $outtext = addslashes($outtext);
+        $author = addslashes($author);
+        $version = addslashes($version);
         $sql = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" .
                " ('$language','$namespace','$intext','$outtext','$author','$version')";
         return db_query($sql);
     }
 
     public static function deleteUntranslated(string $language, string $namespace, string $intext) {
+        // Inputs may originate from user data; escape to prevent SQL injection
+        // due to lack of parameterized query support
+        $language = addslashes($language);
+        $namespace = addslashes($namespace);
+        $intext = addslashes($intext);
         $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
         return db_query($sql);
     }
@@ -82,8 +94,12 @@ class WizardService {
                 $ns = $nameTexts[$key] ?? $namespace;
                 $out = $outTexts[$key];
                 if (!empty($ids[$key])) {
+                    // Manually escape because there is no parameterized query API
+                    $outEsc = addslashes($out);
+                    $authorEsc = addslashes($author);
+                    $versionEsc = addslashes($version);
                     $sql = "UPDATE " . db_prefix("translations") .
-                           " SET outtext='$out',author='$author',version='$version' WHERE tid={$ids[$key]};";
+                           " SET outtext='$outEsc',author='$authorEsc',version='$versionEsc' WHERE tid={$ids[$key]};";
                     $result1 = db_query($sql);
                 } else {
                     $result1 = self::createTranslation($language, $ns, $text, $out, $author, $version);
