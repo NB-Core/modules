@@ -6,6 +6,7 @@ declare(strict_types=1);
 if(!defined('OVERRIDE_FORCED_NAV')) define("OVERRIDE_FORCED_NAV",true);
 require_once("modules/translationwizard/TranslationWizard.php");
 require_once("modules/translationwizard/form_helpers.php");
+require_once("modules/translationwizard/WizardService.php");
 
 /**
  * Return module metadata for the Translation Wizard.
