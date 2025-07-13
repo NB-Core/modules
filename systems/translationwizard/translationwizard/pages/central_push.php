@@ -5,16 +5,20 @@ $currentdate=$datum['mon']."-".$datum['mday']."-".$datum['year'];
 $currenttime=$datum['hours'].":".$datum['minutes'].":".$datum['seconds'];
 $selectedlanguage=httppost('pushlanguage');
 if (!$selectedlanguage) $selectedlanguage=$languageschema;
+$namespaceEsc = addslashes($namespace);
+$selectedEsc  = addslashes($selectedlanguage);
 if (httppost('pushall')||httppost('pushselected')) $mode="pushall"; //set in order to get the switch right... hard because no get reasonable
 switch($mode)
 {
 case "push":
-	if (httpget('pushlanguage')) $selectedlanguage=httpget('pushlanguage');
-	$sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$namespace."' AND language='".$selectedlanguage."' ORDER BY intext;";
+        if (httpget('pushlanguage')) $selectedlanguage=httpget('pushlanguage');
+        $namespaceEsc = addslashes($namespace);
+        $selectedEsc  = addslashes($selectedlanguage);
+        $sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$namespaceEsc."' AND language='".$selectedEsc."' ORDER BY intext;";
 	$result=db_query($sql);
 	output("Please copy the following code to a file named `b`^%s.sql`0`b and give it to the admin for your language:",$namespace);
 	output_notl("`n`n");
-	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
+        $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
         $res=db_query($sql);
         output("Select the namespace to push:");
         tw_form_open("push&mode=push");
@@ -45,10 +49,10 @@ case "push":
 		}
 	break;
 
-	case "pushall": //get a grip :D
-		if (httppost('pushselected'))
-			{
-			$trans = httppost('pusharray');
+        case "pushall": //get a grip :D
+                if (httppost('pushselected'))
+                        {
+                        $trans = httppost('pusharray');
 			if (is_array($trans))  //setting for any intexts you might receive
 				{
 				$pusharray = $trans;
@@ -56,10 +60,12 @@ case "push":
 				{
 					if ($trans) $pusharray = array($trans);
 					else $pusharray = array();
-				}
-			}
-		$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
-		$res=db_query($sql);
+                                }
+                        }
+                $namespaceEsc = addslashes($namespace);
+                $selectedEsc  = addslashes($selectedlanguage);
+                $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
+                $res=db_query($sql);
 		$firstrow=$currentdate." Verified "."Uploader:".$session['user']['login']." Time:".$currenttime.chr(13).chr(10);
 		$start="('";
 		$middle="','";
@@ -78,9 +84,9 @@ case "push":
 			}
 		foreach($pusharray as $key=>$rowspace)
 			{
-			$end="'),".chr(13).chr(10);
-			$sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$rowspace."' AND language='".$selectedlanguage."' ORDER BY intext;";
-			$result=db_query($sql);
+                        $end="'),".chr(13).chr(10);
+                        $sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$rowspace."' AND language='".$selectedEsc."' ORDER BY intext;";
+                        $result=db_query($sql);
 			$i=0;
 			$numend=db_num_rows($result);
 			$filename=$dir."/".$rowspace.'.sql';
@@ -98,6 +104,8 @@ case "push":
 			}
 		break;
 default:
+        $namespaceEsc = addslashes($namespace);
+        $selectedEsc  = addslashes($selectedlanguage);
         output("Choose the language you want to push:");
         output_notl("`n");
         output("Select language and namespaces to push:");
@@ -112,8 +120,8 @@ default:
 		}
 	rawoutput("</select>");
 	output_notl("`n");	
-	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
-	$result=db_query($sql);
+        $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
+        $result=db_query($sql);
 	output("Following namespace were found on your LotGD:`n");
 	output_notl("`n`n");
 	rawoutput("<input type='submit' name='pushall' value='". translate_inline("Push entire translations") ."' class='button'>");
