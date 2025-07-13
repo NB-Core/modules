@@ -6,7 +6,12 @@ declare(strict_types=1);
 if(!defined('OVERRIDE_FORCED_NAV')) define("OVERRIDE_FORCED_NAV",true);
 require_once("modules/translationwizard/TranslationWizard.php");
 
-function translationwizard_getmoduleinfo(){
+/**
+ * Return module metadata for the Translation Wizard.
+ *
+ * @return array Configuration for the module
+ */
+function translationwizard_getmoduleinfo(): array{
 	//Slightly modified by JT Traub in the original untranslated.php
 	$info = array(
 	    "name"=>"Translation Wizard",
@@ -46,7 +51,12 @@ function translationwizard_getmoduleinfo(){
     return $info;
 }
 
-function translationwizard_install(){
+/**
+ * Install the Translation Wizard module and create required tables.
+ *
+ * @return bool True on success
+ */
+function translationwizard_install(): bool{
 	module_addhook("superuser");
 	module_addhook("header-modules");
 	if (is_module_active("translationwizard")) debug("Module Translationwizard updated");
@@ -67,22 +77,43 @@ function translationwizard_install(){
 	return true;
 }
 
-function translationwizard_uninstall() {
-	debug ("Performing Uninstall on Translation Wizard. Thank you for using!`n`n");
-	if(db_table_exists(db_prefix("temp_translations"))){
-		$result=db_query("DROP TABLE ".db_prefix("temp_translations"));
-	}
-	return $result;
+/**
+ * Remove temporary tables created by the Translation Wizard module.
+ *
+ * @return bool True on success
+ */
+function translationwizard_uninstall(): bool {
+        debug ("Performing Uninstall on Translation Wizard. Thank you for using!`n`n");
+        $result = true;
+        if(db_table_exists(db_prefix("temp_translations"))){
+                $query=db_query("DROP TABLE ".db_prefix("temp_translations"));
+                $result = (bool)$query;
+        }
+        return $result;
 }
 
 
-function translationwizard_dohook($hookname, $args){
-	global $session;
-	require("./modules/translationwizard/translationwizard_dohook.php");
-	return $args;
+/**
+ * Hook dispatcher for the Translation Wizard.
+ *
+ * @param string $hookname Name of the hook
+ * @param array  $args     Arguments passed by the hook system
+ *
+ * @return array Modified arguments
+ */
+function translationwizard_dohook(string $hookname, array $args): array{
+        global $session;
+        require("./modules/translationwizard/translationwizard_dohook.php");
+        return $args;
 }
 
-function translationwizard_run(){
+/**
+ * Main execution dispatcher for the Translation Wizard module.
+ * Handles request routing and page setup.
+ *
+ * @return void
+ */
+function translationwizard_run(): void{
 	global $session,$logd_version,$coding;
 	check_su_access(SU_IS_TRANSLATOR); //check again Superuser Access
 	$op = httpget('op');

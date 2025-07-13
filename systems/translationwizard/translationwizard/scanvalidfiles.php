@@ -2,7 +2,17 @@
 declare(strict_types=1);
 /* This is mostly a copy of the source.php*/
 
-function wizard_showvalidfiles($dosubmit=true,$onlymodules=0,$showselectbox=true,$mainmodulecheck=false) {
+/**
+ * Build a list of files that can be scanned for translations.
+ *
+ * @param bool $dosubmit        Whether to auto submit the form on change
+ * @param int  $onlymodules     Restrict search to modules (1) or submodules (2)
+ * @param bool $showselectbox   Show the select element with files
+ * @param bool $mainmodulecheck Enable javascript module check handler
+ *
+ * @return array List of file names that may be scanned
+ */
+function wizard_showvalidfiles(bool $dosubmit=true,int $onlymodules=0,bool $showselectbox=true,bool $mainmodulecheck=false): array {
 	global $coding;
 	require_once("lib/errorhandling.php");
 	$url="";
@@ -108,7 +118,14 @@ function wizard_showvalidfiles($dosubmit=true,$onlymodules=0,$showselectbox=true
 	return $outputfiles;
 }
 
-function wizard_tree($base) {
+/**
+ * Recursively build a list of directories within a base path.
+ *
+ * @param string $base Directory base path
+ *
+ * @return array Array of directory paths
+ */
+function wizard_tree(string $base): array {
 	$d = dir("$base");
 	$back=array();
 	while($entry = $d->read()) {
