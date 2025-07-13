@@ -80,7 +80,7 @@ case "saveedited":
 	break;
 	
 case "scan":
-if (!httpget('how')=='multi') {
+if (httpget('how') != 'multi') {
         tw_form_open('scanmodules&mode=scan');
 	addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan");
 	$one=TranslationWizard::showValidFiles();
