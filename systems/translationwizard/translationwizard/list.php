@@ -55,12 +55,24 @@ if (httppost("copychecked")) {
 switch ($mode)
 {
 case "save":		//if you want to save a single translation (called not from the checkboxes form)
-	$from="module=translationwizard&op=list&ns=".$namespace;
-	require("./modules/translationwizard/save_single.php");
-	break; //just in case
+        $from="module=translationwizard&op=list&ns=".$namespace;
+        $outtext = httppost('outtext');
+        if ($outtext !== '') {
+                $success = WizardService::saveTranslation(
+                        $languageschema,
+                        $namespace,
+                        httppost('intext'),
+                        $outtext,
+                        $session['user']['login'],
+                        $logd_version
+                );
+                $error = $success ? 5 : 4;
+        }
+        redirect("runmodule.php?{$from}&error=".(isset($error) ? $error : ''));
+        break; //just in case
 case "edit": //for one translation via the edit button
-	require("./modules/translationwizard/edit_single.php");
-	break;
+        require("./modules/translationwizard/edit_single.php");
+        break;
 case "del": //to delete one via the delete button
 	$intext=rawurldecode(httpget('intext'));
 	$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$languageschema' AND namespace = '$namespace'";

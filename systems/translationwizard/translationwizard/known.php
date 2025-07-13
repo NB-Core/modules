@@ -11,9 +11,22 @@ if ($central)
 switch($mode)
 {
 case "save":		//if you want to save a single translation from Edit+Insert
-	require("./modules/translationwizard/save_single.php");
-break; //just in case
 
+        $from="module=translationwizard&op=known$redirect&ns=".$namespace;
+        $outtext = httppost('outtext');
+        if ($outtext !== '') {
+                $success = WizardService::saveTranslation(
+                        $languageschema,
+                        $namespace,
+                        httppost('intext'),
+                        $outtext,
+                        $session['user']['login'],
+                        $logd_version
+                );
+                $error = $success ? 5 : 4;
+        }
+        redirect("runmodule.php?{$from}&error=".(isset($error) ? $error : ''));
+        break; //just in case
 case "picked": //save the picked one
 	$intext=rawurldecode(httpget('intext'));
 	$outtext=rawurldecode(httpget('outtext'));
