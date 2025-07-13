@@ -4,7 +4,7 @@ declare(strict_types=1);
 class TranslationWizard {
     public static function scanFile(string $filepath, bool $debug=false, $standard_tlschema=false) {
         if(!is_file($filepath)) {
-            die("Fatal Error ! Could not find File.");
+            throw new RuntimeException("Fatal Error: Could not find file at path: " . $filepath);
         }
         $str = join("", file($filepath));
         if($standard_tlschema === false) {
