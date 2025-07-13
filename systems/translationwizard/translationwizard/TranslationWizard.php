@@ -2,6 +2,15 @@
 declare(strict_types=1);
 
 class TranslationWizard {
+    /**
+     * Parse a PHP file and return all translatable strings.
+     *
+     * @param string $filepath          Path to the file being scanned
+     * @param bool   $debug             Output debug information when true
+     * @param string|false $standard_tlschema Default tlschema if not auto-detected
+     *
+     * @return array Array of ['text' => string, 'schema' => string] entries
+     */
     public static function scanFile(string $filepath, bool $debug=false, $standard_tlschema=false) {
         if(!is_file($filepath)) {
             throw new RuntimeException("Fatal Error: Could not find file at path: " . $filepath);
@@ -284,6 +293,15 @@ class TranslationWizard {
         return $return;
     }
 
+    /**
+     * Insert untranslated strings into the database.
+     *
+     * @param array|string $delrows       Strings or rows to insert
+     * @param string       $languageschema Target language schema
+     * @param bool         $serialized     Whether input rows are serialized
+     *
+     * @return void
+     */
     public static function insertFile($delrows, $languageschema, $serialized=false) {
         if(is_array($delrows)) {
             $insertrows = $delrows;
@@ -300,6 +318,15 @@ class TranslationWizard {
         }
     }
 
+    /**
+     * Advance the pointer past PHP comments while scanning a file.
+     *
+     * @param string $str  Entire file contents
+     * @param int    &$i   Current index in the string (modified)
+     * @param int    &$line Current line counter (modified)
+     *
+     * @return void
+     */
     protected static function skipCommentary($str, &$i, &$line) {
         while($str[$i] == "/" && $str[$i] != "") {
             if($str[($i+1)] == "/") {
@@ -320,6 +347,15 @@ class TranslationWizard {
         }
     }
 
+    /**
+     * Check if a translation entry already exists in the given array.
+     *
+     * @param array  $array  Current collection of entries
+     * @param string $text   Text string to compare
+     * @param string $schema Associated schema
+     *
+     * @return bool True if an identical entry exists
+     */
     protected static function alreadyInArray($array, $text, $schema) {
         foreach($array as $entry) {
             if($entry['text'] == $text && $entry['schema'] == $schema) {
@@ -329,6 +365,16 @@ class TranslationWizard {
         return false;
     }
 
+    /**
+     * Display or return a list of scannable files.
+     *
+     * @param bool $dosubmit       When true, change events submit the form
+     * @param int  $onlymodules    0 = all, 1 = modules folder, 2 = only modules
+     * @param bool $showselectbox  Whether to output a &lt;select&gt; element
+     * @param bool $mainmodulecheck If true, onChange uses modulecheck()
+     *
+     * @return array Array of valid file paths
+     */
     public static function showValidFiles($dosubmit=true, $onlymodules=0, $showselectbox=true, $mainmodulecheck=false) {
         global $coding;
         require_once("lib/errorhandling.php");
@@ -418,6 +464,13 @@ class TranslationWizard {
         return $outputfiles;
     }
 
+    /**
+     * Recursively gather subdirectories below a given base path.
+     *
+     * @param string $base Base directory
+     *
+     * @return array List of directory paths
+     */
     protected static function tree($base) {
         $d = dir("$base");
         $back=array();
