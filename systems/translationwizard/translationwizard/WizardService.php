@@ -89,11 +89,14 @@ class WizardService {
                     $result1 = self::createTranslation($language, $ns, $text, $out, $author, $version);
                 }
                 $result2 = self::deleteUntranslated($language, $ns, $text);
-                invalidatedatacache("translations-" . $ns . "-" . $language);
+                $cacheKeys["translations-" . $ns . "-" . $language] = true;
                 if (!$result1 || !$result2) {
                     $ok = false;
                 }
             }
+        }
+        foreach (array_keys($cacheKeys) as $cacheKey) {
+            invalidatedatacache($cacheKey);
         }
         return $ok;
     }
