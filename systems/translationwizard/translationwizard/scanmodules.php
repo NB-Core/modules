@@ -66,7 +66,16 @@ case "insert":
 
 case "saveedited":
 	$redirectonline=0;
-	require("./modules/translationwizard/multichecked.php");//if you want to copy the checked translations with intext and the entered outtext, this commences the copy process
+        $success = WizardService::saveBatchTranslations(
+                $languageschema,
+                $namespace,
+                WizardService::ensureArray($transintext),
+                WizardService::ensureArray($transouttext),
+                WizardService::ensureArray($nametext),
+                WizardService::ensureArray($translatedtid),
+                $session["user"]["login"],
+                $logd_version
+        );
 	output("Job done");
 	break;
 	
