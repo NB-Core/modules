@@ -23,7 +23,7 @@ if (httppost("editchecked")) {
 		}
 	rawoutput("</select>");
 	//rawoutput("<input type='submit' class='button' value='". translate_inline("Show") ."'>"); //no longer necessary
-	require("./modules/translationwizard/editchecked.php"); //if you want to edit some translations at a time
+       require __DIR__ . '/editchecked.php'; //if you want to edit some translations at a time
 	addnav("R?Restart Translator", "runmodule.php?module=translationwizard");
 	addnav("N?Translate by Namespace", "runmodule.php?module=translationwizard&op=list");
 	require_once("lib/superusernav.php");
@@ -76,7 +76,7 @@ case "save":		//if you want to save a single translation (called not from the ch
         redirect("runmodule.php?{$from}&error=".(isset($error) ? $error : ''));
         break; //just in case
 case "edit": //for one translation via the edit button
-        require("./modules/translationwizard/edit_single.php");
+       require __DIR__ . '/edit_single.php';
         break;
 case "del": //to delete one via the delete button
 	$intext=rawurldecode(httpget('intext'));
