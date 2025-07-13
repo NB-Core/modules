@@ -2,6 +2,13 @@
 declare(strict_types=1);
 
 class WizardService {
+    /**
+     * Normalize input into an array.
+     *
+     * @param mixed $value Scalar or array value to wrap
+     *
+     * @return array The provided value as an array
+     */
     public static function ensureArray($value): array {
         if (is_array($value)) {
             return $value;
@@ -9,6 +16,21 @@ class WizardService {
         return ($value !== null && $value !== '') ? array($value) : array();
     }
 
+    /**
+     * Insert a translation row.
+     *
+     * Values are manually escaped because the db_query helper has no
+     * parameterized query support.
+     *
+     * @param string $language Target language code
+     * @param string $namespace Namespace/URI of the text
+     * @param string $intext Original text
+     * @param string $outtext Translated text
+     * @param string $author Saving author
+     * @param string $version Game version
+     *
+     * @return resource|bool Result of db_query()
+     */
     public static function createTranslation(string $language, string $namespace, string $intext, string $outtext, string $author, string $version) {
         // db_query() has no support for parameterized queries, so manually escape values
         $language = addslashes($language);
@@ -22,6 +44,18 @@ class WizardService {
         return db_query($sql);
     }
 
+    /**
+     * Remove a row from the untranslated table.
+     *
+     * Values are manually escaped because parameterized queries are not
+     * available.
+     *
+     * @param string $language Target language code
+     * @param string $namespace Namespace/URI of the text
+     * @param string $intext Original untranslated text
+     *
+     * @return resource|bool Result of db_query()
+     */
     public static function deleteUntranslated(string $language, string $namespace, string $intext) {
         // Inputs may originate from user data; escape to prevent SQL injection
         // due to lack of parameterized query support
@@ -32,6 +66,21 @@ class WizardService {
         return db_query($sql);
     }
 
+    /**
+     * Convenience wrapper to insert a translation and remove the untranslated row.
+     *
+     * Manual escaping occurs inside the called methods since no parameterized
+     * queries are available.
+     *
+     * @param string $language Target language code
+     * @param string $namespace Namespace/URI of the text
+     * @param string $intext Original text
+     * @param string $outtext Translated text
+     * @param string $author Saving author
+     * @param string $version Game version
+     *
+     * @return bool True on success
+     */
     public static function saveTranslation(string $language, string $namespace, string $intext, string $outtext, string $author, string $version): bool {
         $insert = self::createTranslation($language, $namespace, $intext, $outtext, $author, $version);
         $delete = self::deleteUntranslated($language, $namespace, $intext);
@@ -41,6 +90,9 @@ class WizardService {
 
     /**
      * Copy untranslated texts directly to the translation table.
+     *
+     * Manual escaping is performed before issuing SQL statements because no
+     * parameterized query mechanism is available.
      *
      * @param string $language  Target language
      * @param string $namespace Namespace of the texts
@@ -66,6 +118,9 @@ class WizardService {
 
     /**
      * Save multiple translations at once.
+     *
+     * Manual escaping of values is required for the generated SQL queries
+     * because the project lacks support for parameterized statements.
      *
      * @param string $language  Target language
      * @param string $namespace Default namespace if none is supplied per row
