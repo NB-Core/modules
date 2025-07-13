@@ -133,6 +133,7 @@ default:
         $i=0;
         while ($row = db_fetch_assoc($result))
                 {
+		$i++;
                 $checkbox = "<input type='checkbox' name='pusharray[]' value='".rawurlencode($row['uri'])."' >";
                 $actions = "<a href='runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri'])."'>". translate_inline("Push") ."</a>";
                 addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri']));
