@@ -468,7 +468,7 @@ function wizard_insertfile($delrows, string $languageschema, bool $serialized=fa
  */
 function wizard_skipcommentary(string $str,int &$i,int &$line): void
 {
-	while($str[$i] == "/" && $str[$i] != "")
+	while($str[$i] == "/")
 	{
 		if($str[($i+1)] == "/")
 		{
