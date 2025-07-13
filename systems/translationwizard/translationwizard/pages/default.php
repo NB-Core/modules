@@ -32,8 +32,7 @@ if ($count['count'] > 0) {
                 ], true);
                 tw_table_close();
                 tw_form_close($submit);
-                tw_form_open('');
-                tw_form_close($skip);
+                output("<button type='button' onclick=\"window.location.href='runmodule.php?module=translationwizard';\">$skip</button>");
 		addnav("", "runmodule.php?module=translationwizard&op=randomsave");
 		addnav("", "runmodule.php?module=translationwizard");
 	} else {
