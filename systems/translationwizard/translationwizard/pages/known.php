@@ -28,28 +28,35 @@ case "save":		//if you want to save a single translation from Edit+Insert
         redirect("runmodule.php?{$from}&error=".(isset($error) ? $error : ''));
         break; //just in case
 case "picked": //save the picked one
-	$intext=rawurldecode(httpget('intext'));
-	$outtext=rawurldecode(httpget('outtext'));
-	$login = rawurldecode(httpget('author'));
-	if ($central) {
-		$version=rawurldecode(httpget('version'));
-		} else {
-		$version=$logd_version;
-		}
-	$sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$languageschema' AND namespace = '$namespace'";
-	$query=db_query($sql);
-	$result=db_num_rows($query);
-	if ($result==1)
-		{
-		$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$languageschema' AND namespace = '$namespace'";
-		//debug($sql); break;				
-		$result=db_query($sql);
-		$sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$languageschema','$namespace','$intext','$outtext','$login','$version')";
-		$result2=db_query($sql2);
-		redirect("runmodule.php?module=translationwizard&op=known$redirect&error=5"); //just redirecting so you go back to the previous page after the choice
-		} else
-		{
-		output("There was an error while processing your selected translation.");
+        $intext=rawurldecode(httpget('intext'));
+        $outtext=rawurldecode(httpget('outtext'));
+        $login = rawurldecode(httpget('author'));
+        if ($central) {
+                $version=rawurldecode(httpget('version'));
+                } else {
+                $version=$logd_version;
+                }
+
+        $eintext = addslashes($intext);
+        $enamespc = addslashes($namespace);
+        $elangschema = addslashes($languageschema);
+        $elogin = addslashes($login);
+        $eversion = addslashes($version);
+
+        $sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$eintext' AND language = '$elangschema' AND namespace = '$enamespc'";
+        $query=db_query($sql);
+        $result=db_num_rows($query);
+        if ($result==1)
+                {
+                $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$eintext' AND language = '$elangschema' AND namespace = '$enamespc'";
+                //debug($sql); break;
+                $result=db_query($sql);
+                $sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$elangschema','$enamespc','$eintext','$outtext','$elogin','$eversion')";
+                $result2=db_query($sql2);
+                redirect("runmodule.php?module=translationwizard&op=known$redirect&error=5"); //just redirecting so you go back to the previous page after the choice
+                } else
+                {
+                output("There was an error while processing your selected translation.");
 		output_notl(" ");
 		output("Please edit the translation you selected manually or delete it.");
 		output_notl(" ");
@@ -64,12 +71,15 @@ case "picked": //save the picked one
 break;
 
 case "delete": //to delete one via the delete button
-	//$intext= stripslashes(rawurldecode(httpget('intext')));
-	//$intext = str_replace("%", "%%", rawurldecode(httpget('intext')));
-	$intext=rawurldecode(httpget('intext'));
-	$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$languageschema' AND namespace = '$namespace'";
-	//debug($sql); break;
-	db_query($sql);
+        //$intext= stripslashes(rawurldecode(httpget('intext')));
+        //$intext = str_replace("%", "%%", rawurldecode(httpget('intext')));
+        $intext=rawurldecode(httpget('intext'));
+        $eintext = addslashes($intext);
+        $enamespc = addslashes($namespace);
+        $elangschema = addslashes($languageschema);
+        $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$eintext' AND language = '$elangschema' AND namespace = '$enamespc'";
+        //debug($sql); break;
+        db_query($sql);
 	$mode=""; //reset
 	redirect("runmodule.php?module=translationwizard&op=known$redirect"); //just redirecting so you go back to the previous page after the deletion
 break;
@@ -78,30 +88,33 @@ case "radioinsert": //insert all first occurrences
 	//debug($_POST);
 	$table=($central?"temp_translations":"translations");	 
 	$alrighty=true;
-	foreach($_POST as $key=>$val) {
-		$original=unserialize($key);
-		$translation=$val;
-		//debug($original);
-		//debug($translation);
-		$lang=$original[0];
-		$namespace=$original[1];
-		//$intext=(($original[2]));  //this won't be passed over correct, due to blanks you have to rawurlencode, yet the dot becomes an underline, so it's not correct
-		$sql = "SELECT intext,outtext FROM " . db_prefix($table) . " WHERE BINARY tid=".$val.";";
-		$query=db_query($sql);
-		$row=db_fetch_assoc($query);
-		$outtext=addslashes($row['outtext']);
-		$intext=addslashes($row['intext']);
-		//security check
-		$sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$lang' AND namespace = '$namespace'";
-		$query=db_query($sql);
-		$result=db_num_rows($query);		
-		if ($result==1)
-			{
-			$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$lang' AND namespace = '$namespace'";
-			debug($sql);		
-			$result=db_query($sql);
-			$sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$lang','$namespace','$intext','$outtext','$author','$version')";
-			$result2=db_query($sql2);
+        foreach($_POST as $key=>$val) {
+                $original=unserialize($key);
+                $translation=$val;
+                //debug($original);
+                //debug($translation);
+                $lang=$original[0];
+                $namespace=$original[1];
+                $enamespc = addslashes($namespace);
+                //$intext=(($original[2]));  //this won't be passed over correct, due to blanks you have to rawurlencode, yet the dot becomes an underline, so it's not correct
+                $sql = "SELECT intext,outtext FROM " . db_prefix($table) . " WHERE BINARY tid=".$val.";";
+                $query=db_query($sql);
+                $row=db_fetch_assoc($query);
+                $outtext=addslashes($row['outtext']);
+                $intext=addslashes($row['intext']);
+                //security check
+                $sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$lang' AND namespace = '$enamespc'";
+                $query=db_query($sql);
+                $result=db_num_rows($query);
+                if ($result==1)
+                        {
+                        $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$lang' AND namespace = '$enamespc'";
+                        debug($sql);
+                        $result=db_query($sql);
+                        $elogin = addslashes($login);
+                        $eversion = addslashes($version);
+                        $sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$lang','$enamespc','$intext','$outtext','$elogin','$eversion')";
+                        $result2=db_query($sql2);
 			//debug($sql2);
 			} else
 			{
@@ -199,11 +212,14 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
 					} else {
 					$version=$logd_version;
 					}
-				$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '".addslashes($row['intext'])."' AND language = '$languageschema' AND namespace = '{$row['namespace']}'";
-				//debug($sql);				
-				$result=db_query($sql);
-				$sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$languageschema','{$row['namespace']}','".addslashes($row['intext'])."','".addslashes($row['outtext'])."','$login','$version')";
-				$result2=db_query($sql2);
+                                $elangschema = addslashes($languageschema);
+                                $elogin = addslashes($login);
+                                $eversion = addslashes($version);
+                                $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '".addslashes($row['intext'])."' AND language = '$elangschema' AND namespace = '{$row['namespace']}'";
+                                //debug($sql);
+                                $result=db_query($sql);
+                                $sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$elangschema','{$row['namespace']}','".addslashes($row['intext'])."','".addslashes($row['outtext'])."','$elogin','$eversion')";
+                                $result2=db_query($sql2);
 				//debug($sql2);
 				$alttext=$row['intext'];
 				}
