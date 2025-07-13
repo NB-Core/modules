@@ -126,7 +126,7 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
                 }
         }else
                 {
-                        tw_table_row([translate_inline("No rows found"), ''], true);
+                        tw_table_row([rawoutput("<td colspan='3'>".translate_inline("No rows found")."</td>")], true);
                         if ($namespace<>"")
                                 {
                                 $namespace="";
