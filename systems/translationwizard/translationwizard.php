@@ -212,14 +212,24 @@ function translationwizard_run(): void{
                 WizardService::toggleView($viewsimple, $from);
         } elseif ($op == 'insert_central') {
                 WizardService::insertCentral($mode, $namespace, $languageschema);
-        } else {
-               $file = __DIR__ . "/translationwizard/pages/{$op}.php";
-                if (file_exists($file)) {
-                        require($file);
-                } else {
-                        output("Unknown operation: %s", $op);
-                }
-        }
+       } else {
+               $map = [
+                       'list' => 'untranslated_list.php',
+                       'fix'  => 'remove_translated.php',
+                       'pull' => 'central_pull.php',
+                       'push' => 'central_push.php',
+               ];
+               if (isset($map[$op])) {
+                       $file = __DIR__ . '/translationwizard/pages/' . $map[$op];
+               } else {
+                       $file = __DIR__ . "/translationwizard/pages/{$op}.php";
+               }
+               if (file_exists($file)) {
+                       require($file);
+               } else {
+                       output("Unknown operation: %s", $op);
+               }
+       }
 	require_once("lib/superusernav.php");
 	superusernav();
        require(__DIR__ . '/translationwizard/build_nav.php');
