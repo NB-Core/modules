@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 if ($from=="") $from="module=translationwizard&op=list";
-rawoutput("<form action='runmodule.php?".$from."&mode=save&from=".rawurlencode($from)."' method='post'>");
+tw_form_open($from."&mode=save&from=".rawurlencode($from));
 addnav("", "runmodule.php?".$from."&mode=save&from=".rawurlencode($from));
 $sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 $result = db_query($sql);
@@ -23,5 +23,5 @@ while ($row = db_fetch_assoc($result))
 	rawoutput(translate_inline("Translation:"). "<br>");
 	rawoutput("<textarea name='outtext' class='input' cols='60' rows='5'>".htmlentities(stripslashes(httpget('outtext')),ENT_COMPAT,$coding)."</textarea><br/>");
 	rawoutput("<input type='submit' value='". translate_inline("Save") ."' class='button'>");
-	rawoutput("</form>");
+        tw_form_close();
 ?>

@@ -49,19 +49,20 @@ switch ($mode)
 	default:  //if the user hits the button just to check for duplicates
 		$sql= "SELECT intext, language FROM  ".db_prefix("untranslated")." WHERE namespace='' GROUP  BY BINARY intext, language";
 		$result = db_query($sql);
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=deleteempty&mode=delete' method='post'>");
+                tw_form_open("deleteempty&mode=delete");
 		addnav("", "runmodule.php?module=translationwizard&op=deleteempty&mode=delete");
 		rawoutput("<input type='hidden' name='op' value='check'>");
 		output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n",db_num_rows($result));
 		if (db_num_rows($result)==0) //table is fine, no redundant rows
 			{
 			output("Congratulations! Your untranslated table does not have any rows with an empty namespace!");
-			rawoutput("</form");
+                        tw_form_close();
 			break;
 			}
 		output("What do you want to do?`n`n`n`n");
-		rawoutput("<input type='submit' name='deleteall' value='". translate_inline("Delete multiple automatically") ."' class='button'>");
-		rawoutput("<input type='submit' name='listing' value='". translate_inline("Delete manually") ."' class='button'></form>");
+                rawoutput("<input type='submit' name='deleteall' value='". translate_inline("Delete multiple automatically") ."' class='button'>");
+                rawoutput("<input type='submit' name='listing' value='". translate_inline("Delete manually") ."' class='button'>");
+                tw_form_close();
 		output("`b`i`$ Attention, no additional confirmation`i`b`0");
 	break;
 		}

@@ -5,7 +5,7 @@ if (httppost("deletechecked")) {
 	require("./modules/translationwizard/deletechecked.php"); //if you want to delete the checked translations, this commences the deletion process
 }
 if (httppost("editchecked")) {
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=list&ns=".rawurlencode($namespace)."' method='post'>");
+        tw_form_open("list&ns=".rawurlencode($namespace));
 	addnav("", "runmodule.php?module=translationwizard&op=list&ns=".rawurlencode($namespace));
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 	$result = db_query($sql);

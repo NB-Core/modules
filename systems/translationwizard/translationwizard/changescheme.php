@@ -20,12 +20,12 @@ if (httppost('save'))
 		else
 		$set=array("language"=>$lang);//,"coding"=>$code);
 	require_once("lib/showform.php");
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=changescheme' method='POST'>");
+        tw_form_open("changescheme", [], 'POST');
 	//output("Note: If you change your coding table, your php version must support the version. Else you'll get error messages.");
 	output_notl("`n`n");
 	$info = showform($settings,$set);
 	rawoutput("<input type='hidden' value='1' name='save'>");
-	rawoutput("</form>");
+        tw_form_close();
 	addnav("","runmodule.php?module=translationwizard&op=changescheme");
 	}
 

@@ -21,7 +21,7 @@ switch ($mode)
 		$result=db_query($sql);
 		if (db_num_rows($result)>0) 
 			{
-			rawoutput("<form action='runmodule.php?module=translationwizard&op=fix&mode=fix' method='post'>");
+                        tw_form_open("fix&mode=fix");
 			addnav("", "runmodule.php?module=translationwizard&op=fix&mode=fix");
 			output("`0There are %s entries who already have a translation in the translations table.`n`n",db_num_rows($result));
 			output("`0This operation will delete already translated parts from the untranslated table.`n`n`b`$ This operation can't be made undone!`b`0`n`n");
@@ -47,7 +47,7 @@ switch ($mode)
 			{
 			output("Congratulations! Your translation table does not have any redundant entries!");
 			}
-			rawoutput("</form>");
+                        tw_form_close();
 		break;
 	}
 ?>

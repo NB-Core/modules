@@ -32,6 +32,6 @@ foreach($transintext as $trans)
 	}
 output_notl("`n`n");
 rawoutput("<input type='submit' name='multichecked' value='". translate_inline("Save") ."' class='button'>");
-rawoutput("</form>");
+tw_form_close();
 
 ?>

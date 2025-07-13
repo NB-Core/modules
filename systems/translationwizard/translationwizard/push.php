@@ -16,7 +16,7 @@ case "push":
 	output_notl("`n`n");
 	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
 	$res=db_query($sql);
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=push&mode=push' method='post'>");
+        tw_form_open("push&mode=push");
 	addnav("", "runmodule.php?module=translationwizard&op=push&mode=push");
 	rawoutput("<input type='hidden' name='op' value='push'>");
 	rawoutput("<input type='hidden' name='mode' value='push'>");
@@ -27,7 +27,7 @@ case "push":
 		rawoutput("<option value=\"".htmlentities($row['uri'],ENT_COMPAT,$coding)."\"".((htmlentities($row['uri'],ENT_COMPAT,$coding) == $namespace) ? "selected" : "").">".htmlentities($row['uri'],ENT_COMPAT,$coding)." ({$row['c']})</option>");
 		}
 	rawoutput("</select>");
-	rawoutput("</form>");
+        tw_form_close();
 	output_notl("`n`n");
 	output_notl($currentdate." Verified "."Uploader:".$session['user']['login']." Time:".$currenttime);
 	$start="('";

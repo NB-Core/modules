@@ -145,7 +145,7 @@ switch ($mode)
 				//end		
 				if (db_num_rows($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
 				rawoutput("<input type='submit' name='deletechecked' value='". translate_inline("Delete selected") ."' class='button'>");
-				rawoutput("</form>");
+                                tw_form_close();
 				break;
 
 	case "edit":
@@ -158,7 +158,7 @@ switch ($mode)
 				output_notl(" ");
 				output("If you want to abort, just click abort (or any other navigation except 'save'.");
 				output_notl("`n`n");
-				rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandedit&mode=save' method='post'>");
+                                tw_form_open("searchandedit&mode=save");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=save");
 				output("TID of the row:");
 				rawoutput("<input id='input' name='tid' width=5 maxlength=5 value='".$row['tid']."'>");
@@ -186,7 +186,7 @@ switch ($mode)
 				rawoutput("<input type='submit' name='select' value='". translate_inline("Save")."' class='button'>");
 				output("`b`$ ATTENTION`b`0");
 				rawoutput("<input type='submit' name='abort' value='". translate_inline("Abort")."' class='button'>");
-				rawoutput("</form>");	
+                                tw_form_close();
 				break;
 
 	case "save":
@@ -252,7 +252,7 @@ switch ($mode)
 				output_notl(" ");
 				output("If you don't want that, just hit the checkbox below. You may use ?,% or the like in the text."); 
 				output_notl("`n`n");
-				rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandedit&mode=select' method='post'>");
+                                tw_form_open("searchandedit&mode=select");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=select");
 				output("What do you want to search for (select enter one or more criteria):");
 				output_notl("`n`n");

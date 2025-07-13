@@ -140,7 +140,7 @@ if ($numberofallrows==0)
 	if ($central) output("`nSorry, all rows in the pulled translations table have no match in any intext in your translations table.");
 	break;
 	}
-rawoutput("<form action='runmodule.php?module=translationwizard&op=known$redirect' method='post'>");
+tw_form_open("known$redirect");
 addnav("", "runmodule.php?module=translationwizard&op=known$redirect");
 if (!httppost('quickinsert')) 
 	{
@@ -157,7 +157,7 @@ if (!httppost('quickinsert'))
 	rawoutput("<input type='submit' name='quickinsertexecute' value='". translate_inline("Quick Insert Execution") ."' class='button'>");
 	rawoutput("<input type='hidden' name='quickinsert' value='1' class='button'>");
 	}
-rawoutput("</form>");
+tw_form_close();
 $fastinsert=$result; //use the full result for insert purposes if the user wishes for, related to button -quick insert-
 $sql.=" LIMIT $start,$page;";
 //debug("Start: $start and $page and $numberofallrows");
@@ -222,7 +222,7 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
 			rawoutput("</table>");
 		
 	    } else if (db_num_rows($result)>0) {
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=known&mode=radioinsert$redirect' method='post'>");
+                tw_form_open("known&mode=radioinsert$redirect");
 		addnav("", "runmodule.php?module=translationwizard&op=known&mode=radioinsert$redirect");
 		rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
 		rawoutput("<tr class='trhead'><td>". translate_inline("Language") ."</td><td>". translate_inline("Original") ."</td><td>".translate_inline("Module / Translation")."</td><td>".translate_inline("Author")."</td><td>".translate_inline("Actions")."</td><td></td></tr>");			
@@ -265,10 +265,10 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
 				//if ($i>$page) break;  //would need previous/next page and one more if which needs too much time. better to get all now
 			}
 			}
-			rawoutput("</table>");
-			rawoutput("<input type='submit' value='". translate_inline("Insert checked translations") ."' class='button'>");
-			rawoutput("</form>");			
-		}
+                        rawoutput("</table>");
+                        rawoutput("<input type='submit' value='". translate_inline("Insert checked translations") ."' class='button'>");
+                        tw_form_close();
+                }
 	
 }
 ?>
