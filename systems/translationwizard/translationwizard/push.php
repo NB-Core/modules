@@ -16,7 +16,7 @@ case "push":
 	output_notl("`n`n");
 	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
         $res=db_query($sql);
-        output("Choose the namespace to push:");
+        output("Select the namespace to push:");
         tw_form_open("push&mode=push");
 	addnav("", "runmodule.php?module=translationwizard&op=push&mode=push");
 	rawoutput("<input type='hidden' name='op' value='push'>");
