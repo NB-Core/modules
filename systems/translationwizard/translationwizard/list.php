@@ -101,8 +101,11 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
 	addnav("", "runmodule.php?module=translationwizard&op=pull&mode=pull&ns=". rawurlencode($namespace));
 	//rawoutput("<input type='submit' class='button' name='dummy' value='". translate_inline("Show") ."'>"); //no longer necessary
 	output_notl("`n");
-	rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-	rawoutput("<tr class='trhead'><td>". translate_inline("Ops") ."</td><td>". translate_inline("Text") ."</td><td>".translate_inline("Actions")."</td></tr>");
+        tw_table_open([
+            translate_inline("Ops"),
+            translate_inline("Text"),
+            translate_inline("Actions"),
+        ]);
 	$sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' AND namespace='".$namespace."'";
 	$result = db_query($sql);
 	if (db_num_rows($result)>0){
@@ -110,28 +113,27 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
 		while ($row = db_fetch_assoc($result))
 		{
 			$i++;
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-			rawoutput("<input type='checkbox' name='transtext[]' value='".rawurlencode($row['intext'])."' >");
-			addnav("", "runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']));
-			rawoutput("</td><td>");
-			rawoutput(htmlentities($row['intext'],ENT_COMPAT,$coding));
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Edit") ."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Delete") ."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
-			rawoutput("</td></tr>");
-		}
-	}else
-		{
-			rawoutput("<tr><td colspan='2'>". translate_inline("No rows found") ."</td></tr>");
-			if ($namespace<>"")
-				{
-				$namespace="";
-				redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //safety if the rows are empty but the namespace showed up
-				}
-		}
-	rawoutput("</table>");
+                        $checkbox = "<input type='checkbox' name='transtext[]' value='".rawurlencode($row['intext'])."' >";
+                        $actions = "<a href='runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Edit") ."</a>";
+                        addnav("", "runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
+                        $actions .= " <a href='runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Delete") ."</a>";
+                        addnav("", "runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
+                        tw_table_row([
+                            $checkbox,
+                            htmlentities($row['intext'],ENT_COMPAT,$coding),
+                            $actions,
+                        ], $i%2==1);
+                }
+        }else
+                {
+                        tw_table_row([rawoutput("<td colspan='3'>".translate_inline("No rows found")."</td>")], true);
+                        if ($namespace<>"")
+                                {
+                                $namespace="";
+                                redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //safety if the rows are empty but the namespace showed up
+                                }
+                }
+        tw_table_close();
 	//some check/uncheck all
 	$all=translate_inline("Check all");
 	$none=translate_inline("Uncheck all");
