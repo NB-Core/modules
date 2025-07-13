@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 foreach($transintext as $key=>$trans) {
 	if ($transintext[$key]<>"")
 		{

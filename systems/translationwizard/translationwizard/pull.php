@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 require_once("lib/pullurl.php");
 $masterpath=get_module_setting('lookuppath')."/";
 //$masterpath="http://pull.strahd.de/homes/root/";

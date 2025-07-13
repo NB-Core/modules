@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 if ($from=="") $from="module=translationwizard&op=list";
 rawoutput("<form action='runmodule.php?".$from."&mode=save&from=".rawurlencode($from)."' method='post'>");
 addnav("", "runmodule.php?".$from."&mode=save&from=".rawurlencode($from));

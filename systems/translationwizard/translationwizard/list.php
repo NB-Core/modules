@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 //some kind of header
 if (httppost("deletechecked")) {
 	require("./modules/translationwizard/deletechecked.php"); //if you want to delete the checked translations, this commences the deletion process

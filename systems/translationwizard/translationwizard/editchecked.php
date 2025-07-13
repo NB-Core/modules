@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 rawoutput("<br>");
 output("`n`bBeware of the autologoff-timeout!`b`n`n");

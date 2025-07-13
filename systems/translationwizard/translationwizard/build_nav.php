@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 	addnav(array("`bSwitch to %s view`b",translate_inline($viewsimple?"simple":"advanced")),"runmodule.php?module=translationwizard&op=switchview&from=".rawurlencode("module=translationwizard&op=$op&mode=$mode"));
 	addnav("Operations");

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 switch (httpget('error'))
 	{		
 	case 1:

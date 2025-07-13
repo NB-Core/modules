@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 if (httppost('save'))
 	{
@@ -11,7 +12,7 @@ if (httppost('save'))
 	{
 	$settings= array(
 		"Scheme Settings for the Wizard,title",
-		"language"=>"What schema do you want to translate for?,enum,".getsetting("serverlanguages","en,English,de,Deutsch,fr,FranÁais,dk,Danish,es,EspaÒol,it,Italian"),
+		"language"=>"What schema do you want to translate for?,enum,".getsetting("serverlanguages","en,English,de,Deutsch,fr,Fran√ßais,dk,Danish,es,Espa√±ol,it,Italian"),
 		"Server supported languages only (view your game settings or before 1.1.1 prefs.php or configuration.php),note"
 	);
 	$lang=get_module_pref("language");

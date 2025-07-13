@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 	// made by the incomparable genius Edorian, master of the realms and destroyer of souls
 	if(!is_file($filepath))

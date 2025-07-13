@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /* This is mostly a copy of the source.php*/
 
 function wizard_showvalidfiles($dosubmit=true,$onlymodules=0,$showselectbox=true,$mainmodulecheck=false) {
