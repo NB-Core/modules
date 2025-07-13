@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Okay, someone wants to use this outside of normal game flow.. no real harm
 if(!defined('OVERRIDE_FORCED_NAV')) define("OVERRIDE_FORCED_NAV",true);
 require_once __DIR__ . '/translationwizard/TranslationWizard.php';
-require_once __DIR__ . '/translationwizard/form_helpers.php';
+require_once __DIR__ . '/translationwizard/lib/form_helpers.php';
 require_once __DIR__ . '/translationwizard/WizardService.php';
 
 /**
@@ -146,7 +146,7 @@ function translationwizard_run(): void{
 	}
 	//end of the header
         if ($op=="")  $op="default";
-        if($op!='scanmodules') require("./modules/translationwizard/errorhandler.php");
+       if($op!='scanmodules') require(__DIR__ . '/translationwizard/lib/errorhandler.php');
         if ($op == 'randomsave') {
                 $intext = httppost('intext');
                 $outtext = httppost('outtext');
@@ -213,7 +213,7 @@ function translationwizard_run(): void{
         } elseif ($op == 'insert_central') {
                 WizardService::insertCentral($mode, $namespace, $languageschema);
         } else {
-                $file = __DIR__ . "/translationwizard/{$op}.php";
+               $file = __DIR__ . "/translationwizard/pages/{$op}.php";
                 if (file_exists($file)) {
                         require($file);
                 } else {
@@ -222,7 +222,7 @@ function translationwizard_run(): void{
         }
 	require_once("lib/superusernav.php");
 	superusernav();
-	require("./modules/translationwizard/build_nav.php");
+       require(__DIR__ . '/translationwizard/build_nav.php');
 	page_footer();
 }
 
