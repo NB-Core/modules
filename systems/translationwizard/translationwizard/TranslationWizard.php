@@ -3,20 +3,20 @@ declare(strict_types=1);
 
 class TranslationWizard {
     /**
-     * Parse a PHP file and return all translatable strings.
+     * Parse a PHP file and return all translatable strings found within.
      *
-     * @param string $filepath          Path to the file being scanned
-     * @param bool   $debug             Output debug information when true
-     * @param string|false $standard_tlschema Default tlschema if not auto-detected
+     * @param string      $filepath          Path to the file being scanned
+     * @param bool        $debug             Output debug information when true
+     * @param string|null $standard_tlschema Default tlschema if not auto-detected
      *
      * @return array Array of ['text' => string, 'schema' => string] entries
      */
-    public static function scanFile(string $filepath, bool $debug=false, $standard_tlschema=false) {
+    public static function scanFile(string $filepath, bool $debug = false, ?string $standard_tlschema = null): array {
         if(!is_file($filepath)) {
             throw new RuntimeException("Fatal Error: Could not find file at path: " . $filepath);
         }
         $str = join("", file($filepath));
-        if($standard_tlschema === false) {
+        if ($standard_tlschema === null) {
             $posi = strrpos($filepath, "/");
             $name = substr($filepath, $posi+1, strlen($filepath)-$posi-5);
             if(!$posi) {
@@ -302,7 +302,7 @@ class TranslationWizard {
      *
      * @return void
      */
-    public static function insertFile($delrows, $languageschema, $serialized=false) {
+    public static function insertFile(array|string $delrows, string $languageschema, bool $serialized = false): void {
         if(is_array($delrows)) {
             $insertrows = $delrows;
         } else {
@@ -375,7 +375,7 @@ class TranslationWizard {
      *
      * @return array Array of valid file paths
      */
-    public static function showValidFiles($dosubmit=true, $onlymodules=0, $showselectbox=true, $mainmodulecheck=false) {
+    public static function showValidFiles(bool $dosubmit = true, int $onlymodules = 0, bool $showselectbox = true, bool $mainmodulecheck = false): array {
         global $coding;
         require_once("lib/errorhandling.php");
         $url="";

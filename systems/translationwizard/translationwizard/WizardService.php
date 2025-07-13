@@ -9,7 +9,7 @@ class WizardService {
      *
      * @return array The provided value as an array
      */
-    public static function ensureArray($value): array {
+    public static function ensureArray(mixed $value): array {
         if (is_array($value)) {
             return $value;
         }
