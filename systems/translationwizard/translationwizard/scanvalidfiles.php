@@ -141,6 +141,7 @@ function wizard_tree(string $base): array {
 			array_push($back, $ndir . "/");
 		}
 	}
+	$d->close();
 	return $back;
 }
 ?>
