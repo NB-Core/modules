@@ -75,8 +75,8 @@ switch ($mode)
 		$rownumber=db_num_rows($result);
 		if ($rownumber==0) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=2'); //back to the roots if nothing was found
                 output("Select translations to delete:");
-                rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandedit&mode=delete' name='editfeld' method='post' >");
-		addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=delete");
+                tw_form_open('searchandedit&mode=delete');
+                addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=delete");
 		output("%s rows have been found (Displaylimit was %s).",$numberofallrows,$numberof);
 		output_notl("`n");
 		output("Now viewing rows %s to %s",$start,$start+(min($numberof,$numberofallrows-$start)));
@@ -91,37 +91,41 @@ switch ($mode)
 			addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=select&pageop=".($numberof+$start)."");
 		}
 		rawoutput("</h4>");
-		rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-		rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Tid") ."</td><td>". translate_inline("Language")."</td><td>".translate_inline("Namespace")."</td><td>".translate_inline("Intext")."</td><td>".translate_inline("Outtext")."</td><td>".translate_inline("Author")."</td><td>".translate_inline("Version")."</td><td>".translate_inline("Actions")."</td><td></td></tr>");	
-		$i=0;
-		while($row=db_fetch_assoc($result))
-		{
-			$i++;
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-			rawoutput("<input type='checkbox' name='deletetext[]' value='".$row['tid']."' >");
-			rawoutput("</td><td>");
-			rawoutput($row['tid']);
-			rawoutput("</td><td>");
-			rawoutput($row['language']);
-			rawoutput("</td><td>");
-			rawoutput($row['uri']);		
-			rawoutput("</td><td>");
-			rawoutput(htmlentities(stripslashes($row['intext']),ENT_COMPAT,$coding));
-			rawoutput("</td><td>");
-			rawoutput(htmlentities(stripslashes($row['outtext']),ENT_COMPAT,$coding));
-			rawoutput("</td><td>");
-			rawoutput(sanitize($row['author']));
-			rawoutput("</td><td>");
-			rawoutput($row['version']);
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=searchandedit&mode=edit&tid=".$row['tid']."'>". translate_inline("Edit")."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=edit&tid=".$row['tid']);	
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=searchandedit&mode=delete&tid=".$row['tid']."'>". translate_inline("Delete")."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=delete&tid=".$row['tid']);
-			rawoutput("</td></tr>");
-		}
-		rawoutput("</table>");
+                tw_table_open([
+                    '',
+                    translate_inline('Tid'),
+                    translate_inline('Language'),
+                    translate_inline('Namespace'),
+                    translate_inline('Intext'),
+                    translate_inline('Outtext'),
+                    translate_inline('Author'),
+                    translate_inline('Version'),
+                    translate_inline('Actions'),
+                    ''
+                ]);
+                $i=0;
+                while($row=db_fetch_assoc($result))
+                {
+                        $i++;
+                        $checkbox = "<input type='checkbox' name='deletetext[]' value='{$row['tid']}' >";
+                        $edit = "<a href='runmodule.php?module=translationwizard&op=searchandedit&mode=edit&tid={$row['tid']}'>" . translate_inline('Edit') . "</a>";
+                        addnav('', "runmodule.php?module=translationwizard&op=searchandedit&mode=edit&tid={$row['tid']}");
+                        $del = "<a href='runmodule.php?module=translationwizard&op=searchandedit&mode=delete&tid={$row['tid']}'>" . translate_inline('Delete') . "</a>";
+                        addnav('', "runmodule.php?module=translationwizard&op=searchandedit&mode=delete&tid={$row['tid']}");
+                        tw_table_row([
+                            $checkbox,
+                            $row['tid'],
+                            $row['language'],
+                            $row['uri'],
+                            htmlentities(stripslashes($row['intext']), ENT_COMPAT, $coding),
+                            htmlentities(stripslashes($row['outtext']), ENT_COMPAT, $coding),
+                            sanitize($row['author']),
+                            $row['version'],
+                            $edit,
+                            $del
+                        ], $i%2==1);
+                }
+                tw_table_close();
 		//some check/uncheck all
 		$all=translate_inline("Check all");
 		$none=translate_inline("Uncheck all");
@@ -299,7 +303,7 @@ switch ($mode)
 				output("Version of the row:");
 				rawoutput("<input id='input' name='version' width=50 maxlength=50 value='".$query['version']."'>");
 				output_notl("`n`n");
-				rawoutput("<input type='submit' name='select' value='". translate_inline("Search")."' class='button'>");
-				rawoutput("</form>");
+                                rawoutput("<input type='submit' name='select' value='". translate_inline("Search")."' class='button'>");
+                                tw_form_close();
 }
 ?>

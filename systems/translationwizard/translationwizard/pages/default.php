@@ -17,15 +17,20 @@ if ($count['count'] > 0) {
                     'namespace' => $row['namespace'],
                 ]);
 		output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
-		rawoutput("<table width='80%'>");
-		rawoutput("<tr><td width='30%'>");
-		output("Target Language: %s", $row['language']);
-		rawoutput("</td><td></td></tr>");
-		rawoutput("<tr><td width='30%'>");
-		output("Namespace: %s", $row['namespace']);
-		rawoutput("</td><td></td></tr>");
-                rawoutput("<tr><td width='30%'><textarea cols='35' rows='4' name='intext' readonly title=\"".translate_inline('Original text')."\">".$row['intext']."</textarea></td>");
-                rawoutput("<td width='30%'><textarea cols='25' rows='4' name='outtext' title=\"".translate_inline('Enter your translation')."\"></textarea></td></tr></table>");
+                tw_table_open();
+                tw_table_row([
+                    sprintf("%s", sprintf(translate_inline('Target Language: %s'), $row['language'])),
+                    ''
+                ], true);
+                tw_table_row([
+                    sprintf("%s", sprintf(translate_inline('Namespace: %s'), $row['namespace'])),
+                    ''
+                ], false);
+                tw_table_row([
+                    "<textarea cols='35' rows='4' name='intext' readonly title=\"" . translate_inline('Original text') . "\">" . $row['intext'] . "</textarea>",
+                    "<textarea cols='25' rows='4' name='outtext' title=\"" . translate_inline('Enter your translation') . "\"></textarea>"
+                ], true);
+                tw_table_close();
                 tw_form_close($submit);
                 tw_form_open('');
                 tw_form_close($skip);

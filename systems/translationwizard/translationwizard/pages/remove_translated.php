@@ -28,20 +28,21 @@ switch ($mode)
 			rawoutput("<input type='submit' value='". translate_inline("Execute") ."' class='button'>");
 			$i = 0;
 			output("`n`nFollowing rows are already translated:");
-			rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-			rawoutput("<tr class='trhead'><td>". translate_inline("Language") ."</td><td>". translate_inline("Text") ."</td><td>".translate_inline("Module")."</td></tr>");						
-			while ($row = db_fetch_assoc($result))
-			{
-				$i++;
-				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-				rawoutput(htmlentities($row['language'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['intext'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['namespace'],ENT_COMPAT,$coding));
-				rawoutput("</td></tr>");
-			}
-					rawoutput("</table>");
+                        tw_table_open([
+                            translate_inline("Language"),
+                            translate_inline("Text"),
+                            translate_inline("Module")
+                        ]);
+                        while ($row = db_fetch_assoc($result))
+                        {
+                                $i++;
+                                tw_table_row([
+                                    htmlentities($row['language'], ENT_COMPAT, $coding),
+                                    htmlentities($row['intext'], ENT_COMPAT, $coding),
+                                    htmlentities($row['namespace'], ENT_COMPAT, $coding)
+                                ], $i%2==1);
+                        }
+                        tw_table_close();
 			}
 			else
 			{
