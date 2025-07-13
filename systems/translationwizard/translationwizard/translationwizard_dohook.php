@@ -17,13 +17,12 @@ case "header-modules":
 		if (httpget('op')=="install") {
 			$languageschema=get_module_pref("language","translationwizard");
 			if (!$languageschema) break;
-			require_once("./modules/translationwizard/scanmodules_func.php");
-			$content=wizard_scanfile("modules/".httpget('module').".php"); 
-			wizard_insertfile($content,$languageschema);
+			$content=TranslationWizard::scanFile("modules/".httpget('module').".php"); 
+			TranslationWizard::insertFile($content,$languageschema);
 		} elseif (httpget('op')=="mass" && httppost("install")) {
 			$languageschema=get_module_pref("language","translationwizard");
 			if (!$languageschema) break;
-			require_once("./modules/translationwizard/scanmodules_func.php");
+			
 			$module = httppost("module");
 			if (is_array($module)){
 				$modules = $module;
@@ -33,8 +32,8 @@ case "header-modules":
 			}
 			reset($modules);
 			foreach($modules as $module) {
-				$content=wizard_scanfile("modules/$module.php");
-				wizard_insertfile($content,$languageschema);
+				$content=TranslationWizard::scanFile("modules/$module.php");
+				TranslationWizard::insertFile($content,$languageschema);
 			}
 		}
 	}

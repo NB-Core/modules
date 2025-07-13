@@ -54,8 +54,7 @@ switch($mode)
 case "insert":
 	$transintext = httppost("inserttext");
 	if (!httppost('insertandeditchecked')) {
-		require_once("./modules/translationwizard/scanmodules_func.php");
-		wizard_insertfile($transintext,$languageschema,true);
+		TranslationWizard::insertFile($transintext,$languageschema,true);
 		redirect('runmodule.php?module=translationwizard&op=scanmodules&error=1'); //back to the roots, no error but success
 	} else { //if edit button was pushed
 		rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=saveedited' method='post'>");
@@ -72,19 +71,17 @@ case "saveedited":
 	break;
 	
 case "scan":
-require_once("./modules/translationwizard/scanvalidfiles.php");
-require_once("./modules/translationwizard/scanmodules_func.php");
 if (!httpget('how')=='multi') {
 	rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan' name='listenauswahl' method='post'>");
 	addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan");
-	$one=wizard_showvalidfiles();
+	$one=TranslationWizard::showValidFiles();
 	output("`nChoose alternate scheme (valid for main file+libs, i.e. 'module-translationwizard'):`n");
 	rawoutput("<input id='input' name='alternate' width=55>");
 	rawoutput("</form>");
 	$lookfor=httppost('lookfor');
 	$alternate=httppost('alternate');
-	if ($alternate) $ausgabe=wizard_scanfile($lookfor,false,$alternate);
-		else  $ausgabe=wizard_scanfile($lookfor,false);
+	if ($alternate) $ausgabe=TranslationWizard::scanFile($lookfor,false,$alternate);
+		else  $ausgabe=TranslationWizard::scanFile($lookfor,false);
 	
 } else {
 	$lookfor=httppost('lookfor');
@@ -97,10 +94,10 @@ if (!httpget('how')=='multi') {
 		$alternate=$name; //secure, if no standard given, take the name of the main file
 	};
 	//$transintext = lib files etc
-	$ausgabe=wizard_scanfile($lookfor,false,$alternate); //main file
+	$ausgabe=TranslationWizard::scanFile($lookfor,false,$alternate); //main file
 	//now merge the libs with the alternate scheme to the main
 	foreach($transintext as $val) {
-		$ausgabe=array_merge($ausgabe,wizard_scanfile($val,false,$alternate));
+		$ausgabe=array_merge($ausgabe,TranslationWizard::scanFile($val,false,$alternate));
 	}
 }
 rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=insert' name='editfeld' method='post' >");
@@ -211,11 +208,9 @@ output(" You may then decide to edit and insert them.");
 output_notl("`n");
 output("Do `bnot`b scan any library files modules are including. This will result in double and useless entries!");
 output_notl("`n`n");
-
-require_once("./modules/translationwizard/scanvalidfiles.php");
 rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan' name='listenauswahl' method='post'>");
 addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan");
-$one=wizard_showvalidfiles();
+$one=TranslationWizard::showValidFiles();
 output("`nChoose alternate scheme (valid for main file+libs, i.e. 'module-translationwizard'):`n");
 rawoutput("<input id='input' name='alternate' width=55>");
 rawoutput("</form>");
@@ -230,13 +225,13 @@ output_notl("`n`n");
 
 rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=scan&how=multi' name='secondscan' method='post'>");
 addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=scan&how=multi");
-$two=wizard_showvalidfiles(false,1,true,true);
+$two=TranslationWizard::showValidFiles(false,1,true,true);
 output("`nChoose alternate scheme (valid for main file+libs, i.e. 'module-translationwizard'):`n");
 rawoutput("<input id='input' name='alternate' width=55>");
 output_notl("`n`n");
 rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
 rawoutput("<tr class='trhead'><td></td><td>".translate_inline("File")."</td></tr>");	
-$two=wizard_showvalidfiles(false,2,false);
+$two=TranslationWizard::showValidFiles(false,2,false);
 foreach($two as $key=>$val) {
 	rawoutput("<tr class='".($key%2?"trlight":"trdark")."'><td>");
 	rawoutput("<input type='checkbox' name='transtext[]' value='$val' >");

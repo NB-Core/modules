@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 // Okay, someone wants to use this outside of normal game flow.. no real harm
 if(!defined('OVERRIDE_FORCED_NAV')) define("OVERRIDE_FORCED_NAV",true);
+require_once("modules/translationwizard/TranslationWizard.php");
 
 function translationwizard_getmoduleinfo(){
 	//Slightly modified by JT Traub in the original untranslated.php
