@@ -124,7 +124,12 @@ $sql="SELECT tid,outtext FROM ".db_prefix("translations")." WHERE ";
 $wasthereanuntranslated=0;
 //end
 foreach($ausgabe as $key=>$row) {
-		$result=db_query($sql."intext='".addslashes($row['text'])."' AND language='".$languageschema."' AND uri='".$row['schema']."';");
+                $result=db_query(
+                        $sql
+                        . "intext='" . addslashes($row['text']) . "'"
+                        . " AND language='" . addslashes($languageschema) . "'"
+                        . " AND uri='" . addslashes($row['schema']) . "';"
+                );
 		if (db_num_rows($result)==0) {
 			$alreadytranslated=translate_inline("No");
 			$trans=0;
