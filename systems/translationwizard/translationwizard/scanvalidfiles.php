@@ -123,6 +123,7 @@ function wizard_tree($base) {
 			array_push($back, $ndir . "/");
 		}
 	}
+	$d->close();
 	return $back;
 }
 ?>
