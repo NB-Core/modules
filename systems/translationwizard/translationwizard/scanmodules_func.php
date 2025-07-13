@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
-function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
+/**
+ * Parse a PHP file and return all translatable strings.
+ *
+ * @param string      $filepath          Absolute file path to scan
+ * @param bool        $debug             Output debug information
+ * @param string|null $standard_tlschema Default translation schema or null to detect
+ *
+ * @return array List of detected texts with schemas
+ */
+function wizard_scanfile(string $filepath, bool $debug=false, ?string $standard_tlschema=null): array {
 	// made by the incomparable genius Edorian, master of the realms and destroyer of souls
 	if(!is_file($filepath))
 	{
@@ -417,7 +426,16 @@ function wizard_scanfile($filepath,$debug=false,$standard_tlschema=false) {
 
 }
 
-function wizard_insertfile($delrows,$languageschema,$serialized=false) {
+/**
+ * Insert untranslated strings into the database.
+ *
+ * @param mixed  $delrows        Array or single row of strings to insert
+ * @param string $languageschema Target language schema
+ * @param bool   $serialized     Whether the rows are serialized
+ *
+ * @return void
+ */
+function wizard_insertfile($delrows, string $languageschema, bool $serialized=false): void {
 	if (is_array($delrows))  //setting for any intexts you might receive
 	{
 		$insertrows = $delrows;
@@ -439,7 +457,16 @@ function wizard_insertfile($delrows,$languageschema,$serialized=false) {
 	}
 }
 
-function wizard_skipcommentary($str,&$i,&$line)
+/**
+ * Skip comments in the parsed string while scanning a file.
+ *
+ * @param string $str  Entire file content
+ * @param int    &$i   Current character index (modified by reference)
+ * @param int    &$line Current line number (modified by reference)
+ *
+ * @return void
+ */
+function wizard_skipcommentary(string $str,int &$i,int &$line): void
 {
 	while($str[$i] == "/" && $str[$i] != "")
 	{
@@ -469,7 +496,16 @@ function wizard_skipcommentary($str,&$i,&$line)
 	}
 }
 
-function already_in_array($array,$text,$schema)
+/**
+ * Check whether a translation entry already exists in an array.
+ *
+ * @param array  $array  Current list of translations
+ * @param string $text   Text being checked
+ * @param string $schema Translation schema of the text
+ *
+ * @return bool True if the entry exists
+ */
+function already_in_array(array $array,string $text,string $schema): bool
 {
 	foreach ($array as $entry) 
 	{
