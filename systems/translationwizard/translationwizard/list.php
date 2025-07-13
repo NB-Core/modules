@@ -41,13 +41,15 @@ if (httppost("multichecked")) {
         redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
 }
 if (httppost("copychecked")) {
-        WizardService::copyCheckedTranslations(
+        $success = WizardService::copyCheckedTranslations(
                 $languageschema,
                 $namespace,
                 WizardService::ensureArray($transintext),
                 $session['user']['login'],
                 $logd_version
         );
+        $error = $success ? 5 : 4; // 5 for success, 4 for failure
+        redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
 }
 	//debug("Name of the module:".$namespace);
 switch ($mode)
