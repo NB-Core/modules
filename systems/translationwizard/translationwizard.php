@@ -196,6 +196,7 @@ function translationwizard_run(): void{
                 $error = $success ? 5 : 4;
                 redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
         } elseif ($op == 'copychecked') {
+                $namespace = httppost('namespace');
                 $success = WizardService::copyCheckedTranslations(
                         $languageschema,
                         $namespace,
