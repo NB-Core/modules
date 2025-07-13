@@ -27,11 +27,27 @@ if (httppost("editchecked")) {
 	page_footer();  //let's stop here
 }
 if (httppost("multichecked")) {
-	$redirectonline=1;
-	require("./modules/translationwizard/multichecked.php");//if you want to copy the checked translations with intext and the entered outtext, this commences the copy process
+        $success = WizardService::saveBatchTranslations(
+                $languageschema,
+                $namespace,
+                WizardService::ensureArray($transintext),
+                WizardService::ensureArray($transouttext),
+                WizardService::ensureArray(httppost('nametext')),
+                WizardService::ensureArray(httppost('translatedtid')),
+                $session['user']['login'],
+                $logd_version
+        );
+        $error = $success ? 5 : 4;
+        redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
 }
 if (httppost("copychecked")) {
-	require("./modules/translationwizard/copychecked.php");//if you want to copy the checked translations with intext=outtext, this commences the copy process
+        WizardService::copyCheckedTranslations(
+                $languageschema,
+                $namespace,
+                WizardService::ensureArray($transintext),
+                $session['user']['login'],
+                $logd_version
+        );
 }
 	//debug("Name of the module:".$namespace);
 switch ($mode)

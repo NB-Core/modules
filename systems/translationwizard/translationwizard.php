@@ -146,8 +146,27 @@ function translationwizard_run(): void{
 	}
 	//end of the header
 	if ($op=="")  $op="default";
-	if($op!='scanmodules') require("./modules/translationwizard/errorhandler.php");	
-	require("./modules/translationwizard/$op.php");
+        if($op!='scanmodules') require("./modules/translationwizard/errorhandler.php");
+        if ($op == 'randomsave') {
+                $intext = httppost('intext');
+                $outtext = httppost('outtext');
+                $namespace = httppost('namespace');
+                $language = httppost('language');
+                if ($outtext !== '') {
+                        $success = WizardService::saveTranslation(
+                                $language,
+                                $namespace,
+                                $intext,
+                                $outtext,
+                                $session['user']['login'],
+                                $logd_version
+                        );
+                        $error = $success ? 5 : 4;
+                }
+                redirect("runmodule.php?module=translationwizard&error=".$error);
+        } else {
+                require("./modules/translationwizard/$op.php");
+        }
 	require_once("lib/superusernav.php");
 	superusernav();
 	require("./modules/translationwizard/build_nav.php");
