@@ -138,7 +138,7 @@ default:
                 addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri']));
                 tw_table_row([
                     $checkbox,
-                    $row['uri'],
+                    htmlspecialchars($row['uri'], ENT_QUOTES, 'UTF-8'),
                     $row['c'],
                     $actions,
                 ], $i%2==1);
