@@ -28,4 +28,40 @@ function tw_form_close(?string $label = null): void
     rawoutput('</form>');
 }
 
+/**
+ * Open a table and optionally output a header row.
+ */
+function tw_table_open(array $headers = []): void
+{
+    rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
+    if ([] !== $headers) {
+        rawoutput("<tr class='trhead'>");
+        foreach ($headers as $header) {
+            $header = htmlspecialchars((string)$header, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
+            rawoutput("<td>{$header}</td>");
+        }
+        rawoutput('</tr>');
+    }
+}
+
+/**
+ * Output a table row with alternating row classes.
+ */
+function tw_table_row(array $cells, bool $odd): void
+{
+    rawoutput("<tr class='" . ($odd ? 'trlight' : 'trdark') . "'>");
+    foreach ($cells as $cell) {
+        rawoutput("<td>{$cell}</td>");
+    }
+    rawoutput('</tr>');
+}
+
+/**
+ * Close a table.
+ */
+function tw_table_close(): void
+{
+    rawoutput('</table>');
+}
+
 

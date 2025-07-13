@@ -124,23 +124,26 @@ default:
 	output_notl("`n`n");
 	output("Select the namespace from your translations you want to push.");
 	output_notl("`n");
-	rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-	rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Namespace") ."</td><td>".translate_inline("# of rows")."</td><td>".translate_inline("Actions")."</td></tr>");
-	$i=0;
-	while ($row = db_fetch_assoc($result))
-		{
-		rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-		rawoutput("<input type='checkbox' name='pusharray[]' value='".rawurlencode($row['uri'])."' >");
-		rawoutput("</td><td>");
-		rawoutput($row['uri']);
-		rawoutput("</td><td>");
-		rawoutput($row['c']);
-		rawoutput("</td><td>");
-		rawoutput("<a href='runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri'])."'>". translate_inline("Push")."</a>");
-		addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri']));
-		rawoutput("</td></tr>");
-		}
-	rawoutput("</table>");
+        tw_table_open([
+            '',
+            translate_inline("Namespace"),
+            translate_inline("# of rows"),
+            translate_inline("Actions"),
+        ]);
+        $i=0;
+        while ($row = db_fetch_assoc($result))
+                {
+                $checkbox = "<input type='checkbox' name='pusharray[]' value='".rawurlencode($row['uri'])."' >";
+                $actions = "<a href='runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri'])."'>". translate_inline("Push") ."</a>";
+                addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri']));
+                tw_table_row([
+                    $checkbox,
+                    $row['uri'],
+                    $row['c'],
+                    $actions,
+                ], $i%2==1);
+                }
+        tw_table_close();
 	rawoutput("</form>");
 }
 ?>
