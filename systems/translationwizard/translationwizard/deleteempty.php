@@ -1,4 +1,5 @@
-<?php	
+<?php
+declare(strict_types=1);	
 if (httppost("listing")) $mode="listing";
 if (httppost("deleteall")) $mode="delete";
 switch ($mode)

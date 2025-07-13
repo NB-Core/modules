@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 $datum = getdate(time());
 $currentdate=$datum['mon']."-".$datum['mday']."-".$datum['year'];
 $currenttime=$datum['hours'].":".$datum['minutes'].":".$datum['seconds'];

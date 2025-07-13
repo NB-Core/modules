@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 $sql = "SELECT count(*) AS count FROM " . db_prefix("untranslated");
 $count = db_fetch_assoc(db_query($sql));
 if ($count['count'] > 0) {

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 switch ($mode) 
 {
 	case "fix": //remove already translated from the untranslated table (in an extra point because the query takes a few seconds)

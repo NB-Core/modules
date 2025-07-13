@@ -1,4 +1,5 @@
-<?php	
+<?php
+declare(strict_types=1);	
 $intext = httppost('intext');
 $outtext = httppost('outtext');
 $namespace = httppost('namespace');

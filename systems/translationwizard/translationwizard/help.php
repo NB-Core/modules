@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 output("`b`^This is a general help how to use this Wizard.`0`b");
 output_notl("`n`n");
 

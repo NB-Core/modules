@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 output("Overview:");
 output_notl("`n`n");
 $sql= "SELECT count(*) AS counter, uri,language FROM ".db_prefix("translations")." GROUP BY language,uri";
