@@ -288,7 +288,7 @@ class TranslationWizard {
         if(is_array($delrows)) {
             $insertrows = $delrows;
         } else {
-            if($delrows) $insertrows = array($insertrows);
+            if($delrows) $insertrows = array($delrows);
             else $insertrows = array();
         }
         foreach($insertrows as $key=>$val) {
