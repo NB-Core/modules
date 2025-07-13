@@ -10,7 +10,11 @@ if ($count['count'] > 0) {
 		$row['intext'] = stripslashes($row['intext']);
 		$submit = translate_inline("Save Translation");
 		$skip = translate_inline("Skip Translation");
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=randomsave' method='post'>");
+                tw_form_open('randomsave', [
+                    'id'        => $row['id'],
+                    'language'  => $row['language'],
+                    'namespace' => $row['namespace'],
+                ]);
 		output("`^`cThere are `&%s`^ untranslated texts in the database.`c`n`n", $count['count']);
 		rawoutput("<table width='80%'>");
 		rawoutput("<tr><td width='30%'>");
@@ -21,14 +25,9 @@ if ($count['count'] > 0) {
 		rawoutput("</td><td></td></tr>");
 		rawoutput("<tr><td width='30%'><textarea cols='35' rows='4' name='intext' readonly>".$row['intext']."</textarea></td>");
 		rawoutput("<td width='30%'><textarea cols='25' rows='4' name='outtext'></textarea></td></tr></table>");
-		rawoutput("<input type='hidden' name='id' value='{$row['id']}'>");
-		rawoutput("<input type='hidden' name='language' value='{$row['language']}'>");
-		rawoutput("<input type='hidden' name='namespace' value='{$row['namespace']}'>");
-		rawoutput("<input type='submit' value='$submit' class='button'>");
-		rawoutput("</form>");
-		rawoutput("<form action='runmodule.php?module=translationwizard' method='post'>");
-		rawoutput("<input type='submit' value='$skip' class='button'>");
-		rawoutput("</form>");
+                tw_form_close($submit);
+                tw_form_open('');
+                tw_form_close($skip);
 		addnav("", "runmodule.php?module=translationwizard&op=randomsave");
 		addnav("", "runmodule.php?module=translationwizard");
 	} else {

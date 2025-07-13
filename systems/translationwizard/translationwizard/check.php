@@ -80,9 +80,8 @@ switch ($mode)
 	case "deleteall":
 		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=check&mode=delete' method='post'>");
-		addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
-		rawoutput("<input type='hidden' name='op' value='check'>");
+                tw_form_open('check&mode=delete', ['op' => 'check']);
+                addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
 		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
 		output("`0This operation will delete one occurrence of each row. `n`n`b`$ CAUTION!`b`0`n`nDue to technical reasons, this operation can't let you select every single line.");
 		output("The query would cost a lot of time and MySql might time out or the query block your game for more than just seconds.");
@@ -93,7 +92,7 @@ switch ($mode)
 		rawoutput("<option label='min' selected>Delete first</option>");
 		rawoutput("<option label='max'>Delete last</option>");
 		rawoutput("</select>");
-		rawoutput("<br><br><br><br>  <input type='submit' value='". translate_inline("Execute") ."' class='button'></form>");
+                tw_form_close(translate_inline('Execute'));
 		output("`b`i`$ Attention, no additional confirmation`i`b`0");
 
 	break;
@@ -101,19 +100,20 @@ switch ($mode)
 	default:  //if the user hits the button just to check for duplicates
 		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=check&mode=delete' method='post'>");
-		addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
-		rawoutput("<input type='hidden' name='op' value='check'>");
+                tw_form_open('check&mode=delete', ['op' => 'check']);
+                addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
 		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
 		if (db_num_rows($result)==0) //table is fine, no redundant rows
 			{
 			output("Congratulations! Your translation table does not have any redundant entries!");
-			rawoutput("</form");
+                        tw_form_close();
 			break;
 			}
 		output("What do you want to do?`n`n`n`n");
-		rawoutput("<input type='submit' name='deleteall' value='". translate_inline("Delete multiple automatically") ."' class='button'>");
-		rawoutput("<input type='submit' name='listing' value='". translate_inline("Delete manually") ."' class='button'></form>");
+                rawoutput("<input type='submit' name='deleteall' value='". translate_inline("Delete multiple automatically") ."' class='button'>");
+                rawoutput("<input type='submit' name='listing' value='". translate_inline("Delete manually") ."' class='button'>");
+                tw_form_close();
 	break;
 		}
 ?>
+
