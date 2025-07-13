@@ -129,7 +129,6 @@ function translationwizard_dohook(string $hookname, array $args): array{
                                 if (!$languageschema) break;
 
                                 $modules = array_filter((array)httppost("module"));
-                                reset($modules);
                                 foreach($modules as $module) {
                                         $content=TranslationWizard::scanFile("modules/$module.php");
                                         TranslationWizard::insertFile($content,$languageschema);
