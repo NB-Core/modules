@@ -57,7 +57,7 @@ case "insert":
 		TranslationWizard::insertFile($transintext,$languageschema,true);
 		redirect('runmodule.php?module=translationwizard&op=scanmodules&error=1'); //back to the roots, no error but success
 	} else { //if edit button was pushed
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=scanmodules&mode=saveedited' method='post'>");
+                tw_form_open("scanmodules&mode=saveedited");
 		addnav("", "runmodule.php?module=translationwizard&op=scanmodules&mode=saveedited");
 		//rawoutput("<input type='submit' class='button' value='". translate_inline("Show") ."'>"); //no longer necessary
 		require("./modules/translationwizard/editchecked.php"); //if you want to edit some translations at a time

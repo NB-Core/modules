@@ -44,10 +44,10 @@ default:
 		output_notl("`n");
 		output("This may take some time.");
 		output_notl("`n`n");
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=insert_central&mode=continue' method='post'>");
+                tw_form_open("insert_central&mode=continue");
 		addnav("", "runmodule.php?module=translationwizard&op=insert_central&mode=continue");
 		rawoutput("<input type='submit' name='continue' value='". translate_inline("Commence the process")."' class='button'>");
-		rawoutput("</form>");
+                tw_form_close();
 	} else {
 		output("The pulled translations is empty, there is nothing to do!");
 	}

@@ -145,7 +145,7 @@ switch ($mode)
 				//end		
 				if (db_num_rows($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
 				rawoutput("<input type='submit' name='replacechecked' value='". translate_inline("Replace in selected") ."' class='button'>");
-				rawoutput("</form>");
+                                tw_form_close();
 				break;
 
 	case "edit":
@@ -158,7 +158,7 @@ switch ($mode)
 				output_notl(" ");
 				output("If you want to abort, just click abort (or any other navigation except 'save'.");
 				output_notl("`n`n");
-				rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandreplace&mode=save' method='post'>");
+                                tw_form_open("searchandreplace&mode=save");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=save");
 				output("TID of the row:");
 				rawoutput("<input id='input' name='tid' width=5 maxlength=5 value='".$row['tid']."'>");
@@ -184,7 +184,7 @@ switch ($mode)
 				rawoutput("<input type='submit' name='select' value='". translate_inline("Save")."' class='button'>");
 				output("`b`$ ATTENTION`b`0");
 				rawoutput("<input type='submit' name='abort' value='". translate_inline("Abort")."' class='button'>");
-				rawoutput("</form>");	
+                                tw_form_close();
 				break;
 
 	case "save":
@@ -263,7 +263,7 @@ switch ($mode)
 				output_notl(" ");
 				output("If you don't want that, just hit the checkbox below. You may use ?,% or the like in the text."); 
 				output_notl("`n`n");
-				rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandreplace&mode=select' method='post'>");
+                                tw_form_open("searchandreplace&mode=select");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=select");
 				output("What do you want to search for (select enter one or more criteria):");
 				output_notl("`n`n");
@@ -339,7 +339,7 @@ switch ($mode)
 				rawoutput("<input id='input' name='rversion' width=20 maxlength=50 value='".$query['rversion']."'>");
 				rawoutput("<input id='input' name='rversion2' width=20 maxlength=50 value='".$query['rversion2']."'>");
 
-				rawoutput("<input type='submit' name='select' value='". translate_inline("Preview")."' class='button'>");
-				rawoutput("</form>");
+                                rawoutput("<input type='submit' name='select' value='". translate_inline("Preview")."' class='button'>");
+                                tw_form_close();
 }
 ?>
