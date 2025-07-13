@@ -1,5 +1,15 @@
 <?php
 declare(strict_types=1);
+/**
+ * Directory layout notes
+ * - `pages/` contains the runnable scripts for each wizard action. The main
+ *   operations are `scan` (`pages/scanmodules.php`), `edit`
+ *   (`pages/edit_single.php`), `pull` (`pages/central_pull.php`) and `push`
+ *   (`pages/central_push.php`).
+ * - `lib/` holds various helper functions used across the pages.
+ * - `WizardService` defines the service layer that performs translation
+ *   database operations and other utility logic for the wizard.
+ */
 //For versioninfos just take a look at /modules/translationwizard/versions.txt
 
 // Okay, someone wants to use this outside of normal game flow.. no real harm
