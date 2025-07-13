@@ -27,7 +27,7 @@ function translationwizard_getmoduleinfo(): array{
 	//Slightly modified by JT Traub in the original untranslated.php
 	$info = array(
 	    "name"=>"Translation Wizard",
-		"version"=>"1.46",
+		"version"=>"1.47",
 		"author"=>"`2Written by Oliver Brendel, `3based on the untranslated.php by Christian Rutsch`nFilescan by `qEdorian`n",
 		"category"=>"Translations",
 		"download"=>"http://lotgd-downloads.com",
