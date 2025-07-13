@@ -8,8 +8,9 @@ if ($count['count'] > 0) {
 	if (db_num_rows($result) == 1) {
 		$row = db_fetch_assoc($result);
 		$row['intext'] = stripslashes($row['intext']);
-		$submit = translate_inline("Save Translation");
-		$skip = translate_inline("Skip Translation");
+                $submit = translate_inline("Save Translation");
+                $skip = translate_inline("Skip Translation");
+                output("Translate the text below:");
                 tw_form_open('randomsave', [
                     'id'        => $row['id'],
                     'language'  => $row['language'],
@@ -23,8 +24,8 @@ if ($count['count'] > 0) {
 		rawoutput("<tr><td width='30%'>");
 		output("Namespace: %s", $row['namespace']);
 		rawoutput("</td><td></td></tr>");
-		rawoutput("<tr><td width='30%'><textarea cols='35' rows='4' name='intext' readonly>".$row['intext']."</textarea></td>");
-		rawoutput("<td width='30%'><textarea cols='25' rows='4' name='outtext'></textarea></td></tr></table>");
+                rawoutput("<tr><td width='30%'><textarea cols='35' rows='4' name='intext' readonly title=\"".translate_inline('Original text')."\">".$row['intext']."</textarea></td>");
+                rawoutput("<td width='30%'><textarea cols='25' rows='4' name='outtext' title=\"".translate_inline('Enter your translation')."\"></textarea></td></tr></table>");
                 tw_form_close($submit);
                 tw_form_open('');
                 tw_form_close($skip);

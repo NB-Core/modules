@@ -15,7 +15,8 @@ case "push":
 	output("Please copy the following code to a file named `b`^%s.sql`0`b and give it to the admin for your language:",$namespace);
 	output_notl("`n`n");
 	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
-	$res=db_query($sql);
+        $res=db_query($sql);
+        output("Select the namespace to push:");
         tw_form_open("push&mode=push");
 	addnav("", "runmodule.php?module=translationwizard&op=push&mode=push");
 	rawoutput("<input type='hidden' name='op' value='push'>");
@@ -97,9 +98,10 @@ case "push":
 			}
 		break;
 default:
-	output("Choose the language you want to push:");
-	output_notl("`n");
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=push' name='pushi' method='post'>");
+        output("Choose the language you want to push:");
+        output_notl("`n");
+        output("Select language and namespaces to push:");
+        rawoutput("<form action='runmodule.php?module=translationwizard&op=push' name='pushi' method='post'>");
 	addnav("", "runmodule.php?module=translationwizard&op=push");	
 	rawoutput("<select name='pushlanguage' onChange='this.form.submit()'>");
 	$sql = "SELECT language,count(*) AS c FROM " . db_prefix("translations") . " GROUP BY language ORDER BY language ASC";

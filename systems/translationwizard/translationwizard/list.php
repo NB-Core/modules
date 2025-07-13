@@ -5,6 +5,7 @@ if (httppost("deletechecked")) {
 	require("./modules/translationwizard/deletechecked.php"); //if you want to delete the checked translations, this commences the deletion process
 }
 if (httppost("editchecked")) {
+        output("Edit the selected texts below:");
         tw_form_open("list&ns=".rawurlencode($namespace));
 	addnav("", "runmodule.php?module=translationwizard&op=list&ns=".rawurlencode($namespace));
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
@@ -82,7 +83,8 @@ case "del": //to delete one via the delete button
 	redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //just redirecting so you go back to the previous page after the deletion
 	break;
 default: //if there is any other mode, i.e. "" go on and display what's necessary including checkboxes and so on, just the main list
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=list' name='listenauswahl' method='post'>");
+        output("Select texts to translate or delete:");
+        rawoutput("<form action='runmodule.php?module=translationwizard&op=list' name='listenauswahl' method='post'>");
 	addnav("", "runmodule.php?module=translationwizard&op=list");
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 	$result = db_query($sql);

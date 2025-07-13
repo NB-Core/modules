@@ -74,7 +74,8 @@ switch ($mode)
 		$result=db_query($sql);
 		$rownumber=db_num_rows($result);
 		if ($rownumber==0) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=2'); //back to the roots if nothing was found
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandedit&mode=delete' name='editfeld' method='post' >");
+                output("Select translations to delete:");
+                rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandedit&mode=delete' name='editfeld' method='post' >");
 		addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=delete");
 		output("%s rows have been found (Displaylimit was %s).",$numberofallrows,$numberof);
 		output_notl("`n");
@@ -158,6 +159,7 @@ switch ($mode)
 				output_notl(" ");
 				output("If you want to abort, just click abort (or any other navigation except 'save'.");
 				output_notl("`n`n");
+                                output("Edit the selected translation:");
                                 tw_form_open("searchandedit&mode=save");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=save");
 				output("TID of the row:");
@@ -171,11 +173,11 @@ switch ($mode)
 				output_notl("`n`n");
 				output("Intext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='intext' class='input' cols='60' rows='5'>".htmlentities(stripslashes($row['intext']),ENT_COMPAT,$coding)."</textarea>");
+                                rawoutput("<textarea name='intext' class='input' cols='60' rows='5' title=\"".translate_inline('Original text')."\">".htmlentities(stripslashes($row['intext']),ENT_COMPAT,$coding)."</textarea>");
 				output_notl("`n`n");
 				output("Outtext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='outtext' class='input' cols='60' rows='5'>".htmlentities(stripslashes($row['outtext']),ENT_COMPAT,$coding)."</textarea>");
+                                rawoutput("<textarea name='outtext' class='input' cols='60' rows='5' title=\"".translate_inline('Enter your translation')."\">".htmlentities(stripslashes($row['outtext']),ENT_COMPAT,$coding)."</textarea>");
 				output_notl("`n`n");	
 				output("Author of the row:");
 				rawoutput("<input id='input' name='author' width=50 maxlength=50 value='".$row['author']."'>");
@@ -252,6 +254,7 @@ switch ($mode)
 				output_notl(" ");
 				output("If you don't want that, just hit the checkbox below. You may use ?,% or the like in the text."); 
 				output_notl("`n`n");
+                                output("Enter part of the translation to search for:");
                                 tw_form_open("searchandedit&mode=select");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandedit&mode=select");
 				output("What do you want to search for (select enter one or more criteria):");
@@ -284,11 +287,11 @@ switch ($mode)
 				output_notl("`n`n");
 				output("Intext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='intext' class='input' cols='60' rows='5'>".$query['intext']."</textarea>");
+                                rawoutput("<textarea name='intext' class='input' cols='60' rows='5' title=\"".translate_inline('Original text')."\">".$query['intext']."</textarea>");
 				output_notl("`n`n");
 				output("Outtext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='outtext' class='input' cols='60' rows='5'>".$query['outtext']."</textarea>");
+                                rawoutput("<textarea name='outtext' class='input' cols='60' rows='5' title=\"".translate_inline('Enter your translation')."\">".$query['outtext']."</textarea>");
 				output_notl("`n`n");	
 				output("Author of the row:");
 				rawoutput("<input id='input' name='author' width=50 maxlength=50 value='".$query['author']."'>");
