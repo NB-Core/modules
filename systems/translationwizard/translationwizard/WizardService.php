@@ -206,6 +206,27 @@ class WizardService {
     }
 
     /**
+     * Retrieve rows without a namespace from the untranslated table.
+     *
+     * @return resource|bool Result of db_query()
+     */
+    private static function getEmptyNamespaceRows() {
+        $sql = "SELECT BINARY intext AS intext, language FROM " . db_prefix('untranslated') .
+               " WHERE namespace='' GROUP BY BINARY intext, language";
+        return db_query($sql);
+    }
+
+    /**
+     * Delete all rows without a namespace from the untranslated table.
+     *
+     * @return resource|bool Result of db_query()
+     */
+    private static function deleteEmptyNamespaceRows() {
+        $sql = "DELETE FROM " . db_prefix('untranslated') . " WHERE namespace=''";
+        return db_query($sql);
+    }
+
+    /**
      * Handle deletion of rows without a namespace.
      *
      * This replicates the legacy deleteempty.php behaviour.
@@ -237,15 +258,12 @@ class WizardService {
                 break;
 
             case 'delete':
-                $sql = "DELETE FROM " . db_prefix('untranslated') . " WHERE namespace=''";
-                $result = db_query($sql);
+                $result = self::deleteEmptyNamespaceRows();
                 output("`bOperation commenced, %s rows found and deleted`b`n`n", db_affected_rows($result));
                 break;
 
             case 'listing':
-                $sql = "SELECT intext, language FROM  " . db_prefix('untranslated') .
-                       " WHERE namespace='' GROUP  BY BINARY intext, language";
-                $result = db_query($sql);
+                $result = self::getEmptyNamespaceRows();
                 output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", db_num_rows($result));
                 $i = 0;
                 output("`n`nFollowing rows have no namespace:");
@@ -273,9 +291,7 @@ class WizardService {
                 break;
 
             default:
-                $sql = "SELECT BINARY intext, language FROM  " . db_prefix('untranslated') .
-                       " WHERE namespace='' GROUP BY BINARY intext, language";
-                $result = db_query($sql);
+                $result = self::getEmptyNamespaceRows();
                 tw_form_open('deleteempty&mode=delete');
                 addnav('', 'runmodule.php?module=translationwizard&op=deleteempty&mode=delete');
                 rawoutput("<input type='hidden' name='op' value='check'>");
