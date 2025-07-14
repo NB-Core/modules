@@ -6,4 +6,4 @@ foreach($log as $val) {
 	rawoutput($val);
 	output_notl("`n");
 	}
-?>
+

@@ -25,4 +25,4 @@ while ($row = db_fetch_assoc($result))
        rawoutput("<textarea name='outtext' class='input' cols='60' rows='5' title=\"".translate_inline('Enter your translation')."\">".htmlentities(stripslashes(httpget('outtext')),ENT_COMPAT,$coding)."</textarea><br/>");
 	rawoutput("<input type='submit' value='". translate_inline("Save") ."' class='button'>");
         tw_form_close();
-?>
+

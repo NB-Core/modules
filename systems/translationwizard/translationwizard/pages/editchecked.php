@@ -35,4 +35,4 @@ output_notl("`n`n");
 rawoutput("<input type='submit' name='multichecked' value='". translate_inline("Save") ."' class='button'>");
 tw_form_close();
 
-?>
+

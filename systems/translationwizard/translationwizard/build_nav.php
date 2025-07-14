@@ -49,4 +49,4 @@ declare(strict_types=1);
 	addnav("Show Versionlog","runmodule.php?module=translationwizard&op=showversionlog");
 	if ($viewsimple) addnav("Scan Modules","runmodule.php?module=translationwizard&op=scanmodules");
 	
-?>
+

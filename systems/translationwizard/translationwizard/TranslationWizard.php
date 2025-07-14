@@ -487,4 +487,4 @@ class TranslationWizard {
         return $back;
     }
 }
-?>
+

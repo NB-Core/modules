@@ -347,4 +347,4 @@ switch ($mode)
                                 rawoutput("<input type='submit' name='select' value='". translate_inline("Preview")."' class='button'>");
                                 tw_form_close();
 }
-?>
+

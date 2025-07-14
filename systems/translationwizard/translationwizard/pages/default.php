@@ -44,4 +44,4 @@ if ($count['count'] > 0) {
 	output("There are no untranslated texts in the database!");
 	output("Congratulations!!!");
 	} // end if
-?>
+
