@@ -270,7 +270,7 @@ function translationwizard_run(): void{
         } elseif ($op == 'deleteempty') {
                 WizardService::deleteEmpty($mode, (int)$page, $coding);
         } elseif ($op == 'switchview') {
-                WizardService::toggleView($viewsimple, $from);
+                WizardService::toggleView((bool)$viewsimple, $from);
         } elseif ($op == 'insert_central') {
                 WizardService::insertCentral($mode, $namespace, $languageschema);
        } else {
