@@ -148,11 +148,11 @@ function translationwizard_dohook(string $hookname, array $args): array{
                 if (get_module_setting("translationdelete")) {
                         if (httpget('op')=="uninstall") {
                                 $get=rawurlencode(serialize(httpallget()));
-                                require_once ("./modules/translationwizard/deleteuninstalled.php");
+                                require_once __DIR__ . '/translationwizard/pages/deleteuninstalled.php';
                         } elseif (httpget('op')=="mass" && httppost("uninstall")) {
                                 $get=rawurlencode(serialize(httpallget()));
                                 $post=rawurlencode(serialize(httpallpost()));
-                                require_once ("./modules/translationwizard/deleteuninstalled.php");
+                                require_once __DIR__ . '/translationwizard/pages/deleteuninstalled.php';
                         }
                 }
                 break;
