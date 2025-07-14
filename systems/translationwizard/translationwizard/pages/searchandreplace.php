@@ -328,13 +328,13 @@ switch ($mode)
 				output_notl("`n`n");
 				output("Intext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='rintext' class='input' cols='30' rows='5'>".$query['rintext']."</textarea>");
-				rawoutput("<textarea name='rintext2' class='input' cols='30' rows='5'>".$query['rintext2']."</textarea>");
+                                rawoutput("<textarea name='rintext' class='input' cols='30' rows='5' title=\"".translate_inline('Original text')."\">".$query['rintext']."</textarea>");
+                                rawoutput("<textarea name='rintext2' class='input' cols='30' rows='5' title=\"".translate_inline('Translated text')."\">".$query['rintext2']."</textarea>");
 				output_notl("`n`n");
 				output("Outtext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='routtext' class='input' cols='30' rows='5'>".$query['routtext']."</textarea>");
-				rawoutput("<textarea name='routtext2' class='input' cols='30' rows='5'>".$query['routtext2']."</textarea>");
+                                rawoutput("<textarea name='routtext' class='input' cols='30' rows='5' title=\"".translate_inline('Original text')."\">".$query['routtext']."</textarea>");
+                                rawoutput("<textarea name='routtext2' class='input' cols='30' rows='5' title=\"".translate_inline('Translated text')."\">".$query['routtext2']."</textarea>");
 				output_notl("`n`n");	
 				output("Author of the row:");
 				rawoutput("<input id='input' name='rauthor' width=20 maxlength=50 value='".$query['rauthor']."'>");
