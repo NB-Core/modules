@@ -144,6 +144,7 @@ class WizardService {
         string $version
     ): bool {
         $ok = true;
+        $cacheKeys = [];
         foreach ($inTexts as $key => $text) {
             if ($outTexts[$key] !== '') {
                 $ns = $nameTexts[$key] ?? $namespace;
