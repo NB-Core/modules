@@ -211,7 +211,7 @@ class WizardService {
      * @return resource|bool Result of db_query()
      */
     private static function getEmptyNamespaceRows() {
-        $sql = "SELECT intext, language FROM " . db_prefix('untranslated') .
+        $sql = "SELECT BINARY intext AS intext, language FROM " . db_prefix('untranslated') .
                " WHERE namespace='' GROUP BY BINARY intext, language";
         return db_query($sql);
     }
