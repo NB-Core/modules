@@ -20,7 +20,7 @@ switch ($mode)
 			$session['user']['specialmisc']=serialize(array("number"=>httppost('number'),"orderbyascdesc"=>httppost('orderbyascdesc'),"orderby"=>httppost('orderby'),"exactly"=>httppost('exactly'),"tid"=>httppost('tid'),"language"=>httppost('language'),"uri"=>httppost('uri'),"intext"=>httppost('intext'),"outtext"=>httppost('outtext'),"author"=>httppost('author'),"version"=>httppost('version'))); //serialize to let the user return to his results and continue
 			$orderbyascdesc=(!httppost('orderbyascdesc')?"ASC":"DESC");
 			$forswitch=httppost('orderby');
-			$numberof=httppost('number');
+			$numberof=(int)httppost('number');
 		} else {
 			$query=unserialize($session['user']['specialmisc']);
 			$sql="Select * from ".db_prefix("translations")." WHERE";
@@ -35,7 +35,7 @@ switch ($mode)
 			if ($query['version']) $sql.=" version LIKE '$p".$query['version']."$p' AND";
 			$orderbyascdesc=(!$query['orderbyascdesc']?"ASC":"DESC");
 			$forswitch=$query['orderby'];
-			$numberof=$query['number'];
+			$numberof=(int)$query['number'];
 		}
 		$sql=substr($sql,0,strlen($sql)-3);
 		$presql=$sql;
@@ -230,7 +230,7 @@ switch ($mode)
 				if (!httpget('tid')) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=6&mode=select'); //back to the roots 
 				$sql="DELETE FROM ".db_prefix("translations")." WHERE tid=".httpget('tid').";";
 				$result=db_query($sql);
-				if (!result) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=6&mode=select'); //back to the roots 
+				if (!$result) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=6&mode=select'); //back to the roots 
 				redirect('runmodule.php?module=translationwizard&op=searchandedit&error=7&mode=select'); //back to the roots, no error but success
 				break;
 

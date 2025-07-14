@@ -186,9 +186,9 @@ function translationwizard_run(): void{
 	//these lines grabbed the local scheme, in 1.1.0 there is a setting for it
 	$coding=getsetting("charset", "ISO-8859-1");
 	$viewsimple=get_module_pref("view","translationwizard");
-	$mode = httpget('mode');
-	$namespace = httppost('ns');
-	$from = httpget('from');
+	$mode = (string)httpget('mode');
+	$namespace = (string)httppost('ns');
+	$from = (string)httpget('from');
 	$page = get_module_setting('page');
 	if (httpget('ns')<>"" && $namespace=="") $namespace=httpget('ns'); //if there is no post then there is maybe something to get
 	$trans = httppost("transtext");

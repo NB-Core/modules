@@ -273,8 +273,8 @@ class WizardService {
                 break;
 
             default:
-                $sql = "SELECT intext, language FROM  " . db_prefix('untranslated') .
-                       " WHERE namespace='' GROUP  BY BINARY intext, language";
+                $sql = "SELECT BINARY intext, language FROM  " . db_prefix('untranslated') .
+                       " WHERE namespace='' GROUP BY BINARY intext, language";
                 $result = db_query($sql);
                 tw_form_open('deleteempty&mode=delete');
                 addnav('', 'runmodule.php?module=translationwizard&op=deleteempty&mode=delete');
