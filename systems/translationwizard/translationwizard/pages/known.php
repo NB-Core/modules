@@ -299,4 +299,4 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
                 }
 	
 }
-?>
+

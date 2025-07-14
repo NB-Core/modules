@@ -173,4 +173,4 @@ if (!$mode=="save" && $namespace<>"")
 	rawoutput("<input type='submit' name='deletechecked' value='". translate_inline("Delete selected") ."' class='button'>");
 	}
 tw_form_close();
-?>
+

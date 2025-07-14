@@ -192,4 +192,4 @@ switch($mode) {
 		rawoutput("<input type='submit' name='pullchecked' value='". translate_inline("Pull checked") ."' class='button'>");
                 tw_form_close();
 }
-?>
+

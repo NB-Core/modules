@@ -51,4 +51,4 @@ switch ($mode)
                         tw_form_close();
 		break;
 	}
-?>
+
