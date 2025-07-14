@@ -1,14 +1,18 @@
 <?php
 
 	addnav(array("`bSwitch to %s view`b",translate_inline($viewsimple?"simple":"advanced")),"runmodule.php?module=translationwizard&op=switchview&from=".rawurlencode("module=translationwizard&op=$op&mode=$mode"));
-	addnav("Operations");
-	addnav("H?Help","runmodule.php?module=translationwizard&op=help");
-	addnav("O?Overview","runmodule.php?module=translationwizard&op=overview");
-	addnav("R?Restart Translator", "runmodule.php?module=translationwizard");
-	addnav("N?Translate by Namespace", "runmodule.php?module=translationwizard&op=list");
-	addnav("C?Check for duplicate entries", "runmodule.php?module=translationwizard&op=check");
-	addnav("F?Fix already translated in table untranslated", "runmodule.php?module=translationwizard&op=fix");
-	addnav("k?Check for known translations","runmodule.php?module=translationwizard&op=known");
+       addnav("Information");
+       addnav("H?Help","runmodule.php?module=translationwizard&op=help");
+       addnav("O?Overview","runmodule.php?module=translationwizard&op=overview");
+
+       addnav("Translation Tasks");
+       addnav("R?Restart Translator", "runmodule.php?module=translationwizard");
+       addnav("N?Translate by Namespace", "runmodule.php?module=translationwizard&op=list");
+       addnav("F?Fix already translated", "runmodule.php?module=translationwizard&op=fix");
+       addnav("C?Check for duplicate entries", "runmodule.php?module=translationwizard&op=check");
+       addnav("k?Check for known translations","runmodule.php?module=translationwizard&op=known");
+
+       addnav("Database Tools");
 	if (get_module_setting('restricted')&& $viewsimple)	{
 		if (get_module_pref('allowed'))	{
 				addnav(array("Search+Edit the translations table %s",""),"runmodule.php?module=translationwizard&op=searchandedit");
@@ -36,7 +40,7 @@
 		addnav("Check for known translations","runmodule.php?module=translationwizard&op=known&central=1");
 		addnav("Truncate pulled translations table","runmodule.php?module=translationwizard&op=truncate&central=1");
 	}
-	addnav("Your current scheme:");
+	addnav("Current Scheme");
 	if ($languageschema<>'') {
 			addnav($languageschema,"!!!addraw!!!",true);
 		} else {
@@ -44,7 +48,7 @@
 			$languageschema="en"; //in case some dummy just wants to click ahead he gets English as a default
 		}
 	addnav("Change current scheme","runmodule.php?module=translationwizard&op=changescheme");
-	addnav("Miscellaneous");
+	addnav("Settings");
 	addnav("Show Versionlog","runmodule.php?module=translationwizard&op=showversionlog");
 	if ($viewsimple) addnav("Scan Modules","runmodule.php?module=translationwizard&op=scanmodules");
 	
