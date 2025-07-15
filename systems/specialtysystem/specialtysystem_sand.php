@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_sand_getmoduleinfo(){
+/**
+ * Module information.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_sand_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty System - Sand",
 		"author" => "`2Oliver Brendel`0",
@@ -14,18 +20,33 @@ function specialtysystem_sand_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_sand_install(){
+/**
+ * Install the module.
+ *
+ * @return bool
+ */
+function specialtysystem_sand_install(): bool {
 	module_addhook("specialtysystem-register");
 	return true;
 }
 
-function specialtysystem_sand_uninstall(){
+/**
+ * Uninstall the module.
+ *
+ * @return bool
+ */
+function specialtysystem_sand_uninstall(): bool {
 	require_once("modules/specialtysystem/uninstall.php");
 	specialtysystem_uninstall("specialtysystem_sand");
 	return true;
 }
 
-function specialtysystem_sand_fightnav(){
+/**
+ * Build fight navigation entries.
+ *
+ * @return array
+ */
+function specialtysystem_sand_fightnav(): array {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_sand");
@@ -57,7 +78,12 @@ function specialtysystem_sand_fightnav(){
 	return specialtysystem_getfightnav();
 }
 
-function specialtysystem_sand_apply($skillname){
+/**
+ * Apply a selected specialty skill.
+ *
+ * @param string $skillname
+ */
+function specialtysystem_sand_apply(string $skillname): void {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	switch($skillname){
@@ -157,7 +183,14 @@ function specialtysystem_sand_apply($skillname){
 	return;
 }
 
-function specialtysystem_sand_dohook($hookname,$args){
+/**
+ * Handle module hooks.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_sand_dohook(string $hookname, array $args): array {
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
@@ -179,6 +212,9 @@ function specialtysystem_sand_dohook($hookname,$args){
 	return $args;
 }
 
-function specialtysystem_sand_run(){
+/**
+ * Module runtime.
+ */
+function specialtysystem_sand_run(): void {
 }
 ?>
