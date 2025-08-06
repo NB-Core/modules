@@ -1,6 +1,10 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_register() {
+/**
+ * Register all specialty modules in the database.
+ */
+function specialtysystem_register(): void {
 	$args=modulehook("specialtysystem-register",array());
 	invalidatedatacache("specialtygetspecs");
 	debug($args);
@@ -19,10 +23,10 @@ function specialtysystem_register() {
 
 		$insert[]=" ('".addslashes($data['spec_name'])."','{$data['spec_colour']}','".addslashes($data['spec_shortdescription'])."','".addslashes($data['spec_longdescription'])."','{$data['modulename']}','{$data['fightnav_active']}','{$data['newday_active']}','{$data['dragonkill_active']}','{$data['dragonkill_minimum_requirement']}','".addslashes(serialize($data['stat_requirements']))."','".addslashes(serialize($data['race_requirements']))."','{$data['noaddskillpoints']}','{$data['basic_uses']}')";
 	}
-	if ($insert==array()) return;
-	debug($insert);
-	$sql.=implode(",",$insert);
-	return db_query($sql);
+        if ($insert==array()) return;
+        debug($insert);
+        $sql.=implode(",",$insert);
+        db_query($sql);
 	/*usage:
 	for first registering
 

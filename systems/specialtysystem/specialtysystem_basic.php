@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_basic_getmoduleinfo(){
+/**
+ * Module information.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_basic_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty System - Basic Techniques",
 		"author" => "`2Oliver Brendel`0",
@@ -14,18 +20,33 @@ function specialtysystem_basic_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_basic_install(){
+/**
+ * Install the module.
+ *
+ * @return bool
+ */
+function specialtysystem_basic_install(): bool {
 	module_addhook("specialtysystem-register");
 	return true;
 }
 
-function specialtysystem_basic_uninstall(){
+/**
+ * Uninstall the module.
+ *
+ * @return bool
+ */
+function specialtysystem_basic_uninstall(): bool {
 	require_once("modules/specialtysystem/uninstall.php");
 	specialtysystem_uninstall("specialtysystem_basic");
 	return true;
 }
 
-function specialtysystem_basic_fightnav(){
+/**
+ * Build fight navigation entries.
+ *
+ * @return array
+ */
+function specialtysystem_basic_fightnav(): array {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_basic");
@@ -41,7 +62,12 @@ function specialtysystem_basic_fightnav(){
 	return specialtysystem_getfightnav();
 }
 
-function specialtysystem_basic_apply($skillname){
+/**
+ * Apply a selected specialty skill.
+ *
+ * @param string $skillname
+ */
+function specialtysystem_basic_apply(string $skillname): void {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$u=&$session['user'];
@@ -111,7 +137,14 @@ function specialtysystem_basic_apply($skillname){
 	return;
 }
 
-function specialtysystem_basic_dohook($hookname,$args){
+/**
+ * Handle module hooks.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_basic_dohook(string $hookname, array $args): array {
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
@@ -131,6 +164,9 @@ function specialtysystem_basic_dohook($hookname,$args){
 	return $args;
 }
 
-function specialtysystem_basic_run(){
+/**
+ * Module runtime.
+ */
+function specialtysystem_basic_run(): void {
 }
 ?>

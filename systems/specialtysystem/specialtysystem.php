@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_getmoduleinfo(){
+/**
+ * Module information for the core system.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty Core System",
 		"author" => "`2Oliver Brendel",
@@ -21,7 +27,12 @@ function specialtysystem_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_install(){
+/**
+ * Install the core module.
+ *
+ * @return bool
+ */
+function specialtysystem_install(): bool {
 	module_addhook("newday-intercept");
 
 	//legacy support
@@ -60,7 +71,12 @@ function specialtysystem_install(){
 	return true;
 }
 
-function specialtysystem_uninstall(){
+/**
+ * Uninstall the core module.
+ *
+ * @return bool
+ */
+function specialtysystem_uninstall(): bool {
 	// Delete us and let the newday do what it wants to ... let them select a new specialty
 	$sql="UPDATE ".db_prefix('accounts')." SET specialty='' WHERE specialty='SS'";
 	db_query($sql);
@@ -70,7 +86,14 @@ function specialtysystem_uninstall(){
 	return true;
 }
 
-function specialtysystem_showfightnav($script,$force=false) {
+/**
+ * Output fight navigation for all specialties.
+ *
+ * @param string $script
+ * @param bool $force
+ * @return void
+ */
+function specialtysystem_showfightnav(string $script, bool $force = false): void {
 	global $session;
 	$check=unserialize(stripslashes(get_module_pref("cache","specialtysystem")));
 	if (isset($check['system']) && $check['system']=='specialtysystem' && !$force) {
@@ -126,7 +149,14 @@ function specialtysystem_showfightnav($script,$force=false) {
 	return;
 }
 
-function specialtysystem_dohook($hookname,$args){
+/**
+ * Handle LoTGD hooks for the core system.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_dohook(string $hookname, array $args): array {
 	global $session,$resline;
 	//resline is a hack to transfer the &ressurrection=0/1 ... I leave it in here ... for now.
 
@@ -332,7 +362,10 @@ function specialtysystem_dohook($hookname,$args){
 	return $args;
 }
 
-function specialtysystem_run(){
+/**
+ * Module runtime operations.
+ */
+function specialtysystem_run(): void {
 	$op=httpget('op');
 	switch ($op) {
 		case "refresh":

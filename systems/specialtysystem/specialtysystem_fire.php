@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_fire_getmoduleinfo(){
+/**
+ * Module information.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_fire_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty System - Fire",
 		"author" => "`2Oliver Brendel`0",
@@ -14,18 +20,33 @@ function specialtysystem_fire_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_fire_install(){
+/**
+ * Install the module.
+ *
+ * @return bool
+ */
+function specialtysystem_fire_install(): bool {
 	module_addhook("specialtysystem-register");
 	return true;
 }
 
-function specialtysystem_fire_uninstall(){
+/**
+ * Uninstall the module.
+ *
+ * @return bool
+ */
+function specialtysystem_fire_uninstall(): bool {
 	require_once("modules/specialtysystem/uninstall.php");
 	specialtysystem_uninstall("specialtysystem_fire");
 	return true;
 }
 
-function specialtysystem_fire_fightnav(){
+/**
+ * Build fight navigation entries.
+ *
+ * @return array
+ */
+function specialtysystem_fire_fightnav(): array {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_fire");
@@ -57,7 +78,12 @@ function specialtysystem_fire_fightnav(){
 	return specialtysystem_getfightnav();
 }
 
-function specialtysystem_fire_apply($skillname){
+/**
+ * Apply a selected specialty skill.
+ *
+ * @param string $skillname
+ */
+function specialtysystem_fire_apply(string $skillname): void {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	switch($skillname){
@@ -162,7 +188,14 @@ function specialtysystem_fire_apply($skillname){
 	return;
 }
 
-function specialtysystem_fire_dohook($hookname,$args){
+/**
+ * Handle module hooks.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_fire_dohook(string $hookname, array $args): array {
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
@@ -186,6 +219,9 @@ function specialtysystem_fire_dohook($hookname,$args){
 	return $args;
 }
 
-function specialtysystem_fire_run(){
+/**
+ * Module runtime.
+ */
+function specialtysystem_fire_run(): void {
 }
 ?>

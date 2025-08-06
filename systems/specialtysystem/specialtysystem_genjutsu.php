@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_genjutsu_getmoduleinfo(){
+/**
+ * Module information.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_genjutsu_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty System - Genjutsu",
 		"author" => "`2Oliver Brendel`0",
@@ -14,18 +20,33 @@ function specialtysystem_genjutsu_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_genjutsu_install(){
+/**
+ * Install the module.
+ *
+ * @return bool
+ */
+function specialtysystem_genjutsu_install(): bool {
 	module_addhook("specialtysystem-register");
 	return true;
 }
 
-function specialtysystem_genjutsu_uninstall(){
+/**
+ * Uninstall the module.
+ *
+ * @return bool
+ */
+function specialtysystem_genjutsu_uninstall(): bool {
 	require_once("modules/specialtysystem/uninstall.php");
 	specialtysystem_uninstall("specialtysystem_genjutsu");
 	return true;
 }
 
-function specialtysystem_genjutsu_fightnav(){
+/**
+ * Build fight navigation entries.
+ *
+ * @return array
+ */
+function specialtysystem_genjutsu_fightnav(): array {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_genjutsu");
@@ -57,7 +78,12 @@ function specialtysystem_genjutsu_fightnav(){
 	return specialtysystem_getfightnav();
 }
 
-function specialtysystem_genjutsu_apply($skillname){
+/**
+ * Apply a selected specialty skill.
+ *
+ * @param string $skillname
+ */
+function specialtysystem_genjutsu_apply(string $skillname): void {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	switch($skillname){
@@ -148,7 +174,14 @@ function specialtysystem_genjutsu_apply($skillname){
 	return;
 }
 
-function specialtysystem_genjutsu_dohook($hookname,$args){
+/**
+ * Handle module hooks.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_genjutsu_dohook(string $hookname, array $args): array {
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
@@ -167,6 +200,9 @@ function specialtysystem_genjutsu_dohook($hookname,$args){
 	return $args;
 }
 
-function specialtysystem_genjutsu_run(){
+/**
+ * Module runtime.
+ */
+function specialtysystem_genjutsu_run(): void {
 }
 ?>

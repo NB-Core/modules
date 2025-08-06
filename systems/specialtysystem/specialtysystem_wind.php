@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_wind_getmoduleinfo(){
+/**
+ * Module information.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_wind_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty System - Wind",
 		"author" => "`2Oliver`0",
@@ -14,18 +20,33 @@ function specialtysystem_wind_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_wind_install(){
+/**
+ * Install the module.
+ *
+ * @return bool
+ */
+function specialtysystem_wind_install(): bool {
 	module_addhook("specialtysystem-register");
 	return true;
 }
 
-function specialtysystem_wind_uninstall(){
+/**
+ * Uninstall the module.
+ *
+ * @return bool
+ */
+function specialtysystem_wind_uninstall(): bool {
 	require_once("modules/specialtysystem/uninstall.php");
 	specialtysystem_uninstall("specialtysystem_wind");
 	return true;
 }
 
-function specialtysystem_wind_fightnav(){
+/**
+ * Build fight navigation entries.
+ *
+ * @return array
+ */
+function specialtysystem_wind_fightnav(): array {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_wind");
@@ -58,7 +79,12 @@ $uses,specialtysystem_getskillpoints("specialtysystem_wind"));
 	return specialtysystem_getfightnav();
 }
 
-function specialtysystem_wind_apply($skillname){
+/**
+ * Apply a selected specialty skill.
+ *
+ * @param string $skillname
+ */
+function specialtysystem_wind_apply(string $skillname): void {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	switch($skillname){
@@ -166,7 +192,14 @@ and shoots a large ball of compressed air and chakra at {badguy}!",
 	return;
 }
 
-function specialtysystem_wind_dohook($hookname,$args){
+/**
+ * Handle module hooks.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_wind_dohook(string $hookname, array $args): array {
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
@@ -192,7 +225,10 @@ in your path away.',
 	return $args;
 }
 
-function specialtysystem_wind_run(){
+/**
+ * Module runtime.
+ */
+function specialtysystem_wind_run(): void {
 }
 ?>
 

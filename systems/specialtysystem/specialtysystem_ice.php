@@ -1,6 +1,12 @@
 <?php
+declare(strict_types=1);
 
-function specialtysystem_ice_getmoduleinfo(){
+/**
+ * Module information.
+ *
+ * @return array<string, mixed>
+ */
+function specialtysystem_ice_getmoduleinfo(): array {
 	$info = array(
 		"name" => "Specialty System - Ice",
 		"author" => "`2Oliver Brendel`0",
@@ -14,18 +20,33 @@ function specialtysystem_ice_getmoduleinfo(){
 	return $info;
 }
 
-function specialtysystem_ice_install(){
+/**
+ * Install the module.
+ *
+ * @return bool
+ */
+function specialtysystem_ice_install(): bool {
 	module_addhook("specialtysystem-register");
 	return true;
 }
 
-function specialtysystem_ice_uninstall(){
+/**
+ * Uninstall the module.
+ *
+ * @return bool
+ */
+function specialtysystem_ice_uninstall(): bool {
 	require_once("modules/specialtysystem/uninstall.php");
 	specialtysystem_uninstall("specialtysystem_ice");
 	return true;
 }
 
-function specialtysystem_ice_fightnav(){
+/**
+ * Build fight navigation entries.
+ *
+ * @return array
+ */
+function specialtysystem_ice_fightnav(): array {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_ice");
@@ -57,7 +78,12 @@ function specialtysystem_ice_fightnav(){
 	return specialtysystem_getfightnav();
 }
 
-function specialtysystem_ice_apply($skillname){
+/**
+ * Apply a selected specialty skill.
+ *
+ * @param string $skillname
+ */
+function specialtysystem_ice_apply(string $skillname): void {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	switch($skillname){
@@ -160,7 +186,14 @@ function specialtysystem_ice_apply($skillname){
 	return;
 }
 
-function specialtysystem_ice_dohook($hookname,$args){
+/**
+ * Handle module hooks.
+ *
+ * @param string $hookname
+ * @param array $args
+ * @return array
+ */
+function specialtysystem_ice_dohook(string $hookname, array $args): array {
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
@@ -184,6 +217,9 @@ function specialtysystem_ice_dohook($hookname,$args){
 	return $args;
 }
 
-function specialtysystem_ice_run(){
+/**
+ * Module runtime.
+ */
+function specialtysystem_ice_run(): void {
 }
 ?>
