@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 output("`b`^This is a general help how to use this Wizard.`0`b");
 output_notl("`n`n");
 
@@ -58,4 +59,4 @@ output("If you are not sure what you want, do the following: `iFix already trans
 output_notl(" ");
 output("This ensures a safe translation without putting redundancies (and thus more work) into it.");
 output_notl("`n`n");
-?>
+

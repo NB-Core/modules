@@ -1,6 +1,8 @@
 <?php
+declare(strict_types=1);
 if ($from=="") $from="module=translationwizard&op=list";
-rawoutput("<form action='runmodule.php?".$from."&mode=save&from=".rawurlencode($from)."' method='post'>");
+output("Edit the translation below:");
+tw_form_open($from."&mode=save&from=".rawurlencode($from));
 addnav("", "runmodule.php?".$from."&mode=save&from=".rawurlencode($from));
 $sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 $result = db_query($sql);
@@ -18,9 +20,9 @@ while ($row = db_fetch_assoc($result))
 	//rawoutput("<input type='submit' class='button' value='". translate_inline("Show") ."'>"); //no longer necessary
 	rawoutput("<br>");
 	rawoutput(translate_inline("Text:"). "<br>");
-	rawoutput("<textarea name='intext' class='input' cols='60' rows='5' readonly>".htmlentities(stripslashes(httpget('intext')),ENT_COMPAT,$coding)."</textarea><br/>");
-	rawoutput(translate_inline("Translation:"). "<br>");
-	rawoutput("<textarea name='outtext' class='input' cols='60' rows='5'>".htmlentities(stripslashes(httpget('outtext')),ENT_COMPAT,$coding)."</textarea><br/>");
+       rawoutput("<textarea name='intext' class='input' cols='60' rows='5' readonly title=\"".translate_inline('Original text')."\">".htmlentities(stripslashes(httpget('intext')),ENT_COMPAT,$coding)."</textarea><br/>");
+        rawoutput(translate_inline("Translation:"). "<br>");
+       rawoutput("<textarea name='outtext' class='input' cols='60' rows='5' title=\"".translate_inline('Enter your translation')."\">".htmlentities(stripslashes(httpget('outtext')),ENT_COMPAT,$coding)."</textarea><br/>");
 	rawoutput("<input type='submit' value='". translate_inline("Save") ."' class='button'>");
-	rawoutput("</form>");
-?>
+        tw_form_close();
+

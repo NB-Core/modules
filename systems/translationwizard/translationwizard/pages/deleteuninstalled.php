@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 $what=httpget('deletemode');
 switch ($what) {
 
@@ -57,4 +58,4 @@ switch ($what) {
 
 
 
-?>
+

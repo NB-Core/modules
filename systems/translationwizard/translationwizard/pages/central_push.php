@@ -1,21 +1,27 @@
 <?php
+declare(strict_types=1);
 $datum = getdate(time());
 $currentdate=$datum['mon']."-".$datum['mday']."-".$datum['year'];
 $currenttime=$datum['hours'].":".$datum['minutes'].":".$datum['seconds'];
 $selectedlanguage=httppost('pushlanguage');
 if (!$selectedlanguage) $selectedlanguage=$languageschema;
+$namespaceEsc = addslashes($namespace);
+$selectedEsc  = addslashes($selectedlanguage);
 if (httppost('pushall')||httppost('pushselected')) $mode="pushall"; //set in order to get the switch right... hard because no get reasonable
 switch($mode)
 {
 case "push":
-	if (httpget('pushlanguage')) $selectedlanguage=httpget('pushlanguage');
-	$sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$namespace."' AND language='".$selectedlanguage."' ORDER BY intext;";
+        if (httpget('pushlanguage')) $selectedlanguage=httpget('pushlanguage');
+        $namespaceEsc = addslashes($namespace);
+        $selectedEsc  = addslashes($selectedlanguage);
+        $sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$namespaceEsc."' AND language='".$selectedEsc."' ORDER BY intext;";
 	$result=db_query($sql);
 	output("Please copy the following code to a file named `b`^%s.sql`0`b and give it to the admin for your language:",$namespace);
 	output_notl("`n`n");
-	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
-	$res=db_query($sql);
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=push&mode=push' method='post'>");
+        $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
+        $res=db_query($sql);
+        output("Select the namespace to push:");
+        tw_form_open("push&mode=push");
 	addnav("", "runmodule.php?module=translationwizard&op=push&mode=push");
 	rawoutput("<input type='hidden' name='op' value='push'>");
 	rawoutput("<input type='hidden' name='mode' value='push'>");
@@ -26,7 +32,7 @@ case "push":
 		rawoutput("<option value=\"".htmlentities($row['uri'],ENT_COMPAT,$coding)."\"".((htmlentities($row['uri'],ENT_COMPAT,$coding) == $namespace) ? "selected" : "").">".htmlentities($row['uri'],ENT_COMPAT,$coding)." ({$row['c']})</option>");
 		}
 	rawoutput("</select>");
-	rawoutput("</form>");
+        tw_form_close();
 	output_notl("`n`n");
 	output_notl($currentdate." Verified "."Uploader:".$session['user']['login']." Time:".$currenttime);
 	$start="('";
@@ -43,10 +49,10 @@ case "push":
 		}
 	break;
 
-	case "pushall": //get a grip :D
-		if (httppost('pushselected'))
-			{
-			$trans = httppost('pusharray');
+        case "pushall": //get a grip :D
+                if (httppost('pushselected'))
+                        {
+                        $trans = httppost('pusharray');
 			if (is_array($trans))  //setting for any intexts you might receive
 				{
 				$pusharray = $trans;
@@ -54,10 +60,12 @@ case "push":
 				{
 					if ($trans) $pusharray = array($trans);
 					else $pusharray = array();
-				}
-			}
-		$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
-		$res=db_query($sql);
+                                }
+                        }
+                $namespaceEsc = addslashes($namespace);
+                $selectedEsc  = addslashes($selectedlanguage);
+                $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
+                $res=db_query($sql);
 		$firstrow=$currentdate." Verified "."Uploader:".$session['user']['login']." Time:".$currenttime.chr(13).chr(10);
 		$start="('";
 		$middle="','";
@@ -76,9 +84,9 @@ case "push":
 			}
 		foreach($pusharray as $key=>$rowspace)
 			{
-			$end="'),".chr(13).chr(10);
-			$sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$rowspace."' AND language='".$selectedlanguage."' ORDER BY intext;";
-			$result=db_query($sql);
+                        $end="'),".chr(13).chr(10);
+                        $sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$rowspace."' AND language='".$selectedEsc."' ORDER BY intext;";
+                        $result=db_query($sql);
 			$i=0;
 			$numend=db_num_rows($result);
 			$filename=$dir."/".$rowspace.'.sql';
@@ -96,9 +104,12 @@ case "push":
 			}
 		break;
 default:
-	output("Choose the language you want to push:");
-	output_notl("`n");
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=push' name='pushi' method='post'>");
+        $namespaceEsc = addslashes($namespace);
+        $selectedEsc  = addslashes($selectedlanguage);
+        output("Choose the language you want to push:");
+        output_notl("`n");
+        output("Select language and namespaces to push:");
+        tw_form_open('push');
 	addnav("", "runmodule.php?module=translationwizard&op=push");	
 	rawoutput("<select name='pushlanguage' onChange='this.form.submit()'>");
 	$sql = "SELECT language,count(*) AS c FROM " . db_prefix("translations") . " GROUP BY language ORDER BY language ASC";
@@ -109,8 +120,8 @@ default:
 		}
 	rawoutput("</select>");
 	output_notl("`n");	
-	$sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedlanguage."' GROUP BY uri ORDER BY uri ASC";
-	$result=db_query($sql);
+        $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
+        $result=db_query($sql);
 	output("Following namespace were found on your LotGD:`n");
 	output_notl("`n`n");
 	rawoutput("<input type='submit' name='pushall' value='". translate_inline("Push entire translations") ."' class='button'>");
@@ -121,23 +132,27 @@ default:
 	output_notl("`n`n");
 	output("Select the namespace from your translations you want to push.");
 	output_notl("`n");
-	rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-	rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Namespace") ."</td><td>".translate_inline("# of rows")."</td><td>".translate_inline("Actions")."</td></tr>");
-	$i=0;
-	while ($row = db_fetch_assoc($result))
-		{
-		rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-		rawoutput("<input type='checkbox' name='pusharray[]' value='".rawurlencode($row['uri'])."' >");
-		rawoutput("</td><td>");
-		rawoutput($row['uri']);
-		rawoutput("</td><td>");
-		rawoutput($row['c']);
-		rawoutput("</td><td>");
-		rawoutput("<a href='runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri'])."'>". translate_inline("Push")."</a>");
-		addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri']));
-		rawoutput("</td></tr>");
-		}
-	rawoutput("</table>");
-	rawoutput("</form>");
+        tw_table_open([
+            '',
+            translate_inline("Namespace"),
+            translate_inline("# of rows"),
+            translate_inline("Actions"),
+        ]);
+        $i=0;
+        while ($row = db_fetch_assoc($result))
+                {
+		$i++;
+                $checkbox = "<input type='checkbox' name='pusharray[]' value='".rawurlencode($row['uri'])."' >";
+                $actions = "<a href='runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri'])."'>". translate_inline("Push") ."</a>";
+                addnav("", "runmodule.php?module=translationwizard&op=push&mode=push&pushlanguage=$selectedlanguage&ns=". rawurlencode($row['uri']));
+                tw_table_row([
+                    $checkbox,
+                    htmlspecialchars($row['uri'], ENT_QUOTES, 'UTF-8'),
+                    $row['c'],
+                    $actions,
+                ], $i%2==1);
+                }
+        tw_table_close();
+        tw_form_close();
 }
-?>
+

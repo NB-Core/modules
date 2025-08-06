@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 switch ($mode) 
 {
 	case "fix": //remove already translated from the untranslated table (in an extra point because the query takes a few seconds)
@@ -20,33 +21,34 @@ switch ($mode)
 		$result=db_query($sql);
 		if (db_num_rows($result)>0) 
 			{
-			rawoutput("<form action='runmodule.php?module=translationwizard&op=fix&mode=fix' method='post'>");
+                        tw_form_open("fix&mode=fix");
 			addnav("", "runmodule.php?module=translationwizard&op=fix&mode=fix");
 			output("`0There are %s entries who already have a translation in the translations table.`n`n",db_num_rows($result));
 			output("`0This operation will delete already translated parts from the untranslated table.`n`n`b`$ This operation can't be made undone!`b`0`n`n");
 			rawoutput("<input type='submit' value='". translate_inline("Execute") ."' class='button'>");
 			$i = 0;
 			output("`n`nFollowing rows are already translated:");
-			rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-			rawoutput("<tr class='trhead'><td>". translate_inline("Language") ."</td><td>". translate_inline("Text") ."</td><td>".translate_inline("Module")."</td></tr>");						
-			while ($row = db_fetch_assoc($result))
-			{
-				$i++;
-				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-				rawoutput(htmlentities($row['language'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['intext'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row['namespace'],ENT_COMPAT,$coding));
-				rawoutput("</td></tr>");
-			}
-					rawoutput("</table>");
+                        tw_table_open([
+                            translate_inline("Language"),
+                            translate_inline("Text"),
+                            translate_inline("Module")
+                        ]);
+                        while ($row = db_fetch_assoc($result))
+                        {
+                                $i++;
+                                tw_table_row([
+                                    htmlentities($row['language'], ENT_COMPAT, $coding),
+                                    htmlentities($row['intext'], ENT_COMPAT, $coding),
+                                    htmlentities($row['namespace'], ENT_COMPAT, $coding)
+                                ], $i%2==1);
+                        }
+                        tw_table_close();
 			}
 			else
 			{
 			output("Congratulations! Your translation table does not have any redundant entries!");
 			}
-			rawoutput("</form>");
+                        tw_form_close();
 		break;
 	}
-?>
+

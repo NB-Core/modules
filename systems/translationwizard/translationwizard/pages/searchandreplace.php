@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 //debug($session['user']['specialmisc']);
 switch ($mode)
 {
@@ -73,7 +74,8 @@ switch ($mode)
 		$result=db_query($sql);
 		$rownumber=db_num_rows($result);
 		if ($rownumber==0) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=2'); //back to the roots if nothing was found
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandreplace&mode=replace' name='editfeld' method='post' >");
+                output("Select translations to replace:");
+                tw_form_open('searchandreplace&mode=replace');
 		addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=replace");
 		output("%s rows have been found (Displaylimit was %s).",$numberofallrows,$numberof);
 		output_notl("`n");
@@ -89,37 +91,39 @@ switch ($mode)
 			addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=select&pageop=".($numberof+$start)."");
 		}
 		rawoutput("</h4>");
-		rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-		rawoutput("<tr class='trhead'><td></td><td>". translate_inline("Tid") ."</td><td>". translate_inline("Language")."</td><td>".translate_inline("Namespace")."</td><td>".translate_inline("Intext")."</td><td>".translate_inline("Outtext")."</td><td>".translate_inline("Author")."</td><td>".translate_inline("Version")."</td><td>".translate_inline("Actions")."</td><td></td></tr>");	
-		$i=0;
-		while($row=db_fetch_assoc($result))
-		{
-			$i++;
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-			rawoutput("<input type='checkbox' name='replacetext[]' value='".rawurlencode(serialize($row))."' >");
-			rawoutput("</td><td>");
-			rawoutput($row['tid']);
-			rawoutput("</td><td>");
-			rawoutput($row['language']);
-			rawoutput("</td><td>");
-			rawoutput($row['uri']);		
-			rawoutput("</td><td>");
-			rawoutput(htmlentities(stripslashes($row['intext']),ENT_COMPAT,$coding));
-			rawoutput("</td><td>");
-			rawoutput(htmlentities(stripslashes($row['outtext']),ENT_COMPAT,$coding));
-			rawoutput("</td><td>");
-			rawoutput(sanitize($row['author']));
-			rawoutput("</td><td>");
-			rawoutput($row['version']);
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=searchandreplace&mode=edit&tid=".$row['tid']."'>". translate_inline("Edit")."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=edit&tid=".$row['tid']);	
-			rawoutput("</td><td>");
-			//rawoutput("<a href='runmodule.php?module=translationwizard&op=searchandreplace&mode=delete&tid=".$row['tid']."'>". translate_inline("Delete")."</a>");
-			//addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=delete&tid=".$row['tid']);
-			rawoutput("</td></tr>");
-		}
-		rawoutput("</table>");
+                tw_table_open([
+                    '',
+                    translate_inline('Tid'),
+                    translate_inline('Language'),
+                    translate_inline('Namespace'),
+                    translate_inline('Intext'),
+                    translate_inline('Outtext'),
+                    translate_inline('Author'),
+                    translate_inline('Version'),
+                    translate_inline('Actions'),
+                    ''
+                ]);
+                $i=0;
+                while($row=db_fetch_assoc($result))
+                {
+                        $i++;
+                        $checkbox = "<input type='checkbox' name='replacetext[]' value='" . rawurlencode(serialize($row)) . "' >";
+                        $edit = "<a href='runmodule.php?module=translationwizard&op=searchandreplace&mode=edit&tid={$row['tid']}'>" . translate_inline('Edit') . "</a>";
+                        addnav('', "runmodule.php?module=translationwizard&op=searchandreplace&mode=edit&tid={$row['tid']}");
+                        tw_table_row([
+                            $checkbox,
+                            $row['tid'],
+                            $row['language'],
+                            $row['uri'],
+                            htmlentities(stripslashes($row['intext']), ENT_COMPAT, $coding),
+                            htmlentities(stripslashes($row['outtext']), ENT_COMPAT, $coding),
+                            sanitize($row['author']),
+                            $row['version'],
+                            $edit,
+                            ''
+                        ], $i%2==1);
+                }
+                tw_table_close();
 		//some check/uncheck all
 		$all=translate_inline("Check all");
 		$none=translate_inline("Uncheck all");
@@ -144,7 +148,7 @@ switch ($mode)
 				//end		
 				if (db_num_rows($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
 				rawoutput("<input type='submit' name='replacechecked' value='". translate_inline("Replace in selected") ."' class='button'>");
-				rawoutput("</form>");
+                                tw_form_close();
 				break;
 
 	case "edit":
@@ -157,7 +161,8 @@ switch ($mode)
 				output_notl(" ");
 				output("If you want to abort, just click abort (or any other navigation except 'save'.");
 				output_notl("`n`n");
-				rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandreplace&mode=save' method='post'>");
+                                output("Edit the selected translation:");
+                                tw_form_open("searchandreplace&mode=save");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=save");
 				output("TID of the row:");
 				rawoutput("<input id='input' name='tid' width=5 maxlength=5 value='".$row['tid']."'>");
@@ -169,10 +174,10 @@ switch ($mode)
 				rawoutput("<input id='uri' name='uri' width=65 maxlength=255 value='".$row['uri']."'>");
 				output_notl("`n`n");
 				output("Intext of the row:");
-				rawoutput("<textarea name='intext' class='input' cols='60' rows='5'>".htmlentities(stripslashes($row['intext']),ENT_COMPAT,$coding)."</textarea>");
+                                rawoutput("<textarea name='intext' class='input' cols='60' rows='5' title=\"".translate_inline('Original text')."\">".htmlentities(stripslashes($row['intext']),ENT_COMPAT,$coding)."</textarea>");
 				output_notl("`n`n");
 				output("Outtext of the row:");
-				rawoutput("<textarea name='outtext' class='input' cols='60' rows='5'>".htmlentities(stripslashes($row['outtext']),ENT_COMPAT,$coding)."</textarea>");
+                                rawoutput("<textarea name='outtext' class='input' cols='60' rows='5' title=\"".translate_inline('Enter your translation')."\">".htmlentities(stripslashes($row['outtext']),ENT_COMPAT,$coding)."</textarea>");
 				output_notl("`n`n");	
 				output("Author of the row:");
 				rawoutput("<input id='input' name='author' width=50 maxlength=50 value='".$row['author']."'>");
@@ -183,7 +188,7 @@ switch ($mode)
 				rawoutput("<input type='submit' name='select' value='". translate_inline("Save")."' class='button'>");
 				output("`b`$ ATTENTION`b`0");
 				rawoutput("<input type='submit' name='abort' value='". translate_inline("Abort")."' class='button'>");
-				rawoutput("</form>");	
+                                tw_form_close();
 				break;
 
 	case "save":
@@ -191,7 +196,7 @@ switch ($mode)
 				$sql="UPDATE ".db_prefix("translations")." set language='".httppost('language')."', uri='".httppost('uri')."', intext='".httppost('intext')."', outtext='".httppost('outtext')."', author='".httppost('author')."', version='".httppost('version')."' WHERE tid=".httppost('tid').";";
 				$result=db_query($sql);
 				invalidatedatacache("translations-".$namespace."-".$languageschema);
-				if (!result) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=4&mode=select'); //back to the roots 
+                                if (!$result) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=4&mode=select'); //back to the roots
 				redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=5&mode=select'); //back to the roots, no error but success
 
 				break;
@@ -262,7 +267,8 @@ switch ($mode)
 				output_notl(" ");
 				output("If you don't want that, just hit the checkbox below. You may use ?,% or the like in the text."); 
 				output_notl("`n`n");
-				rawoutput("<form action='runmodule.php?module=translationwizard&op=searchandreplace&mode=select' method='post'>");
+                                output("Enter part of the translation to search for:");
+                                tw_form_open("searchandreplace&mode=select");
 				addnav("", "runmodule.php?module=translationwizard&op=searchandreplace&mode=select");
 				output("What do you want to search for (select enter one or more criteria):");
 				output_notl("`n`n");
@@ -294,11 +300,11 @@ switch ($mode)
 				output_notl("`n`n");
 				output("Intext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='intext' class='input' cols='60' rows='5'>".$query['intext']."</textarea>");
+                                rawoutput("<textarea name='intext' class='input' cols='60' rows='5' title=\"".translate_inline('Original text')."\">".$query['intext']."</textarea>");
 				output_notl("`n`n");
 				output("Outtext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='outtext' class='input' cols='60' rows='5'>".$query['outtext']."</textarea>");
+                                rawoutput("<textarea name='outtext' class='input' cols='60' rows='5' title=\"".translate_inline('Enter your translation')."\">".$query['outtext']."</textarea>");
 				output_notl("`n`n");	
 				output("Author of the row:");
 				rawoutput("<input id='input' name='author' width=50 maxlength=50 value='".$query['author']."'>");
@@ -322,13 +328,13 @@ switch ($mode)
 				output_notl("`n`n");
 				output("Intext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='rintext' class='input' cols='30' rows='5'>".$query['rintext']."</textarea>");
-				rawoutput("<textarea name='rintext2' class='input' cols='30' rows='5'>".$query['rintext2']."</textarea>");
+                                rawoutput("<textarea name='rintext' class='input' cols='30' rows='5' title=\"".translate_inline('Original text')."\">".$query['rintext']."</textarea>");
+                                rawoutput("<textarea name='rintext2' class='input' cols='30' rows='5' title=\"".translate_inline('Translated text')."\">".$query['rintext2']."</textarea>");
 				output_notl("`n`n");
 				output("Outtext of the row:");
 				output_notl("`n");
-				rawoutput("<textarea name='routtext' class='input' cols='30' rows='5'>".$query['routtext']."</textarea>");
-				rawoutput("<textarea name='routtext2' class='input' cols='30' rows='5'>".$query['routtext2']."</textarea>");
+                                rawoutput("<textarea name='routtext' class='input' cols='30' rows='5' title=\"".translate_inline('Original text')."\">".$query['routtext']."</textarea>");
+                                rawoutput("<textarea name='routtext2' class='input' cols='30' rows='5' title=\"".translate_inline('Translated text')."\">".$query['routtext2']."</textarea>");
 				output_notl("`n`n");	
 				output("Author of the row:");
 				rawoutput("<input id='input' name='rauthor' width=20 maxlength=50 value='".$query['rauthor']."'>");
@@ -338,7 +344,7 @@ switch ($mode)
 				rawoutput("<input id='input' name='rversion' width=20 maxlength=50 value='".$query['rversion']."'>");
 				rawoutput("<input id='input' name='rversion2' width=20 maxlength=50 value='".$query['rversion2']."'>");
 
-				rawoutput("<input type='submit' name='select' value='". translate_inline("Preview")."' class='button'>");
-				rawoutput("</form>");
+                                rawoutput("<input type='submit' name='select' value='". translate_inline("Preview")."' class='button'>");
+                                tw_form_close();
 }
-?>
+

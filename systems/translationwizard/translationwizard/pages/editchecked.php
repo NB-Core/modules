@@ -1,8 +1,10 @@
 <?php
+declare(strict_types=1);
 
 rawoutput("<br>");
 output("`n`bBeware of the autologoff-timeout!`b`n`n");
-foreach($transintext as $trans) 
+output("Edit the translations below:");
+foreach($transintext as $trans)
 	{
 		output("Text:");
 		output_notl("`n");
@@ -31,6 +33,6 @@ foreach($transintext as $trans)
 	}
 output_notl("`n`n");
 rawoutput("<input type='submit' name='multichecked' value='". translate_inline("Save") ."' class='button'>");
-rawoutput("</form>");
+tw_form_close();
 
-?>
+

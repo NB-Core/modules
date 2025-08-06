@@ -1,10 +1,16 @@
 <?php
+declare(strict_types=1);
 //some kind of header
 if (httppost("deletechecked")) {
-	require("./modules/translationwizard/deletechecked.php"); //if you want to delete the checked translations, this commences the deletion process
+        WizardService::deleteCheckedRows(
+                $languageschema,
+                $namespace,
+                WizardService::ensureArray($transintext)
+        );
 }
 if (httppost("editchecked")) {
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=list&ns=".rawurlencode($namespace)."' method='post'>");
+        output("Edit the selected texts below:");
+        tw_form_open("list&ns=".rawurlencode($namespace));
 	addnav("", "runmodule.php?module=translationwizard&op=list&ns=".rawurlencode($namespace));
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 	$result = db_query($sql);
@@ -17,7 +23,7 @@ if (httppost("editchecked")) {
 		}
 	rawoutput("</select>");
 	//rawoutput("<input type='submit' class='button' value='". translate_inline("Show") ."'>"); //no longer necessary
-	require("./modules/translationwizard/editchecked.php"); //if you want to edit some translations at a time
+       require __DIR__ . '/editchecked.php'; //if you want to edit some translations at a time
 	addnav("R?Restart Translator", "runmodule.php?module=translationwizard");
 	addnav("N?Translate by Namespace", "runmodule.php?module=translationwizard&op=list");
 	require_once("lib/superusernav.php");
@@ -26,22 +32,52 @@ if (httppost("editchecked")) {
 	page_footer();  //let's stop here
 }
 if (httppost("multichecked")) {
-	$redirectonline=1;
-	require("./modules/translationwizard/multichecked.php");//if you want to copy the checked translations with intext and the entered outtext, this commences the copy process
+        $success = WizardService::saveBatchTranslations(
+                $languageschema,
+                $namespace,
+                WizardService::ensureArray($transintext),
+                WizardService::ensureArray($transouttext),
+                WizardService::ensureArray(httppost('nametext')),
+                WizardService::ensureArray(httppost('translatedtid')),
+                $session['user']['login'],
+                $logd_version
+        );
+        $error = $success ? 5 : 4;
+        redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
 }
 if (httppost("copychecked")) {
-	require("./modules/translationwizard/copychecked.php");//if you want to copy the checked translations with intext=outtext, this commences the copy process
+        $success = WizardService::copyCheckedTranslations(
+                $languageschema,
+                $namespace,
+                WizardService::ensureArray($transintext),
+                $session['user']['login'],
+                $logd_version
+        );
+        $error = $success ? 5 : 4; // 5 for success, 4 for failure
+        redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace."&error=".$error);
 }
 	//debug("Name of the module:".$namespace);
 switch ($mode)
 {
 case "save":		//if you want to save a single translation (called not from the checkboxes form)
-	$from="module=translationwizard&op=list&ns=".$namespace;
-	require("./modules/translationwizard/save_single.php");
-	break; //just in case
+        $from="module=translationwizard&op=list&ns=".$namespace;
+        $outtext = httppost('outtext');
+        if ($outtext !== '') {
+                $success = WizardService::saveTranslation(
+                        $languageschema,
+                        $namespace,
+                        httppost('intext'),
+                        $outtext,
+                        $session['user']['login'],
+                        $logd_version
+                );
+                $error = $success ? 5 : 4;
+        }
+        redirect("runmodule.php?{$from}&error=".(isset($error) ? $error : ''));
+        break; //just in case
 case "edit": //for one translation via the edit button
-	require("./modules/translationwizard/edit_single.php");
-	break;
+       require __DIR__ . '/edit_single.php';
+        break;
 case "del": //to delete one via the delete button
 	$intext=rawurldecode(httpget('intext'));
 	$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$languageschema' AND namespace = '$namespace'";
@@ -51,7 +87,8 @@ case "del": //to delete one via the delete button
 	redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //just redirecting so you go back to the previous page after the deletion
 	break;
 default: //if there is any other mode, i.e. "" go on and display what's necessary including checkboxes and so on, just the main list
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=list' name='listenauswahl' method='post'>");
+        output("Select texts to translate or delete:");
+        tw_form_open('list');
 	addnav("", "runmodule.php?module=translationwizard&op=list");
 	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
 	$result = db_query($sql);
@@ -68,8 +105,11 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
 	addnav("", "runmodule.php?module=translationwizard&op=pull&mode=pull&ns=". rawurlencode($namespace));
 	//rawoutput("<input type='submit' class='button' name='dummy' value='". translate_inline("Show") ."'>"); //no longer necessary
 	output_notl("`n");
-	rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-	rawoutput("<tr class='trhead'><td>". translate_inline("Ops") ."</td><td>". translate_inline("Text") ."</td><td>".translate_inline("Actions")."</td></tr>");
+        tw_table_open([
+            translate_inline("Ops"),
+            translate_inline("Text"),
+            translate_inline("Actions"),
+        ]);
 	$sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' AND namespace='".$namespace."'";
 	$result = db_query($sql);
 	if (db_num_rows($result)>0){
@@ -77,28 +117,27 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
 		while ($row = db_fetch_assoc($result))
 		{
 			$i++;
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-			rawoutput("<input type='checkbox' name='transtext[]' value='".rawurlencode($row['intext'])."' >");
-			addnav("", "runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']));
-			rawoutput("</td><td>");
-			rawoutput(htmlentities($row['intext'],ENT_COMPAT,$coding));
-			rawoutput("</td><td>");
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Edit") ."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
-			rawoutput("<a href='runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Delete") ."</a>");
-			addnav("", "runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
-			rawoutput("</td></tr>");
-		}
-	}else
-		{
-			rawoutput("<tr><td colspan='2'>". translate_inline("No rows found") ."</td></tr>");
-			if ($namespace<>"")
-				{
-				$namespace="";
-				redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //safety if the rows are empty but the namespace showed up
-				}
-		}
-	rawoutput("</table>");
+                        $checkbox = "<input type='checkbox' name='transtext[]' value='".rawurlencode($row['intext'])."' >";
+                        $actions = "<a href='runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Edit") ."</a>";
+                        addnav("", "runmodule.php?module=translationwizard&op=list&mode=edit&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
+                        $actions .= " <a href='runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>". translate_inline("Delete") ."</a>";
+                        addnav("", "runmodule.php?module=translationwizard&op=list&mode=del&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']));
+                        tw_table_row([
+                            $checkbox,
+                            htmlentities($row['intext'],ENT_COMPAT,$coding),
+                            $actions,
+                        ], $i%2==1);
+                }
+        }else
+                {
+                        tw_table_row([rawoutput("<td colspan='3'>".translate_inline("No rows found")."</td>")], true);
+                        if ($namespace<>"")
+                                {
+                                $namespace="";
+                                redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //safety if the rows are empty but the namespace showed up
+                                }
+                }
+        tw_table_close();
 	//some check/uncheck all
 	$all=translate_inline("Check all");
 	$none=translate_inline("Uncheck all");
@@ -133,5 +172,5 @@ if (!$mode=="save" && $namespace<>"")
 	rawoutput("<input type='submit' name='editchecked' value='". translate_inline("Edit selected") ."' class='button'>");
 	rawoutput("<input type='submit' name='deletechecked' value='". translate_inline("Delete selected") ."' class='button'>");
 	}
-rawoutput("</form>");
-?>
+tw_form_close();
+

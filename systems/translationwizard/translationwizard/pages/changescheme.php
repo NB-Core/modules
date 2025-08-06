@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 if (httppost('save'))
 	{
@@ -11,7 +12,7 @@ if (httppost('save'))
 	{
 	$settings= array(
 		"Scheme Settings for the Wizard,title",
-		"language"=>"What schema do you want to translate for?,enum,".getsetting("serverlanguages","en,English,de,Deutsch,fr,Français,dk,Danish,es,Español,it,Italian"),
+		"language"=>"What schema do you want to translate for?,enum,".getsetting("serverlanguages","en,English,de,Deutsch,fr,FranÃ§ais,dk,Danish,es,EspaÃ±ol,it,Italian"),
 		"Server supported languages only (view your game settings or before 1.1.1 prefs.php or configuration.php),note"
 	);
 	$lang=get_module_pref("language");
@@ -19,16 +20,16 @@ if (httppost('save'))
 		else
 		$set=array("language"=>$lang);//,"coding"=>$code);
 	require_once("lib/showform.php");
-	rawoutput("<form action='runmodule.php?module=translationwizard&op=changescheme' method='POST'>");
+        tw_form_open("changescheme", [], 'POST');
 	//output("Note: If you change your coding table, your php version must support the version. Else you'll get error messages.");
 	output_notl("`n`n");
 	$info = showform($settings,$set);
 	rawoutput("<input type='hidden' value='1' name='save'>");
-	rawoutput("</form>");
+        tw_form_close();
 	addnav("","runmodule.php?module=translationwizard&op=changescheme");
 	}
 
 
 
 
-?>
+

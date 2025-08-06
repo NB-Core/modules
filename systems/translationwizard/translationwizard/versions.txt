@@ -50,3 +50,4 @@ v1.41 switched to Administrative section + coding scheme now taken from the lotg
 v1.42 added the possibilty to clean up empty namespace rows in the untranslated - idea by Edorian -
 v1.43 added the invalidate for the cached translation quers in 1.1.x and a fix for the scan module regarding addnews
 v.144 serveral smaller bugfixes and adaption to new language settings in 1.1.1 (compatible downwards)
+v1.47 modernization cleanup and strict types enabled for all files

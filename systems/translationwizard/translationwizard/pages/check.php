@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 if (httppost("listing")) $mode="listing";
 if (httppost("deleteall")) $mode="deleteall";
 switch ($mode)
@@ -44,44 +45,44 @@ switch ($mode)
 		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
 		$i = 0;
 		output("`n`nFollowing rows are non-unique:");
-		rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-		rawoutput("<tr class='trhead'><td>". translate_inline("Language")."</td><td>".translate_inline("Namespace")."</td><td>".translate_inline("Original") ."</td><td>".translate_inline("Translation")."</td><td>".translate_inline("Author")."</td><td>".translate_inline("Version")."</td><td>".translate_inline("Actions")."</td></tr>");
-		while ($row = db_fetch_assoc($result))
-			{
-			$i++;
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'>");
-			$sql="SELECT * FROM ".db_prefix("translations")." WHERE intext='".addslashes($row['intext'])."' AND language='".$row['language']."' AND uri='".$row['uri']."';";
-			$result2 = db_query($sql);
-				while ($row2 = db_fetch_assoc($result2))
-				{
-				rawoutput("<td>");
-				rawoutput(htmlentities($row2['language'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row2['uri'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row2['intext'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row2['outtext'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row2['author'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput(htmlentities($row2['version'],ENT_COMPAT,$coding));
-				rawoutput("</td><td>");
-				rawoutput("<a href='runmodule.php?module=translationwizard&op=check&mode=del&tid=". $row2['tid'] ."'>". translate_inline("Delete") ."</a>");
-				addnav("", "runmodule.php?module=translationwizard&op=check&mode=del&tid=". $row2['tid']);
-				rawoutput("</td></tr>");
-				}
-			if ($i>$page) break;
-			}
-		rawoutput("</table>");
+                tw_table_open([
+                    translate_inline("Language"),
+                    translate_inline("Namespace"),
+                    translate_inline("Original Text"),
+                    translate_inline("Translation"),
+                    translate_inline("Author"),
+                    translate_inline("Version"),
+                    translate_inline("Actions"),
+                ]);
+                while ($row = db_fetch_assoc($result))
+                        {
+                        $sql="SELECT * FROM ".db_prefix("translations")." WHERE intext='".addslashes($row['intext'])."' AND language='".$row['language']."' AND uri='".$row['uri']."';";
+                        $result2 = db_query($sql);
+                                while ($row2 = db_fetch_assoc($result2))
+                                {
+                                    $i++;
+                                    $actions = "<a href='runmodule.php?module=translationwizard&op=check&mode=del&tid=". $row2['tid'] ."'>". translate_inline("Delete") ."</a>";
+                                    addnav("", "runmodule.php?module=translationwizard&op=check&mode=del&tid=". $row2['tid']);
+                                    tw_table_row([
+                                        htmlentities($row2['language'],ENT_COMPAT,$coding),
+                                        htmlentities($row2['uri'],ENT_COMPAT,$coding),
+                                        htmlentities($row2['intext'],ENT_COMPAT,$coding),
+                                        htmlentities($row2['outtext'],ENT_COMPAT,$coding),
+                                        htmlentities($row2['author'],ENT_COMPAT,$coding),
+                                        htmlentities($row2['version'],ENT_COMPAT,$coding),
+                                        $actions,
+                                    ], $i%2==1);
+                                    if ($i>$page) break 2;
+                                }
+                        }
+                tw_table_close();
 	break;
 
 	case "deleteall":
 		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=check&mode=delete' method='post'>");
-		addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
-		rawoutput("<input type='hidden' name='op' value='check'>");
+                tw_form_open('check&mode=delete', ['op' => 'check']);
+                addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
 		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
 		output("`0This operation will delete one occurrence of each row. `n`n`b`$ CAUTION!`b`0`n`nDue to technical reasons, this operation can't let you select every single line.");
 		output("The query would cost a lot of time and MySql might time out or the query block your game for more than just seconds.");
@@ -92,7 +93,7 @@ switch ($mode)
 		rawoutput("<option label='min' selected>Delete first</option>");
 		rawoutput("<option label='max'>Delete last</option>");
 		rawoutput("</select>");
-		rawoutput("<br><br><br><br>  <input type='submit' value='". translate_inline("Execute") ."' class='button'></form>");
+                tw_form_close(translate_inline('Execute'));
 		output("`b`i`$ Attention, no additional confirmation`i`b`0");
 
 	break;
@@ -100,19 +101,19 @@ switch ($mode)
 	default:  //if the user hits the button just to check for duplicates
 		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
 		$result = db_query($sql);
-		rawoutput("<form action='runmodule.php?module=translationwizard&op=check&mode=delete' method='post'>");
-		addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
-		rawoutput("<input type='hidden' name='op' value='check'>");
+                tw_form_open('check&mode=delete', ['op' => 'check']);
+                addnav("", "runmodule.php?module=translationwizard&op=check&mode=delete");
 		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
 		if (db_num_rows($result)==0) //table is fine, no redundant rows
 			{
 			output("Congratulations! Your translation table does not have any redundant entries!");
-			rawoutput("</form");
+                        tw_form_close();
 			break;
 			}
 		output("What do you want to do?`n`n`n`n");
-		rawoutput("<input type='submit' name='deleteall' value='". translate_inline("Delete multiple automatically") ."' class='button'>");
-		rawoutput("<input type='submit' name='listing' value='". translate_inline("Delete manually") ."' class='button'></form>");
+                rawoutput("<input type='submit' name='deleteall' value='". translate_inline("Delete multiple automatically") ."' class='button'>");
+                rawoutput("<input type='submit' name='listing' value='". translate_inline("Delete manually") ."' class='button'>");
+                tw_form_close();
 	break;
 		}
-?>
+
