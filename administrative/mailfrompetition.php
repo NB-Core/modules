@@ -1,8 +1,4 @@
 <?php
-/*
-
- */
-require_once('ext/vendor/autoload.php');
 
 function mailfrompetition_getmoduleinfo() {
 	$info = array(
@@ -280,4 +276,3 @@ function mailfrompetition_plainText($text)
 
 	return $text;
 }
-?>
