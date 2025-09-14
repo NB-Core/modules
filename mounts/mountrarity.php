@@ -27,6 +27,8 @@
 // addnews ready
 // mail ready
 
+require_once("lib/gamelog.php");
+
 function mountrarity_getmoduleinfo(){
 	$info=array(
 			"name"=>"Mount Rarity",
