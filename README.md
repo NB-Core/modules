@@ -12,6 +12,7 @@ Directories group modules by purpose:
 - **administrative/** – tools for admins and moderation
 - **forest/** – general forest related tweaks
 - **forest_specials/** – additional forest encounters and bosses
+- **inventory/** - inventory and items 
 - **lodge/** – lodge upgrades
 - **mounts/** – mount related features
 - **systems/** – large feature systems (races, specialties etc.)
@@ -66,6 +67,9 @@ Below is a short description for every module. Some modules rely on others; depe
 - **vampirelord_bride** – bride of the vampire lord (requires `vampirelord`).
 - **wedgieman** – the fearsome Wedgie Man.
 - **zombie** – zombie outbreak event.
+
+### inventory
+- **inventory** - the entire updated item system by XChrisX for run with +nb core
 
 ### Lodge
 - **lodgedkpointreset** – reset spent lodge points for a dragon kill.
