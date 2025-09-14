@@ -59,7 +59,16 @@ function mount_feeder_install() {
 }
 
 function mount_feeder_uninstall() {
-	return true;
+        return true;
+}
+
+function mount_feeder_add_feed($amount = 1) {
+        if (is_module_active('inventory')) {
+                require_once("modules/inventory/lib/itemhandler.php");
+                add_item_by_name("`TMount Feed", $amount);
+        } else {
+                output("`4Warning:`0 Inventory module not active; feed not delivered.`n");
+        }
 }
 
 function mount_feeder_dohook($hookname,$args) {
@@ -107,11 +116,10 @@ function mount_feeder_runevent($type,$link) {
 		output("`7You hold out requested amount of gold, and the old man quickly snatches it up, hiding it somewhere on his person so fast you lose track of it.");
 		output(" He swings the basket off his back, and pulls out a lump of the meat like substance, still dripping. He hands the thing to you with a smile.");
 		output(" `T\"There you go, some nice, fresh feed for your mount, I'm sure they'll love it.\"`7");
-		require_once("modules/inventory/lib/itemhandler.php");
-		add_item_by_name("`TMount Feed");
-		$session['user']['gold']-=$cost;
-		$session['user']['specialinc'] = "";
-		break;
+                mount_feeder_add_feed();
+                $session['user']['gold']-=$cost;
+                $session['user']['specialinc'] = "";
+                break;
 	case "rob":
 		output("`7You see the poor, defenseless looking old man, and decide you don't need to pay for enough. Slowly you approach him, drawing your %s`7.`n`n",$session['user']['weapon']);
 		$chance = e_rand(1,10);
@@ -120,11 +128,10 @@ function mount_feeder_runevent($type,$link) {
 			output("`7The old man looks up at you, then screams, making a run for it. You bolt after them, only to be overcome by a huge shadow.");
 			output(" A giant winged beast swoops down, and picks up the old man, flying away with him. The stand, staring in wonder at the strange event.`n`n");
 			$cchance = e_rand(1,10);
-			if ($cchance == 1){
-				require_once("modules/inventory/lib/itemhandler.php");
-				add_item_by_name("`TMount Feed");
-				output("Looking down, you notice the old man appeared to drop something, a nice fresh lump of feed.");
-			}
+                        if ($cchance == 1){
+                                mount_feeder_add_feed();
+                                output("Looking down, you notice the old man appeared to drop something, a nice fresh lump of feed.");
+                        }
 			if ($cchance == 10){
 				//attacked!
 				$hploss = round($session['user']['hitpoints']/e_rand(2,4));
@@ -135,10 +142,9 @@ function mount_feeder_runevent($type,$link) {
 		} elseif($chance > 1 && $chance < 5){
 			//Surrender
 			output("The old man flails in fear, the throws a lump of the feed at you. `T\"Take it! Just let me go!\" `7The old man runs off, leaving you with a free feed.");
-			require_once("modules/inventory/lib/itemhandler.php");
-			add_item_by_name("`TMount Feed");
-			$session['user']['specialinc'] = "";
-		} else {
+                        mount_feeder_add_feed();
+                        $session['user']['specialinc'] = "";
+                } else {
 			//Attack!
 			output("`7The old man eyes you with interest. `T\"You plan take my stock by force? Well then, lets see if I can tenderize you child.\"`n");
 			addnav("Attack",$link."op=attack");
@@ -171,17 +177,15 @@ function mount_feeder_runevent($type,$link) {
 			output(" `T\"Well, I guess this will have to make do then.\" `7The old man laments.`n`n");
 			addnews("%s`^ survived an encounter with the Mount Feeder`^.",$session['user']['name']);
 			$chance = e_rand(1,10);
-			if ($chance < 6){
-				output("Distracted by the scene, the old man slips away before you can notice.");
-			} elseif($chance > 5 && $chance < 9){
-				output("Distracted by the scene, the old man slips away before you can notice. However you noticed a lump of feed left behind in his haste.");
-				require_once("modules/inventory/lib/itemhandler.php");
-				add_item_by_name("`TMount Feed");
-			} else {
-				output("Distracted by the scene, the old man slips away before you can notice. However you noticed TWO lumps of feed left behind in his haste.");
-				require_once("modules/inventory/lib/itemhandler.php");
-				add_item_by_name("`TMount Feed",2);
-			}
+                        if ($chance < 6){
+                                output("Distracted by the scene, the old man slips away before you can notice.");
+                        } elseif($chance > 5 && $chance < 9){
+                                output("Distracted by the scene, the old man slips away before you can notice. However you noticed a lump of feed left behind in his haste.");
+                                mount_feeder_add_feed();
+                        } else {
+                                output("Distracted by the scene, the old man slips away before you can notice. However you noticed TWO lumps of feed left behind in his haste.");
+                                mount_feeder_add_feed(2);
+                        }
 			$badguy=array();
 			$session['user']['specialinc'] = "";
 			$session['user']['badguy']="";
@@ -240,11 +244,10 @@ function mount_feeder_run(){
 			output(" `T\"Well here you go, my special feed.\" `7The man holds out a strange fleshy looking lump to you, the smell quite overpowering.");
 			output(" As you take the strange feed, the old man clears his throat, and holds out a hand. `T\"My Payment?\"`7 You fish the required amound from your pockets and hand over.");
 			output(" `T\"Good, well your %s should enjoy that! Just give it to them, and they'll be back to tip top shape in no time... usually.\" `7The old mans says before ushering you away.",$playermount['mountname']);
-			require_once("modules/inventory/lib/itemhandler.php");
-			add_item_by_name("`TMount Feed");
-			$session['user']['gold']-=$cost;
-			set_module_pref("bought", 1);
-			break;
+                        mount_feeder_add_feed();
+                        $session['user']['gold']-=$cost;
+                        set_module_pref("bought", 1);
+                        break;
 		case "ask":
 			output("`7You decide to ask the old man what it is that makes his feed so special. The old man laughs, setting the basket down, you swear you see it move.");
 			output(" `T\"Well, it's the special ingredients I use you see. Plus I have my own unique preparation methods, eleven secret herbsand spices, that sort of thing.\"`7");
