@@ -97,7 +97,7 @@ function display_item_nav($hookname, $return = false) {
 				FROM $inventory 
 				WHERE $inventory.userid = $acctid
 				GROUP BY $inventory.itemid) AS inv ON
-		item.itemid = inv.itemid
+               $item.itemid = inv.itemid
 		WHERE ($item.activationhook & $constant)";
 	$result = db_query($sql);
 
