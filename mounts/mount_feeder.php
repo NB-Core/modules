@@ -14,10 +14,13 @@ function mount_feeder_getmoduleinfo() {
 			"chance"=>"How like is this event in the forest?,range,1,100,1|25",
 			"experienceloss"=>"Percentage: How many experience is lost/won after a fight,floatrange,1,100,1|10",
 			),
-		"prefs"=>array(
-			"bought"=>"How many feeds as the player bought today?,int|0",
-			"encountered"=>"Has the player encountered the feeder in the forest today?,int|0",
-			),
+                "prefs"=>array(
+                        "bought"=>"How many feeds as the player bought today?,int|0",
+                        "encountered"=>"Has the player encountered the feeder in the forest today?,int|0",
+                        ),
+                "requires"=>array(
+                        "inventory"=>"1.0|Inventory system must be installed",
+                        ),
 	);
 	return $info;
 }
@@ -37,18 +40,22 @@ function feeder_chance(){
 }
 
 function mount_feeder_install() {
-	module_addhook("newday");
-	module_addhook("stables-desc");
-	module_addhook("stables-nav");
-	module_addeventhook("forest", "require_once('modules/mount_feeder.php'); return feeder_chance();"); 
-// note to self - this may add too many items. mind uninstalling...	
-	if (!is_module_active('mount_feeder')) {
-		$sql="INSERT INTO item (class, name, description, gold, gems, weight, droppable, level, dragonkills, buffid, charges, link, hide, customvalue, execvalue, exectext, noeffecttext, activationhook, findchance, loosechance, dkloosechance, sellable, buyable, uniqueforserver, uniqueforplayer, equippable, equipwhere) VALUES
-		('Loot', '`TMount Feed', 'A strange, meat like blob. Apparently mounts find this appealing', 1, 0, 1, 0, 1, 0, 0, 0, '', 0, '', 'require_once(\"modules/mount_feeder/item_code.php\");', '`7The you throw the lump of strange feed to you mount.', '', '86', 0, 0, 0, 0, 0, 0, 0, 0, '');";
-		db_query($sql);
-	}
-	
-	return true;
+        if (!is_module_active('inventory')) {
+                output("This module requires the Inventory module to be installed.");
+                return false;
+        }
+        module_addhook("newday");
+        module_addhook("stables-desc");
+        module_addhook("stables-nav");
+        module_addeventhook("forest", "require_once('modules/mount_feeder.php'); return feeder_chance();");
+// note to self - this may add too many items. mind uninstalling...
+        if (!is_module_active('mount_feeder')) {
+                $sql="INSERT INTO item (class, name, description, gold, gems, weight, droppable, level, dragonkills, buffid, charges, link, hide, customvalue, execvalue, exectext, noeffecttext, activationhook, findchance, loosechance, dkloosechance, sellable, buyable, uniqueforserver, uniqueforplayer, equippable, equipwhere) VALUES
+                ('Loot', '`TMount Feed', 'A strange, meat like blob. Apparently mounts find this appealing', 1, 0, 1, 0, 1, 0, 0, 0, '', 0, '', 'require_once(\"modules/mount_feeder/item_code.php\");', '`7The you throw the lump of strange feed to you mount.', '', '86', 0, 0, 0, 0, 0, 0, 0, 0, '');";
+                db_query($sql);
+        }
+
+        return true;
 }
 
 function mount_feeder_uninstall() {
