@@ -119,7 +119,6 @@ function translationwizard_dohook(string $hookname, array $args): array{
         switch ($hookname) {
         case "superuser":
                 if ($session['user']['superuser'] & SU_IS_TRANSLATOR) {
-                        if (in_array($session['user']['acctid'],array(53991,49152,11064,79959,80761,56609,16498,20127,62860,66990))) break; //safety
                         addnav("Actions");
                         addnav("Translation Wizard","runmodule.php?module=translationwizard&op=list");
                         if (get_module_setting("blocktrans")) blocknav("untranslated.php");
