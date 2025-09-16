@@ -80,6 +80,9 @@ Below is a short description for every module. Some modules rely on others; depe
 - **namechange** – allow players to change character name.
 
 ### Mounts
+- **mount_feeder** – forest event where a mysterious vendor sells mount feed (requires `inventory`).
+- **mountname** – Hunter's Lodge service letting players give mounts custom names.
+- **mountrarity** – rotates which mounts are in stock by giving each stable mount a rarity.
 - **mountstables** – extra mount stable slots.
 - **xmasdiscount** – discounted mount prices around Christmas.
 
