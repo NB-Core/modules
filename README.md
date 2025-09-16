@@ -98,6 +98,8 @@ Below is a short description for every module. Some modules rely on others; depe
 - **serverbalance** – helper for tracking server load.
 
 ### Systems
+- **alignment** – track and display player alignment and demeanor values that change via PvP, mounts, and creature settings.
+- **alignmentbasedweapon** – alignment-driven shrine event that can grant powerful weapons to matching characters (requires `alignment`).
 - **circulum** – core reset system called “Circulum Vitae”.
 - **circulum_hof** – Hall of Fame for circulum resets (requires `circulum`).
 - **circulum_prefreset** – preference reset for circulum (requires `circulum`).
