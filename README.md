@@ -65,6 +65,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **ninjamerchant** – wandering ninja merchant.
 - **punishers** – the punishers encounter (requires `alignment`).
 - **thegrinch** – Grinch mini‑boss.
+- **vampirelord** – introduces the Vampire’s Lair event (`forest_specials/vampirelord.php`) where players can sacrifice permanent HP for buffs, gold, or gems.
 - **vampirelord_bride** – bride of the vampire lord (requires `vampirelord`).
 - **wedgieman** – the fearsome Wedgie Man.
 - **zombie** – zombie outbreak event.
