@@ -111,6 +111,7 @@ Below is a short description for every module. Some modules rely on others; depe
 
 ### Village modules
 - **beggarslane** – explore Beggars Lane in the village.
+- **cityamwayr** – adds the Amwayr city with configurable travel routes, minimum dragon kill access requirement, and city-specific PvP handling.
 - **halleyscorner** – Halley’s Corner travel option.
 - **invitationzones** – fighting zones accessible by invitation (requires `fightingzone`).
 - **madmax** – multiplayer word game (requires `playergames`).
