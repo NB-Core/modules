@@ -42,7 +42,8 @@ Below is a short description for every module. Some modules rely on others; depe
 ### Dwellings
 - **dwcastles** - Castle type for dwellings core
 - **dwcityhouses** - City House type for dwellings core
-- **dwellings** - Dwellings core module 
+- **dwellings** - Dwellings core module
+- **cityprefs** - Installs a `cityprefs` table, syncs known cities, and adds a superuser editor for managing city-specific module settings (`dwellings/cityprefs.php`).
 - **dwshack** - Shack type for dwellings core
 - **dwellings_antiplunder** - Counter measures against plundering
 - **dwellings_plunder** - Plundering dwellings for gold
@@ -65,19 +66,25 @@ Below is a short description for every module. Some modules rely on others; depe
 - **ninjamerchant** – wandering ninja merchant.
 - **punishers** – the punishers encounter (requires `alignment`).
 - **thegrinch** – Grinch mini‑boss.
+- **vampirelord** – introduces the Vampire’s Lair event (`forest_specials/vampirelord.php`) where players can sacrifice permanent HP for buffs, gold, or gems.
 - **vampirelord_bride** – bride of the vampire lord (requires `vampirelord`).
 - **wedgieman** – the fearsome Wedgie Man.
 - **zombie** – zombie outbreak event.
 
 ### inventory
 - **inventory** - the entire updated item system by XChrisX for run with +nb core
+- **findloot** – hooks `battle-victory` to roll for loot items via the inventory system (`items/findloot.php`).
 
 ### Lodge
+- **lodge_colortable** – adds a Lodge navigation link displaying the LoTGD color table and a sample text input (`lodge/lodge_colortable.php`).
 - **lodgedkpointreset** – reset spent lodge points for a dragon kill.
 - **lodgenonexpiration** – purchase non‑expiration account upgrade.
 - **namechange** – allow players to change character name.
 
 ### Mounts
+- **mount_feeder** – forest event where a mysterious vendor sells mount feed (requires `inventory`).
+- **mountname** – Hunter's Lodge service letting players give mounts custom names.
+- **mountrarity** – rotates which mounts are in stock by giving each stable mount a rarity.
 - **mountstables** – extra mount stable slots.
 - **xmasdiscount** – discounted mount prices around Christmas.
 
@@ -107,10 +114,14 @@ Below is a short description for every module. Some modules rely on others; depe
 - **specialtysystem_ice** – ice specialties (requires `specialtysystem`).
 - **specialtysystem_lightning** – lightning specialties (requires `specialtysystem`).
 - **specialtysystem_medical** – medical specialties (requires `specialtysystem`).
+- **specialtysystem_sand** – registers sand elemental jutsu combat options for the specialty system (requires `specialtysystem`).
+- **specialtysystem_water** – registers water elemental jutsu combat options for the specialty system (requires `specialtysystem`).
+- **specialtysystem_wind** – registers wind elemental jutsu combat options for the specialty system (requires `specialtysystem`).
 - **translationwizard** – translation management wizard for text output.
 
 ### Village modules
 - **beggarslane** – explore Beggars Lane in the village.
+- **cityamwayr** – adds the Amwayr city with configurable travel routes, minimum dragon kill access requirement, and city-specific PvP handling.
 - **halleyscorner** – Halley’s Corner travel option.
 - **invitationzones** – fighting zones accessible by invitation (requires `fightingzone`).
 - **madmax** – multiplayer word game (requires `playergames`).
