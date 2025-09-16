@@ -74,6 +74,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **findloot** – hooks `battle-victory` to roll for loot items via the inventory system (`items/findloot.php`).
 
 ### Lodge
+- **lodge_colortable** – adds a Lodge navigation link displaying the LoTGD color table and a sample text input (`lodge/lodge_colortable.php`).
 - **lodgedkpointreset** – reset spent lodge points for a dragon kill.
 - **lodgenonexpiration** – purchase non‑expiration account upgrade.
 - **namechange** – allow players to change character name.
