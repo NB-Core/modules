@@ -114,6 +114,9 @@ Below is a short description for every module. Some modules rely on others; depe
 - **specialtysystem_ice** – ice specialties (requires `specialtysystem`).
 - **specialtysystem_lightning** – lightning specialties (requires `specialtysystem`).
 - **specialtysystem_medical** – medical specialties (requires `specialtysystem`).
+- **specialtysystem_sand** – registers sand elemental jutsu combat options for the specialty system (requires `specialtysystem`).
+- **specialtysystem_water** – registers water elemental jutsu combat options for the specialty system (requires `specialtysystem`).
+- **specialtysystem_wind** – registers wind elemental jutsu combat options for the specialty system (requires `specialtysystem`).
 - **translationwizard** – translation management wizard for text output.
 
 ### Village modules
