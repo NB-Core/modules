@@ -71,6 +71,7 @@ Below is a short description for every module. Some modules rely on others; depe
 
 ### inventory
 - **inventory** - the entire updated item system by XChrisX for run with +nb core
+- **findloot** – hooks `battle-victory` to roll for loot items via the inventory system (`items/findloot.php`).
 
 ### Lodge
 - **lodgedkpointreset** – reset spent lodge points for a dragon kill.
