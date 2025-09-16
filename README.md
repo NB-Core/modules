@@ -42,7 +42,8 @@ Below is a short description for every module. Some modules rely on others; depe
 ### Dwellings
 - **dwcastles** - Castle type for dwellings core
 - **dwcityhouses** - City House type for dwellings core
-- **dwellings** - Dwellings core module 
+- **dwellings** - Dwellings core module
+- **cityprefs** - Installs a `cityprefs` table, syncs known cities, and adds a superuser editor for managing city-specific module settings (`dwellings/cityprefs.php`).
 - **dwshack** - Shack type for dwellings core
 - **dwellings_antiplunder** - Counter measures against plundering
 - **dwellings_plunder** - Plundering dwellings for gold
