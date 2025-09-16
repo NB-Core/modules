@@ -1,0 +1,113 @@
+changes 1-09
+fixed transfer limit bug with coffers
+added module settings link in type pref editor
+fixed a translation bug with hard returns.
+fixed for sale dwellings showing in every city.
+removed extra 'back' link in coffers
+
+changes 1-05
+XChrisX went through to optimize everything
+added translatable names that are settings
+added status to interact hook
+altered shacks to use status on interact hook
+added amount per coffer transaction limit per type
+
+changes 12-18
+fixed bug with selling/rebuying houses
+finished main features for editor
+altered shacks to use interact hook
+
+changes 12-13
+Nightborn went through to make things translatable
+
+changes 12-06
+added DK limit for types
+added logout limit for types
+updates to upkeep.php
+messed with the list output
+added hook in list for interaction (pvp, shack trespassing)
+
+
+changes 11-21
+fixed coffer deps/with limits
+fixed people being able to enter unfinished houses/houses via keys
+fixed people getting into dwellings they didnt have keys to, but had keys to user's other dwelling
+hid 'location' column in hamlet list
+
+changes 11-12
+fixed return key YoM output
+added global dwellings limit...oops.
+fixed color code with faerie trees.
+fixed management link when returning keys.
+
+changes 11-11
+let faeries tree handle comments from outsiders
+
+changes 11-10
+went live on main server
+fixed "you have these keys" sql and output
+
+
+changes 11-04
+changed status values. if build turn requirement=0, the status needs to be different.
+LORD HELP ME FIGURE OUT WHY ARGS IS NOT BEING RETURNED
+
+changes 11-03
+added talk-line option
+...still can't figure out why NO MODULE  is returning $args.
+
+changes 11-01
+created citypropvalue.php
+released cityprefs.php
+minor updates on dwellings.php, think its ready for some testing.
+...still can't figure out why dwellingscostsp.php isn't returning $args.
+
+changes 10-31
+somewhere along the line, upkeep.php got left out, put that back in.
+few touch ups to dwellings.php
+more work on editor
+..still can't figure out why dwellingscostsp.php isn't returning $args.
+
+
+changes 10-29
+got the location_saver thing working
+more addition to editor
+..can't figure out why dwellingscostsp.php isn't returning $args.
+
+
+changes 10-28
+started converting everything to use cityprefs
+worked more on dwelling/dwellingtype editor
+worked more on cityprefs
+
+
+changes 10-27
+continue work on city prefs
+updating limit code
+worked on buying hooks
+shaved some code from dwellings_farmhouses to dwellings
+created dwellingsspcost.php
+
+
+changes 10-26
+started working on city prefs
+started working on dwellings editor
+updated misc things with upkeep.php and dwellings_farmhouses.php
+added site point cost to dwellings_farmhouses to test buy hooks.
+
+
+changes 10-25
+1.  added type pref functionality
+2.  stripped out upkeep system
+3.  added the following limits:
+        global limit per dwelling type
+        dwellings per location - need city prefs to vary value per location
+        dwelling types per location - need city prefs to vary value per location
+        dwelling types per owner
+        global dwellings per owner
+4.  misc updates to farmhouses
+
+    
+
+
+

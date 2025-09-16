@@ -22,15 +22,6 @@ Directories group modules by purpose:
 
 Below is a short description for every module. Some modules rely on others; dependencies are noted where known.
 
-### PVP
-- **adminpvp** – grants PvP immunity to game staff.
-- **halloween** – seasonal Halloween PvP event.
-- **pumpkin** – Halloween pumpkin feature (requires `inventory`).
-- **pvpavatars** – shows player avatars during PvP (requires `avatar`).
-- **pvpbalance** – balance PvP targets based on dragon kills.
-- **pvpquotes** – random quotes when entering PvP fights.
-- **serverbalance** – helper for tracking server load.
-
 ### Administrative
 - **advertisingtracker** – record advertising clicks displayed in game.
 - **blocker** – import e‑mail block lists.
@@ -47,6 +38,16 @@ Below is a short description for every module. Some modules rely on others; depe
 - **servercostlog** – log server expenses.
 - **suspendannounce** – announce server suspensions.
 - **welcomemail** – send welcome e‑mail to new users.
+
+### Dwellings
+- **dwcastles** - Castle type for dwellings core
+- **dwcityhouses** - City House type for dwellings core
+- **dwellings** - Dwellings core module 
+- **dwshack** - Shack type for dwellings core
+- **dwellings_antiplunder** - Counter measures against plundering
+- **dwellings_plunder** - Plundering dwellings for gold
+- **dwellings_pvp** - PVP against dwelling sleepers
+- **dwellingseditor** - Superuser Editor for dwellings (like an owner could)
 
 ### Forest
 - **forestmod_new** – quick fights for newer DP versions.
@@ -79,6 +80,15 @@ Below is a short description for every module. Some modules rely on others; depe
 ### Mounts
 - **mountstables** – extra mount stable slots.
 - **xmasdiscount** – discounted mount prices around Christmas.
+
+### PVP
+- **adminpvp** – grants PvP immunity to game staff.
+- **halloween** – seasonal Halloween PvP event.
+- **pumpkin** – Halloween pumpkin feature (requires `inventory`).
+- **pvpavatars** – shows player avatars during PvP (requires `avatar`).
+- **pvpbalance** – balance PvP targets based on dragon kills.
+- **pvpquotes** – random quotes when entering PvP fights.
+- **serverbalance** – helper for tracking server load.
 
 ### Systems
 - **circulum** – core reset system called “Circulum Vitae”.
