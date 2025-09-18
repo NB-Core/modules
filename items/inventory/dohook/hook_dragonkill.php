@@ -1,13 +1,13 @@
 <?php
 	require_once("modules/inventory/lib/itemhandler.php");
-	$inventory = get_inventory();
-	$count=0;
-	while ($item = db_fetch_assoc($inventory)) {
-		$destroyed = 0;
-		for($c=0;$c<$item['quantity'];$c++) {
-			if($item['dkloosechance'] >= e_rand(1,100)) $destroyed++;
+        $inventory = get_inventory();
+        $count=0;
+        foreach ($inventory as $item) {
+                $destroyed = 0;
+                for($c=0;$c<$item['quantity'];$c++) {
+                        if($item['dkloosechance'] >= e_rand(1,100)) $destroyed++;
 
-		}
+                }
 		if ($destroyed) {
 			$destroyed_list[]=$item['name'];
 			remove_item((int)$item['itemid'], $destroyed);

@@ -1,55 +1,111 @@
 <?php
-	global $session;
-	require_once("lib/sanitize.php");
-	define("OVERRIDE_FORCED_NAV", true);
-	$item = db_prefix("item");
-	$inventory = db_prefix("inventory");
-	$op2 = httpget('op2');
-	$id = httpget('id');
-	switch($op2) {
-		case "show":
-			$sql = "SELECT $item.name, $item.description FROM $item WHERE itemid=$id;";
-			$row = db_fetch_assoc(db_query($sql));
-			output("`vDescription of %s`v:`n",$row['name']);
-			output_notl("%s`0`n`n",$row['description']);
-			break;
-		case "equip":
-			$thing = get_item((int)$id);
-			$sql = "SELECT $inventory.itemid FROM $inventory INNER JOIN $item ON $inventory.itemid = $item.itemid WHERE $item.equipwhere = '".$thing['equipwhere']."' AND $inventory.equipped = 1";
-			$result = db_query($sql);
-			while ($row = db_fetch_assoc($result)) $wh[] = $row['itemid'];
-			if (is_array($wh) && count($wh)) {
-				modulehook("unequip-item", array("ids"=>$wh));
-				$sql = "UPDATE $inventory SET equipped = 0 WHERE itemid IN (".join(",",$wh).")";
-				db_query($sql);
-			}
-			modulehook("equip-item", array("id"=>$id));
-			$sql = "UPDATE $inventory SET equipped = 1 WHERE itemid = $id AND userid = {$session['user']['acctid']} LIMIT 1";
-			$result = db_query($sql);
-			break;
-		case "unequip":
-			modulehook("unequip-item", array("ids"=>array($id)));
-			$sql = "UPDATE $inventory SET equipped = 0 WHERE itemid = $id AND userid = {$session['user']['acctid']}";
-			$result = db_query($sql);
-			break;
-		case "activate":
-			$id = httpget('id');
-			$acitem = get_inventory_item((int)$id);
-			require_once("lib/buffs.php");
-			apply_buff($acitem['name'], get_buff($acitem['buffid']));
-			if ($acitem['charges'] > 1) uncharge_item((int)$id, 1);
-			else remove_item((int)$id);
-			if ($acitem['execvalue'] > "") {
-				if ($acitem['exectext'] > "") {
-					output($acitem['exectext'], $acitem['name']);
-				} else {
-					output("You activate %s!", $acitem['name']);
-				}
-				require_once("modules/inventory/lib/itemeffects.php");
-				output_notl("`n`n%s", get_effect($acitem));
-			}
-			break;
-	}
+
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
+        global $session;
+        require_once("lib/sanitize.php");
+        define("OVERRIDE_FORCED_NAV", true);
+        $item = db_prefix("item");
+        $inventory = db_prefix("inventory");
+        $conn = Database::getDoctrineConnection();
+        $op2 = httpget('op2');
+        $id = httpget('id');
+        switch($op2) {
+                case "show":
+                        $sql = "SELECT {$item}.name, {$item}.description FROM {$item} WHERE itemid = :itemid";
+                        $result = $conn->executeQuery(
+                                $sql,
+                                [
+                                        'itemid' => (int) $id,
+                                ],
+                                [
+                                        'itemid' => ParameterType::INTEGER,
+                                ]
+                        );
+                        $row = $result->fetchAssociative();
+                        if ($row) {
+                                output("`vDescription of %s`v:`n",$row['name']);
+                                output_notl("%s`0`n`n",$row['description']);
+                        }
+                        break;
+                case "equip":
+                        $thing = get_item((int)$id);
+                        $sql = "SELECT {$inventory}.itemid FROM {$inventory} INNER JOIN {$item} ON {$inventory}.itemid = {$item}.itemid WHERE {$item}.equipwhere = :equipwhere AND {$inventory}.equipped = 1";
+                        $result = $conn->executeQuery(
+                                $sql,
+                                [
+                                        'equipwhere' => $thing['equipwhere'],
+                                ],
+                                [
+                                        'equipwhere' => ParameterType::STRING,
+                                ]
+                        );
+                        $wh = [];
+                        while ($row = $result->fetchAssociative()) {
+                                $wh[] = (int) $row['itemid'];
+                        }
+                        if ($wh) {
+                                modulehook("unequip-item", array("ids"=>$wh));
+                                $sql = "UPDATE {$inventory} SET equipped = 0 WHERE itemid IN (:itemids)";
+                                $conn->executeStatement(
+                                        $sql,
+                                        [
+                                                'itemids' => $wh,
+                                        ],
+                                        [
+                                                'itemids' => ArrayParameterType::INTEGER,
+                                        ]
+                                );
+                        }
+                        modulehook("equip-item", array("id"=>(int)$id));
+                        $sql = "UPDATE {$inventory} SET equipped = 1 WHERE itemid = :itemid AND userid = :userid LIMIT 1";
+                        $conn->executeStatement(
+                                $sql,
+                                [
+                                        'itemid' => (int) $id,
+                                        'userid' => (int) $session['user']['acctid'],
+                                ],
+                                [
+                                        'itemid' => ParameterType::INTEGER,
+                                        'userid' => ParameterType::INTEGER,
+                                ]
+                        );
+                        break;
+                case "unequip":
+                        modulehook("unequip-item", array("ids"=>array((int) $id)));
+                        $sql = "UPDATE {$inventory} SET equipped = 0 WHERE itemid = :itemid AND userid = :userid";
+                        $conn->executeStatement(
+                                $sql,
+                                [
+                                        'itemid' => (int) $id,
+                                        'userid' => (int) $session['user']['acctid'],
+                                ],
+                                [
+                                        'itemid' => ParameterType::INTEGER,
+                                        'userid' => ParameterType::INTEGER,
+                                ]
+                        );
+                        break;
+                case "activate":
+                        $id = httpget('id');
+                        $acitem = get_inventory_item((int)$id);
+                        require_once("lib/buffs.php");
+                        apply_buff($acitem['name'], get_buff($acitem['buffid']));
+                        if ($acitem['charges'] > 1) uncharge_item((int)$id, 1);
+                        else remove_item((int)$id);
+                        if ($acitem['execvalue'] > "") {
+                                if ($acitem['exectext'] > "") {
+                                        output($acitem['exectext'], $acitem['name']);
+                                } else {
+                                        output("You activate %s!", $acitem['name']);
+                                }
+                                require_once("modules/inventory/lib/itemeffects.php");
+                                output_notl("`n`n%s", get_effect($acitem));
+                        }
+                        break;
+        }
 	popup_header("Your Inventory ");
 	output("You are currently wearing the following items:`n`n");
 	$layout = array(

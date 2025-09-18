@@ -1,4 +1,9 @@
 <?php
+
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 // Itemhandler by Christian Rutsch (c) 2005
 
 mydefine("HOOK_NEWDAY", 1);
@@ -82,50 +87,65 @@ function display_item_fightnav($result, $args) {
 }
 
 function display_item_nav($hookname, $return = false) {
-	global $session;
-	if ($hookname_override = httpget("hookname")) {
-		$hookname = $hookname_override;
-	}
-	$constant = constant("HOOK_" . strtoupper($hookname));
-	$item = db_prefix("item");
-	$inventory = db_prefix("inventory");
-	$acctid = $session['user']['acctid'];
-	$sql = "SELECT $item.*,inv.quantity 
-		FROM $item
-		INNER JOIN (SELECT itemid,
-				SUM(if ($inventory.charges > 1, $inventory.charges, 1)) AS quantity
-				FROM $inventory 
-				WHERE $inventory.userid = $acctid
-				GROUP BY $inventory.itemid) AS inv ON
-               $item.itemid = inv.itemid
-		WHERE ($item.activationhook & $constant)";
-	$result = db_query($sql);
+        global $session;
+        if ($hookname_override = httpget("hookname")) {
+                $hookname = $hookname_override;
+        }
+        $constant = constant("HOOK_" . strtoupper($hookname));
+        $itemTable = Database::prefix("item");
+        $inventoryTable = Database::prefix("inventory");
+        $acctid = (int) $session['user']['acctid'];
+        $conn = Database::getDoctrineConnection();
+        $sql = "SELECT {$itemTable}.*, inv.quantity
+                FROM {$itemTable}
+                INNER JOIN (
+                        SELECT itemid,
+                                SUM(IF({$inventoryTable}.charges > 1, {$inventoryTable}.charges, 1)) AS quantity
+                        FROM {$inventoryTable}
+                        WHERE {$inventoryTable}.userid = :userid
+                        GROUP BY {$inventoryTable}.itemid
+                ) AS inv ON {$itemTable}.itemid = inv.itemid
+                WHERE ({$itemTable}.activationhook & :hook)";
+        $result = $conn->executeQuery(
+                $sql,
+                [
+                        'userid' => $acctid,
+                        'hook' => (int) $constant,
+                ],
+                [
+                        'userid' => ParameterType::INTEGER,
+                        'hook' => ParameterType::INTEGER,
+                ]
+        );
+        $items = $result->fetchAllAssociative();
 
-	if (db_num_rows($result) > 0) {
-		addnav("Items");
-		if ($return === false) {
-			$return = URLencode($_SERVER['REQUEST_URI']);
-		} else {
-			$return = URLencode($return);
-			$return .= "&returnhandle=1&hookname=$hookname";
-		}
-		for ($i=0;$i<db_num_rows($result);$i++){
-			$item = db_fetch_assoc($result);
-			if ((int)$item['itemid'] == 0 || $item['quantity'] == 0) continue;
-			if ($item['link'] <> "")
-				$linkentry = $item['link'];
-			else
-				$linkentry = "|";
-			list($lname, $llink) = explode("|", $linkentry, 2);
-			if ($lname == "") $lname = $item['name'];
-			if ($llink == "") $llink = "runmodule.php?module=inventory&op=activate&id=".$item['itemid'];
-			$llink .= "&return=".$return;
-			if ($item['charges']>0)
-				addnav(array("%s `7(%s) %s charges left`0", $lname, $item['quantity'],$item['charges']), $llink);
-			else
-				addnav(array("%s `7(%s)`0", $lname, $item['quantity']), $llink);
-		}
-	}
+        if ($items) {
+                addnav("Items");
+                if ($return === false) {
+                        $return = URLencode($_SERVER['REQUEST_URI']);
+                } else {
+                        $return = URLencode($return);
+                        $return .= "&returnhandle=1&hookname=$hookname";
+                }
+                foreach ($items as $row) {
+                        if ((int)$row['itemid'] === 0 || (int)$row['quantity'] === 0) {
+                                continue;
+                        }
+                        if ($row['link'] <> "") {
+                                $linkentry = $row['link'];
+                        } else {
+                                $linkentry = "|";
+                        }
+                        [$lname, $llink] = explode("|", $linkentry, 2);
+                        if ($lname == "") $lname = $row['name'];
+                        if ($llink == "") $llink = "runmodule.php?module=inventory&op=activate&id=".$row['itemid'];
+                        $llink .= "&return=".$return;
+                        if ($row['charges']>0)
+                                addnav(array("%s `7(%s) %s charges left`0", $lname, $row['quantity'],$row['charges']), $llink);
+                        else
+                                addnav(array("%s `7(%s)`0", $lname, $row['quantity']), $llink);
+                }
+        }
 }
 
 function run_newday_buffs($result) {
@@ -143,23 +163,41 @@ function run_newday_buffs($result) {
 }
 
 function get_item_by_name($itemname) {
-	$sql = "SELECT * FROM ".db_prefix("item")." WHERE name = '$itemname' LIMIT 1";
-	$result = db_query_cached($sql, "item-name-$itemname");
-	$item = db_fetch_assoc($result);
-	if (db_num_rows($result) == 0)
-		return false;
-	else
-		return $item;
+        $conn = Database::getDoctrineConnection();
+        $table = Database::prefix("item");
+        $result = $conn->executeQuery(
+                "SELECT * FROM {$table} WHERE name = :name LIMIT 1",
+                [
+                        'name' => $itemname,
+                ],
+                [
+                        'name' => ParameterType::STRING,
+                ]
+        );
+        $item = $result->fetchAssociative();
+        if (!$item)
+                return false;
+        else
+                return $item;
 }
 
 function get_item_by_id($itemid) {
-	$sql = "SELECT * FROM ".db_prefix("item")." WHERE itemid = $itemid LIMIT 1";
-	$result = db_query_cached($sql, "item-id-$itemid");
-	$item = db_fetch_assoc($result);
-	if (db_num_rows($result) == 0)
-		return false;
-	else
-		return $item;
+        $conn = Database::getDoctrineConnection();
+        $table = Database::prefix("item");
+        $result = $conn->executeQuery(
+                "SELECT * FROM {$table} WHERE itemid = :itemid LIMIT 1",
+                [
+                        'itemid' => (int) $itemid,
+                ],
+                [
+                        'itemid' => ParameterType::INTEGER,
+                ]
+        );
+        $item = $result->fetchAssociative();
+        if (!$item)
+                return false;
+        else
+                return $item;
 }
 
 function get_item($item){
@@ -170,29 +208,34 @@ function get_item($item){
 }
 
 function get_random_item($class = false) {
-	$chance = e_rand(0,100);
-	if ($class === false) {
-		$sql = "SELECT * FROM ".db_prefix("item")." WHERE $chance <= findchance ORDER BY rand(".e_rand().") LIMIT 1";
-	} else {
-		$classes=explode(",",$class);
-		if (is_array($classes) && count($classes)>1) {
-			//more categories! =)
-			$ins="";
-			foreach ($classes as $class) {
-				$ins.=" OR class = '$class' ";
-			}
+        $chance = e_rand(0,100);
+        $conn = Database::getDoctrineConnection();
+        $table = Database::prefix("item");
+        $qb = $conn->createQueryBuilder();
+        $qb->select('*')
+                ->from($table)
+                ->where(':chance <= findchance')
+                ->setParameter('chance', $chance, ParameterType::INTEGER)
+                ->orderBy('RAND()')
+                ->setMaxResults(1);
+        if ($class !== false) {
+                $classes = array_filter(array_map('trim', explode(',', $class)), 'strlen');
+                if (count($classes) > 1) {
+                        $qb->andWhere($qb->expr()->in('class', ':classes'));
+                        $qb->setParameter('classes', $classes, ArrayParameterType::STRING);
+                } elseif (count($classes) === 1) {
+                        $singleClass = reset($classes);
+                        $qb->andWhere('class = :class');
+                        $qb->setParameter('class', $singleClass, ParameterType::STRING);
+                }
+        }
 
-			$sql = "SELECT * FROM ".db_prefix("item")." WHERE (0 $ins) AND $chance <= findchance ORDER BY rand(".e_rand().") LIMIT 1";
-
-		} else {
-			$sql = "SELECT * FROM ".db_prefix("item")." WHERE class = '$class' AND $chance <= findchance ORDER BY rand(".e_rand().") LIMIT 1";
-		}
-	}
-
-	$result = db_query($sql);
-	if (db_num_rows($result) == 1) $item = db_fetch_assoc($result);
-	else $item = false;
-	return $item;
+        $result = $qb->executeQuery();
+        $item = $result->fetchAssociative();
+        if ($item === false) {
+                return false;
+        }
+        return $item;
 }
 
 function add_item_by_name($itemname, $qty=1, $user=0, $specialvalue="", $sellvaluegold=false, $sellvaluegems=false) {
@@ -201,68 +244,119 @@ function add_item_by_name($itemname, $qty=1, $user=0, $specialvalue="", $sellval
 }
 
 function add_item_by_id($itemid, $qty=1, $user=0, $specialvalue="", $sellvaluegold=false, $sellvaluegems=false, $charges=false) {
-	global $session;
-	if ($qty < 1) return false;
-	if ($user === 0) $user = $session['user']['acctid'];
-	$inventory = db_prefix("inventory");
-	$item = db_prefix("item");
-	$sql = "SELECT COUNT($inventory.itemid) AS totalcount, $item.weight AS totalweight
-		FROM $inventory
-		INNER JOIN $item ON $item.itemid = $inventory.itemid
-		WHERE $inventory.userid = $user
-		GROUP BY $inventory.itemid,$item.weight";
-	$result = db_query($sql);
-	$totalcount = 0;
-	$totalweight = 0;
-	while($row=db_fetch_assoc($result)){
-		$totalcount += $row['totalcount'];
-		$totalweight += $row['totalweight'] * $row['totalcount'];
-	}
-	$inv = db_fetch_assoc($result);
-	$maxcount = get_module_setting("limit", "inventory");
-	$maxweight = get_module_setting("weight", "inventory");
-	if ($maxcount != 0 && $totalcount >= $maxcount) {
-		debug("Too many items, will not add this one!");
-		return false;
-	} else if ($maxweight && $totalweight >= $maxweight) {
-		debug("Items are too heavy. Item hasn't been added!");
-		return false;
-	} else {
-		$sql = "SELECT gold, gems, charges, uniqueforserver, uniqueforplayer FROM $item WHERE itemid = $itemid";
-		$result = db_query($sql);
-		$item_raw = db_fetch_assoc($result);
+        global $session;
+        if ($qty < 1) return false;
+        if ($user === 0) $user = $session['user']['acctid'];
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
+        $item = Database::prefix("item");
+        $sql = "SELECT COUNT(inv.itemid) AS totalcount, it.weight AS totalweight
+                FROM {$inventory} AS inv
+                INNER JOIN {$item} AS it ON it.itemid = inv.itemid
+                WHERE inv.userid = :userid
+                GROUP BY inv.itemid, it.weight";
+        $result = $conn->executeQuery(
+                $sql,
+                [
+                        'userid' => (int) $user,
+                ],
+                [
+                        'userid' => ParameterType::INTEGER,
+                ]
+        );
+        $totalcount = 0;
+        $totalweight = 0;
+        while($row=$result->fetchAssociative()){
+                $totalcount += $row['totalcount'];
+                $totalweight += $row['totalweight'] * $row['totalcount'];
+        }
+        $maxcount = get_module_setting("limit", "inventory");
+        $maxweight = get_module_setting("weight", "inventory");
+        if ($maxcount != 0 && $totalcount >= $maxcount) {
+                debug("Too many items, will not add this one!");
+                return false;
+        } else if ($maxweight && $totalweight >= $maxweight) {
+                debug("Items are too heavy. Item hasn't been added!");
+                return false;
+        } else {
+                $sql = "SELECT gold, gems, charges, uniqueforserver, uniqueforplayer FROM {$item} WHERE itemid = :itemid";
+                $result = $conn->executeQuery(
+                        $sql,
+                        [
+                                'itemid' => (int) $itemid,
+                        ],
+                        [
+                                'itemid' => ParameterType::INTEGER,
+                        ]
+                );
+                $item_raw = $result->fetchAssociative();
+                if (!$item_raw) {
+                        return false;
+                }
 
-		if ($sellvaluegold === false) $sellvaluegold = round($item_raw['gold'] * (get_module_setting("sellgold", "inventory")/100));
-		if ($sellvaluegems === false) $sellvaluegems = round($item_raw['gems'] * (get_module_setting("sellgems", "inventory")/100));
-		if ($charges === false) $charges = $item_raw['charges'];
-		$charges = (int) $charges; //needs to be integer for the insert
-		if (isset($item_raw['uniqueforserver']) && $item_raw['uniqueforserver']) {
-			$sql = "SELECT * FROM $inventory WHERE itemid = $itemid LIMIT 2";
-			$result = db_query($sql);
-			if (db_num_rows($result) > 0) {
-				debug("UNIQUE item has not been added because already someone else owns this!");
-				return false;
-			}
-		}
-		if (isset($item_raw['uniqueforplayer']) && $item_raw['uniqueforplayer']) {
-			$sql = "SELECT * FROM $inventory WHERE itemid = $itemid AND userid = $user LIMIT 2";
-			$result = db_query($sql);
-			if (db_num_rows($result) > 0) {
-				debug("UNIQUEFORPLAYER item has not been added because this player already owns this item!");
-				return false;
-			}
-		}
-		$sql = "INSERT INTO $inventory (`userid`, `itemid`, `sellvaluegold`, `sellvaluegems`, `specialvalue`, `charges`, `equipped` ) VALUES ";
-		for ($i=0;$i<$qty;$i++) {
-			if($i)
-				$sql .= ",";
-			$sql .= "($user, $itemid, $sellvaluegold, $sellvaluegems, '$specialvalue', $charges,0)";
-		}
-		db_query($sql);
-		debuglog("has gained $qty items (ID: $itemid).");
-		invalidatedatacache("inventory-user-$user");
-		return true;
-	}
+                if ($sellvaluegold === false) $sellvaluegold = round($item_raw['gold'] * (get_module_setting("sellgold", "inventory")/100));
+                if ($sellvaluegems === false) $sellvaluegems = round($item_raw['gems'] * (get_module_setting("sellgems", "inventory")/100));
+                if ($charges === false) $charges = $item_raw['charges'];
+                $charges = (int) $charges; //needs to be integer for the insert
+                if (isset($item_raw['uniqueforserver']) && $item_raw['uniqueforserver']) {
+                        $sql = "SELECT 1 FROM {$inventory} WHERE itemid = :itemid LIMIT 1";
+                        $result = $conn->executeQuery(
+                                $sql,
+                                [
+                                        'itemid' => (int) $itemid,
+                                ],
+                                [
+                                        'itemid' => ParameterType::INTEGER,
+                                ]
+                        );
+                        if ($result->fetchOne()) {
+                                debug("UNIQUE item has not been added because already someone else owns this!");
+                                return false;
+                        }
+                }
+                if (isset($item_raw['uniqueforplayer']) && $item_raw['uniqueforplayer']) {
+                        $sql = "SELECT 1 FROM {$inventory} WHERE itemid = :itemid AND userid = :userid LIMIT 1";
+                        $result = $conn->executeQuery(
+                                $sql,
+                                [
+                                        'itemid' => (int) $itemid,
+                                        'userid' => (int) $user,
+                                ],
+                                [
+                                        'itemid' => ParameterType::INTEGER,
+                                        'userid' => ParameterType::INTEGER,
+                                ]
+                        );
+                        if ($result->fetchOne()) {
+                                debug("UNIQUEFORPLAYER item has not been added because this player already owns this item!");
+                                return false;
+                        }
+                }
+                $sql = "INSERT INTO {$inventory} (userid, itemid, sellvaluegold, sellvaluegems, specialvalue, charges, equipped)
+                        VALUES (:userid, :itemid, :sellvaluegold, :sellvaluegems, :specialvalue, :charges, 0)";
+                $params = [
+                        'userid' => (int) $user,
+                        'itemid' => (int) $itemid,
+                        'sellvaluegold' => (int) $sellvaluegold,
+                        'sellvaluegems' => (int) $sellvaluegems,
+                        'specialvalue' => $specialvalue,
+                        'charges' => $charges,
+                ];
+                $types = [
+                        'userid' => ParameterType::INTEGER,
+                        'itemid' => ParameterType::INTEGER,
+                        'sellvaluegold' => ParameterType::INTEGER,
+                        'sellvaluegems' => ParameterType::INTEGER,
+                        'specialvalue' => ParameterType::STRING,
+                        'charges' => ParameterType::INTEGER,
+                ];
+                for ($i=0;$i<$qty;$i++) {
+                        $conn->executeStatement($sql, $params, $types);
+                }
+                debuglog("has gained $qty items (ID: $itemid).");
+                invalidatedatacache("inventory-user-$user");
+                return true;
+        }
 }
 
 function add_item($item, $qty=1, $user=0, $specialvalue="", $sellvaluegold=false, $sellvaluegems=false) {
@@ -274,183 +368,250 @@ function add_item($item, $qty=1, $user=0, $specialvalue="", $sellvaluegold=false
 
 
 function get_inventory($user=0, $showhide=false, $class=0) {
-	global $session;
+        global $session;
 
-	if ($user === 0) $user = $session['user']['acctid'];
-	$showhide = (int)$showhide;
-	$inventory = db_prefix("inventory");
-	$item = db_prefix("item");
-	if ($class === 0)
-		$classwhere = "";
-	else
-		$classwhere = "AND $item.class = '$class'";
-	$sql = "SELECT $item.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM $item INNER JOIN (
-			SELECT itemid, COUNT($inventory.itemid) AS quantity, SUM($inventory.charges) AS charges, $inventory.sellvaluegold AS sellvaluegold, $inventory.sellvaluegems AS sellvaluegems
-			FROM $inventory
-			WHERE $inventory.userid = $user
-			GROUP BY $inventory.itemid,$inventory.sellvaluegold,$inventory.sellvaluegems ) AS inv
-		ON $item.itemid = inv.itemid
-		WHERE $item.hide = $showhide $classwhere
-		ORDER BY
-		$item.class ASC,
-		$item.name ASC";
-	if ($class === 0)
-		$result = db_query_cached($sql, "inventory-user-$user");
-	else
-		$result = db_query($sql);
-	return $result;
+        if ($user === 0) $user = $session['user']['acctid'];
+        $showhide = (int)$showhide;
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
+        $item = Database::prefix("item");
+        $sql = "SELECT {$item}.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM {$item} INNER JOIN (
+                        SELECT itemid, COUNT({$inventory}.itemid) AS quantity, SUM({$inventory}.charges) AS charges, {$inventory}.sellvaluegold AS sellvaluegold, {$inventory}.sellvaluegems AS sellvaluegems
+                        FROM {$inventory}
+                        WHERE {$inventory}.userid = :userid
+                        GROUP BY {$inventory}.itemid, {$inventory}.sellvaluegold, {$inventory}.sellvaluegems ) AS inv
+                ON {$item}.itemid = inv.itemid
+                WHERE {$item}.hide = :showhide";
+        $params = [
+                'userid' => (int) $user,
+                'showhide' => $showhide,
+        ];
+        $types = [
+                'userid' => ParameterType::INTEGER,
+                'showhide' => ParameterType::INTEGER,
+        ];
+        if ($class !== 0) {
+                $sql .= " AND {$item}.class = :class";
+                $params['class'] = $class;
+                $types['class'] = ParameterType::STRING;
+        }
+        $sql .= "
+                ORDER BY
+                {$item}.class ASC,
+                {$item}.name ASC";
+        $result = $conn->executeQuery($sql, $params, $types);
+        return $result->fetchAllAssociative();
 }
 
 function get_inventory_item($itemid, $user = 0) {
-	global $session;
-	if (!is_int($itemid)) {
-		$itemid = get_item_by_name($itemid);
-		$itemid = $itemid['itemid'];
-	}
-	$itemid = (int)$itemid;
-	if ($user === 0) $user = $session['user']['acctid'];
-	$inventory = db_prefix("inventory");
-	$item = db_prefix("item");
-	$sql = "SELECT $item.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM $item INNER JOIN (
-			SELECT itemid, COUNT($inventory.itemid) AS quantity, SUM($inventory.charges) AS charges, $inventory.sellvaluegold AS sellvaluegold, $inventory.sellvaluegems AS sellvaluegems
-			FROM $inventory
-			WHERE $inventory.userid = $user
-			GROUP BY $inventory.itemid,$inventory.sellvaluegold,$inventory.sellvaluegems ) AS inv
-		ON $item.itemid = inv.itemid
-		WHERE $item.itemid = $itemid
-		ORDER BY
-		$item.class ASC,
-		$item.name ASC";
-	$result = db_query($sql);
-	$item = db_fetch_assoc($result);
-	return $item;
+        global $session;
+        if (!is_int($itemid)) {
+                $itemid = get_item_by_name($itemid);
+                $itemid = $itemid['itemid'];
+        }
+        $itemid = (int)$itemid;
+        if ($user === 0) $user = $session['user']['acctid'];
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
+        $item = Database::prefix("item");
+        $sql = "SELECT {$item}.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM {$item} INNER JOIN (
+                        SELECT itemid, COUNT({$inventory}.itemid) AS quantity, SUM({$inventory}.charges) AS charges, {$inventory}.sellvaluegold AS sellvaluegold, {$inventory}.sellvaluegems AS sellvaluegems
+                        FROM {$inventory}
+                        WHERE {$inventory}.userid = :userid
+                        GROUP BY {$inventory}.itemid, {$inventory}.sellvaluegold, {$inventory}.sellvaluegems ) AS inv
+                ON {$item}.itemid = inv.itemid
+                WHERE {$item}.itemid = :itemid
+                ORDER BY
+                {$item}.class ASC,
+                {$item}.name ASC";
+        $result = $conn->executeQuery(
+                $sql,
+                [
+                        'userid' => (int) $user,
+                        'itemid' => $itemid,
+                ],
+                [
+                        'userid' => ParameterType::INTEGER,
+                        'itemid' => ParameterType::INTEGER,
+                ]
+        );
+        return $result->fetchAssociative();
 }
 
 function uncharge_item($itemid, $user=0) {
-	global $session;
-	if (!is_int($itemid)) {
-		$itemid = get_item_by_name($itemid);
-		$itemid = $itemid['itemid'];
-	}
-	$itemid = (int)$itemid;
-	if ($user === 0) $user = $session['user']['acctid'];
-	$inventory = db_prefix("inventory");
-	$sql = "UPDATE $inventory SET charges = charges - 1 WHERE itemid = $itemid AND userid = $user AND charges >= 1 LIMIT 1";
-	$result = db_query($sql);
-	if (db_affected_rows($result) == 0)
-		debug("ERROR: Tried to uncharge item although no charges present!");
-	else
-		debuglog("uncharged ".db_affected_rows($result)." items (ID: $itemid)", $user);
-	$sql = "DELETE FROM $inventory WHERE itemid = $itemid AND userid = $user AND charges = 0";
-	$result = db_query($sql);
-	$count = db_affected_rows($result);
-	if ($count) debuglog("uncharged and deleted $count items (ID: $itemid)", $user);
-	invalidatedatacache("inventory-user-$user");
+        global $session;
+        if (!is_int($itemid)) {
+                $itemid = get_item_by_name($itemid);
+                $itemid = $itemid['itemid'];
+        }
+        $itemid = (int)$itemid;
+        if ($user === 0) $user = $session['user']['acctid'];
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
+        $sql = "UPDATE {$inventory} SET charges = charges - 1 WHERE itemid = :itemid AND userid = :userid AND charges >= 1 LIMIT 1";
+        $affected = $conn->executeStatement(
+                $sql,
+                [
+                        'itemid' => $itemid,
+                        'userid' => (int) $user,
+                ],
+                [
+                        'itemid' => ParameterType::INTEGER,
+                        'userid' => ParameterType::INTEGER,
+                ]
+        );
+        if ($affected == 0)
+                debug("ERROR: Tried to uncharge item although no charges present!");
+        else
+                debuglog("uncharged $affected items (ID: $itemid)", $user);
+        $sql = "DELETE FROM {$inventory} WHERE itemid = :itemid AND userid = :userid AND charges = 0";
+        $count = $conn->executeStatement(
+                $sql,
+                [
+                        'itemid' => $itemid,
+                        'userid' => (int) $user,
+                ],
+                [
+                        'itemid' => ParameterType::INTEGER,
+                        'userid' => ParameterType::INTEGER,
+                ]
+        );
+        if ($count) debuglog("uncharged and deleted $count items (ID: $itemid)", $user);
+        invalidatedatacache("inventory-user-$user");
 }
 
 function recharge_item($itemid, $user=0) {
-	global $session;
-	if (!is_int($itemid)) {
-		$itemid = get_item_by_name($itemid);
-		$itemid = $itemid['itemid'];
-	}
-	$itemid = (int)$itemid;
-	if ($user === 0) $user = $session['user']['acctid'];
-	$inventory = db_prefix("inventory");
-	$sql = "UPDATE $inventory SET charges = charges 1 1 WHERE itemid = $itemid AND userid = $user LIMIT 1";
-	$result = db_query($sql);
-	if (db_affected_rows($result) == 0)
-		debug("ERROR: Tried to recharge non-present item!");
-	else
-		debuglog("recharged ".db_affected_rows($result)." items (ID: $itemid)", $user);
-	invalidatedatacache("inventory-user-$user");
+        global $session;
+        if (!is_int($itemid)) {
+                $itemid = get_item_by_name($itemid);
+                $itemid = $itemid['itemid'];
+        }
+        $itemid = (int)$itemid;
+        if ($user === 0) $user = $session['user']['acctid'];
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
+        $sql = "UPDATE {$inventory} SET charges = charges + 1 WHERE itemid = :itemid AND userid = :userid LIMIT 1";
+        $affected = $conn->executeStatement(
+                $sql,
+                [
+                        'itemid' => $itemid,
+                        'userid' => (int) $user,
+                ],
+                [
+                        'itemid' => ParameterType::INTEGER,
+                        'userid' => ParameterType::INTEGER,
+                ]
+        );
+        if ($affected == 0)
+                debug("ERROR: Tried to recharge non-present item!");
+        else
+                debuglog("recharged $affected items (ID: $itemid)", $user);
+        invalidatedatacache("inventory-user-$user");
 }
 
 
 function show_inventory($user = 0) {
-	global $session;
+        global $session;
 
-	$login = httpget('login');
-	if ($user === 0) $user = $session['user']['acctid'];
-	$inventory = get_inventory($user);
-	$count = db_num_rows($inventory);
-	tlschema("inventory");
-	$name = translate_inline("Name");
-	$class = translate_inline("Category");
-	$description = translate_inline("Description");
-	$goldvalue = translate_inline("Goldvalue");
-	$gemvalue = translate_inline("Gemvalue");
-	$quantity = translate_inline("Quantity");
-	$options = translate_inline("Options");
-	$drop = translate_inline("Drop this once");
-	$sql = "SELECT name FROM ".db_prefix("accounts")." WHERE acctid=$user";
-	$result = db_query($sql);
-	$row = db_fetch_assoc($result);
+        $login = httpget('login');
+        if ($user === 0) $user = $session['user']['acctid'];
+        $inventory = get_inventory($user);
+        $count = count($inventory);
+        tlschema("inventory");
+        $name = translate_inline("Name");
+        $class = translate_inline("Category");
+        $description = translate_inline("Description");
+        $goldvalue = translate_inline("Goldvalue");
+        $gemvalue = translate_inline("Gemvalue");
+        $quantity = translate_inline("Quantity");
+        $options = translate_inline("Options");
+        $drop = translate_inline("Drop this once");
+        $conn = Database::getDoctrineConnection();
+        $accounts = Database::prefix("accounts");
+        $result = $conn->executeQuery(
+                "SELECT name FROM {$accounts} WHERE acctid = :acctid",
+                [
+                        'acctid' => (int) $user,
+                ],
+                [
+                        'acctid' => ParameterType::INTEGER,
+                ]
+        );
+        $row = $result->fetchAssociative();
 
-	rawoutput("<table border=0 cellpadding=2 cellspacing=2 align=center>");
-	rawoutput("<tr class='trhead'><td colspan=6>");
-	output("`c`b`^%s`& is carrying these items:`b`c", $row['name']);
-	$ret=URLEncode($_SERVER['REQUEST_URI']);
-	rawoutput("</td></tr>");
-	$countweight=0;
-	$itemcounter=0;
-	if ($count) {
-		for ($i=0;$i<$count;$i++) {
-			$item = db_fetch_assoc($inventory);
-			$countweight += $item['weight'] * $item['quantity'];
-			$itemcounter += $item['quantity'];
-			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-			output("`&%s`0", translate_inline($item['name']));
-			rawoutput("</td><td>");
-			output("`&`i%s`i`0", translate_inline($item['class']));
-			rawoutput("</td><td align='right'>");
-			output("`&%s `2pcs`0", $item['quantity']);
-			rawoutput("</td><td align='right'>");
-			if ($user == $session['user']['acctid'])
-				output("`&%s `^gold pieces`0", number_format($item['sellvaluegold']));
-			else
-				output_notl("&nbsp;",true);
-			rawoutput("</td><td align='right'>");
-			if ($user == $session['user']['acctid'])
-				output("`&%s `%gems`0  ", number_format($item['sellvaluegems']));
-			else
-				output_notl("&nbsp;",true);
-			rawoutput("</td><td align='center'>");
-			if(($user == $session['user']['acctid'] && $item['droppable'] && get_module_setting("droppable", "inventory")) || ($session['user']['superuser'] & SU_EDIT_USERS)) {
-				rawoutput("[&nbsp;<a href='runmodule.php?module=inventory&login=$login&user=$user&op=dropitem&id=".$item['itemid']."&return=$ret'>$drop</a>&nbsp;]");
-				addnav("", "runmodule.php?module=inventory&login=$login&user=$user&op=dropitem&id=".$item['itemid']."&return=$ret");
-			}
-			rawoutput("</td></tr><tr class='".($i%2?"trlight":"trdark")."'><td colspan=6");
-			output("`7`i%s`i`0", translate_inline($item['description']));
-			rawoutput("</td></tr>");
-		}
-		$limit = get_module_setting("limit", "inventory");
-		$weight = get_module_setting("weight", "inventory");
-		if ($user == $session['user']['acctid']) {
-			if ($limit) {
-				rawoutput("<tr><td colspan=6>");
-				output("`n`cYou are currently carrying `^%s`0 / `^%s`0 items.`c", $itemcounter, $limit);
-			}
-			if ($weight) {
-				rawoutput("<tr><td colspan=6>");
-				output("`n`cYour items have a total weight of `^%s`0. You must not carry more than `^%s`0.`c", $countweight, $weight);
-			}
-		}
-	} else {
-		output("<tr><td colspan=6>`n`c`iThis player does not have any items.`i`c</td></tr>", true);
-	}
-	rawoutput("</table>");
-	tlschema();
+        rawoutput("<table border=0 cellpadding=2 cellspacing=2 align=center>");
+        rawoutput("<tr class='trhead'><td colspan=6>");
+        output("`c`b`^%s`& is carrying these items:`b`c", $row['name']);
+        $ret=URLEncode($_SERVER['REQUEST_URI']);
+        rawoutput("</td></tr>");
+        $countweight=0;
+        $itemcounter=0;
+        if ($count) {
+                foreach ($inventory as $i => $item) {
+                        $countweight += $item['weight'] * $item['quantity'];
+                        $itemcounter += $item['quantity'];
+                        rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
+                        output("`&%s`0", translate_inline($item['name']));
+                        rawoutput("</td><td>");
+                        output("`&`i%s`i`0", translate_inline($item['class']));
+                        rawoutput("</td><td align='right'>");
+                        output("`&%s `2pcs`0", $item['quantity']);
+                        rawoutput("</td><td align='right'>");
+                        if ($user == $session['user']['acctid'])
+                                output("`&%s `^gold pieces`0", number_format($item['sellvaluegold']));
+                        else
+                                output_notl("&nbsp;",true);
+                        rawoutput("</td><td align='right'>");
+                        if ($user == $session['user']['acctid'])
+                                output("`&%s `%gems`0  ", number_format($item['sellvaluegems']));
+                        else
+                                output_notl("&nbsp;",true);
+                        rawoutput("</td><td align='center'>");
+                        if(($user == $session['user']['acctid'] && $item['droppable'] && get_module_setting("droppable", "inventory")) || ($session['user']['superuser'] & SU_EDIT_USERS)) {
+                                rawoutput("[&nbsp;<a href='runmodule.php?module=inventory&login=$login&user=$user&op=dropitem&id=".$item['itemid']."&return=$ret'>$drop</a>&nbsp;]");
+                                addnav("", "runmodule.php?module=inventory&login=$login&user=$user&op=dropitem&id=".$item['itemid']."&return=$ret");
+                        }
+                        rawoutput("</td></tr><tr class='".($i%2?"trlight":"trdark")."'><td colspan=6");
+                        output("`7`i%s`i`0", translate_inline($item['description']));
+                        rawoutput("</td></tr>");
+                }
+                $limit = get_module_setting("limit", "inventory");
+                $weight = get_module_setting("weight", "inventory");
+                if ($user == $session['user']['acctid']) {
+                        if ($limit) {
+                                rawoutput("<tr><td colspan=6>");
+                                output("`n`cYou are currently carrying `^%s`0 / `^%s`0 items.`c", $itemcounter, $limit);
+                        }
+                        if ($weight) {
+                                rawoutput("<tr><td colspan=6>");
+                                output("`n`cYour items have a total weight of `^%s`0. You must not carry more than `^%s`0.`c", $countweight, $weight);
+                        }
+                }
+        } else {
+                output("<tr><td colspan=6>`n`c`iThis player does not have any items.`i`c</td></tr>", true);
+        }
+        rawoutput("</table>");
+        tlschema();
 }
 
 function check_qty_by_id($itemid, $user = 0) {
-	global $session;
-	if ($user === 0) $user = $session['user']['acctid'];
-	$inventory = db_prefix("inventory");
-	$sql = "SELECT COUNT(itemid) AS qty FROM $inventory WHERE userid = $user AND itemid = $itemid";
-	$result = db_query($sql);
-	$row = db_fetch_assoc($result);
-	return $row['qty'];
+        global $session;
+        if ($user === 0) $user = $session['user']['acctid'];
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
+        $result = $conn->executeQuery(
+                "SELECT COUNT(itemid) AS qty FROM {$inventory} WHERE userid = :userid AND itemid = :itemid",
+                [
+                        'userid' => (int) $user,
+                        'itemid' => (int) $itemid,
+                ],
+                [
+                        'userid' => ParameterType::INTEGER,
+                        'itemid' => ParameterType::INTEGER,
+                ]
+        );
+        $row = $result->fetchAssociative();
+        return $row ? (int) $row['qty'] : 0;
 }
 
 function check_qty_by_name($itemname, $user = 0) {
@@ -466,18 +627,36 @@ function check_qty($item, $user=0) {
 }
 
 function remove_item_by_id($item, $qty=1, $user=0) {
-	global $session;
+        global $session;
 
-	if ($user === 0) $user = $session['user']['acctid'];
+        if ($user === 0) $user = $session['user']['acctid'];
 
-	$inventory = db_prefix("inventory");
+        $conn = Database::getDoctrineConnection();
+        $inventory = Database::prefix("inventory");
 
-	$sql = "DELETE FROM $inventory WHERE userid = $user AND itemid = $item LIMIT $qty";
-	debuglog("removed item $item from inventory", $user);
-	$result = db_query($sql);
-	invalidatedatacache("inventory-user-$user");
-	invalidatedatacache("inventory-item-$item-$user");
-	return db_affected_rows($result);
+        $sql = "DELETE FROM {$inventory} WHERE userid = :userid AND itemid = :itemid LIMIT 1";
+        $params = [
+                'userid' => (int) $user,
+                'itemid' => (int) $item,
+        ];
+        $types = [
+                'userid' => ParameterType::INTEGER,
+                'itemid' => ParameterType::INTEGER,
+        ];
+        $removed = 0;
+        for ($i=0;$i<$qty;$i++) {
+                $affected = $conn->executeStatement($sql, $params, $types);
+                if ($affected === 0) {
+                        break;
+                }
+                $removed += $affected;
+        }
+        if ($removed > 0) {
+                debuglog("removed item $item from inventory", $user);
+        }
+        invalidatedatacache("inventory-user-$user");
+        invalidatedatacache("inventory-item-$item-$user");
+        return $removed;
 }
 
 function remove_item_by_name($itemname, $qty=1, $user=0) {
@@ -493,63 +672,65 @@ function remove_item($item, $qty=1, $user=0) {
 }
 
 function shopnav($return, $class, $sell=false, $user=0, $sellall=false, $showdescription=true) {
-	global $session;
+        global $session;
 
-	if (substr($return,strlen($return)-1,1) != "&") $return .= "&";
+        if (substr($return,strlen($return)-1,1) != "&") $return .= "&";
 
-	$inventory = db_prefix("inventory");
-	$item = db_prefix("item");
-	if ($sell === false) {
-		$sql = "SELECT *
-			FROM $item
-			WHERE $item.class = '$class'
-			AND $item.buyable <> 0
-			ORDER BY
-			$item.class ASC,
-			$item.name ASC";
-	} else {
-		if ($user === 0) $user = $session['user']['acctid'];
-		$sql = "SELECT $item.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM $item INNER JOIN (
-				SELECT itemid, COUNT($inventory.itemid) AS quantity, SUM($inventory.charges) AS charges, $inventory.sellvaluegold AS sellvaluegold, $inventory.sellvaluegems AS sellvaluegems
-				FROM $inventory
-				WHERE $inventory.userid = $user
-				AND $item.class = '$class'
-				AND $item.sellable <> 0
-				GROUP BY $inventory.itemid,$inventory.sellvaluegold,$inventory.sellvaluegems ) AS inv
-			ON $item.itemid = inv.itemid
-			WHERE $item.itemid = $itemid
-			ORDER BY
-			$item.class ASC,
-			$item.name ASC";
-	}
-	$result = db_query($sql);
-	if (db_num_rows($result) > 0) {
-		tlschema('inventory');
-		$class = translate_inline($class);
-		if ($sellall == true && db_num_rows($result) > 0) {
-			addnav(array("Sell all %s", $class));
-			addnav("Sell all", $return."id=all");
-		}
-		$sell?addnav(array("Sell %s", $class)):addnav(array("Buy %s", $class));
-		while($row = db_fetch_assoc($result)) {
-			if ($sell === false) {
-				if ($session['user']['gold'] >= $row['gold'] && $session['user']['gems'] >= $row['gems'])
-					addnav(array("%s`n`^%s`0 Gold, `%%%s`0 Gems", translate_inline($row['name']), $row['gold'], $row['gems']), $return."id=".$row['itemid']);
-				else
-					addnav(array("%s`n`^%s`0 Gold, `%%%s`0 Gems", translate_inline($row['name']), $row['gold'], $row['gems']), "");
-				if ($showdescription == true) {
-					output("`#%s ", translate_inline($row['name']));
-					$qty = check_qty((int)$row['itemid']);
-					if ($qty > 0) output("`7- You own `^%s pieces", $qty);
-					$description = translate_inline($row['description']);
-					output("`n`7%s`n`n", $description);
-				}
-			} else {
-				addnav(array("%s`n`^%s`0 Gold, `%%%s`0 Gems`n(`2%s Stück`0)", translate_inline($row['name']), $row['sellvaluegold'], $row['sellvaluegems'], $row['quantity']), $return."id=".$row['itemid']);
-			}
-		}
-		tlschema();
-	}
+        $conn = Database::getDoctrineConnection();
+        $inventoryTable = Database::prefix("inventory");
+        $itemTable = Database::prefix("item");
+        if ($sell === false) {
+                $sql = "SELECT *
+                        FROM {$itemTable}
+                        WHERE {$itemTable}.class = :class
+                        AND {$itemTable}.buyable <> 0
+                        ORDER BY
+                        {$itemTable}.class ASC,
+                        {$itemTable}.name ASC";
+                $result = $conn->executeQuery(
+                        $sql,
+                        [
+                                'class' => $class,
+                        ],
+                        [
+                                'class' => ParameterType::STRING,
+                        ]
+                );
+                $rows = $result->fetchAllAssociative();
+        } else {
+                if ($user === 0) $user = $session['user']['acctid'];
+                $items = get_inventory($user, false, $class);
+                $rows = array_values(array_filter($items, function ($row) {
+                        return isset($row['sellable']) && $row['sellable'] != 0;
+                }));
+        }
+        if ($rows) {
+                tlschema('inventory');
+                $classTranslated = translate_inline($class);
+                if ($sellall == true && $sell === true) {
+                        addnav(array("Sell all %s", $classTranslated));
+                        addnav("Sell all", $return."id=all");
+                }
+                $sell?addnav(array("Sell %s", $classTranslated)):addnav(array("Buy %s", $classTranslated));
+                foreach ($rows as $row) {
+                        if ($sell === false) {
+                                if ($session['user']['gold'] >= $row['gold'] && $session['user']['gems'] >= $row['gems'])
+                                        addnav(array("%s`n`^%s`0 Gold, `%%%s`0 Gems", translate_inline($row['name']), $row['gold'], $row['gems']), $return."id=".$row['itemid']);
+                                else
+                                        addnav(array("%s`n`^%s`0 Gold, `%%%s`0 Gems", translate_inline($row['name']), $row['gold'], $row['gems']), "");
+                                if ($showdescription == true) {
+                                        output("`#%s ", translate_inline($row['name']));
+                                        $qty = check_qty((int)$row['itemid']);
+                                        if ($qty > 0) output("`7- You own `^%s pieces", $qty);
+                                        $description = translate_inline($row['description']);
+                                        output("`n`7%s`n`n", $description);
+                                }
+                        } else {
+                                addnav(array("%s`n`^%s`0 Gold, `%%%s`0 Gems`n(`2%s Stück`0)", translate_inline($row['name']), $row['sellvaluegold'], $row['sellvaluegems'], $row['quantity']), $return."id=".$row['itemid']);
+                        }
+                }
+                tlschema();
+        }
 // $injection: An array containing information about the new item.
 //					Unset values will be replaced by their defaults (via MySQL table definition.)
 // true  - if the item was inserted
