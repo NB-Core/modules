@@ -3,7 +3,6 @@
 // mail ready
 
 use Doctrine\DBAL\ArrayParameterType;
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 function mightyblogs_getmoduleinfo(){
@@ -146,41 +145,102 @@ function mightyblogs_run(){
 	}
 	//-->
 	</script>");
-	rawoutput("<style type='text/css'>
-		span.tangent {
-			display: none;
-			border: 1px dotted #0000FF;
-		}
-		table.calendar {
-			border-left: 1px solid #000000;
-			border-right: 0px solid #000000;
-			border-bottom: 1px solid #000000;
-			border-top: 0px solid #000000;
-		}
-		table.calendar tr {
-
-		}
-		table.calendar td {
-			border-left: 0px solid #000000;
-			border-right: 1px solid #000000;
-			border-bottom: 0px solid #000000;
-			border-top: 1px solid #000000;
-			font-size: 10px;
-			background-color: #003366;
-			color: #FFFFFF;
-			text-align: center;
-		}
-		table.calendar td.new {
-			background-color: #006699;
-		}
-		table.calendar td.new a {
-			color: #FFFF66;
-			text-decoration: none;
-		}
-		table.calendar td.offmonth {
-			background-color: #006633;
-		}
-	</style>");
+        rawoutput("<style type='text/css'>
+                span.tangent {
+                        display: none;
+                        border: 1px dotted #0000FF;
+                }
+                .mighty-calendar {
+                        background-color: #002a4d;
+                        border: 1px solid #001a33;
+                        border-radius: 4px;
+                        color: #ffffff;
+                        font-size: 12px;
+                        margin-bottom: 8px;
+                        max-width: 260px;
+                        overflow: hidden;
+                }
+                .mighty-calendar .calendar-nav {
+                        align-items: center;
+                        background: linear-gradient(90deg, #003f7d, #00528f);
+                        display: flex;
+                        gap: 8px;
+                        justify-content: space-between;
+                        padding: 6px 10px;
+                        text-transform: uppercase;
+                }
+                .mighty-calendar .calendar-nav a {
+                        background-color: rgba(0, 0, 0, 0.25);
+                        border-radius: 999px;
+                        color: #fffd87;
+                        display: inline-flex;
+                        font-weight: bold;
+                        justify-content: center;
+                        min-width: 24px;
+                        padding: 4px 8px;
+                        text-decoration: none;
+                        transition: background-color 0.2s ease-in-out;
+                }
+                .mighty-calendar .calendar-nav a:hover,
+                .mighty-calendar .calendar-nav a:focus {
+                        background-color: rgba(255, 255, 255, 0.2);
+                        color: #ffffff;
+                }
+                .mighty-calendar .calendar-nav .calendar-nav__label {
+                        flex: 1;
+                        font-weight: bold;
+                        letter-spacing: 0.06em;
+                        text-align: center;
+                }
+                .mighty-calendar .calendar-grid {
+                        display: grid;
+                        gap: 1px;
+                        grid-template-columns: repeat(7, 1fr);
+                        padding: 1px;
+                        background-color: #001a33;
+                }
+                .mighty-calendar .calendar-grid .calendar-day,
+                .mighty-calendar .calendar-grid .calendar-day-label {
+                        align-items: center;
+                        background-color: #003e73;
+                        display: flex;
+                        justify-content: center;
+                        min-height: 32px;
+                        padding: 4px;
+                        text-align: center;
+                }
+                .mighty-calendar .calendar-grid .calendar-day-label {
+                        background-color: #004c8f;
+                        font-size: 9px;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                }
+                .mighty-calendar .calendar-grid .calendar-day.off-month {
+                        background-color: #21415f;
+                        color: #9bb7d3;
+                }
+                .mighty-calendar .calendar-grid .calendar-day.has-post {
+                        background: linear-gradient(180deg, #006699, #004d7a);
+                        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+                }
+                .mighty-calendar .calendar-grid .calendar-day.has-post a {
+                        color: #fffd87;
+                        display: block;
+                        font-weight: bold;
+                        height: 100%;
+                        text-decoration: none;
+                        width: 100%;
+                }
+                .mighty-calendar .calendar-grid .calendar-day.has-post a:hover,
+                .mighty-calendar .calendar-grid .calendar-day.has-post a:focus {
+                        color: #ffffff;
+                        text-decoration: underline;
+                }
+                .mighty-calendar .calendar-grid .calendar-day.is-selected {
+                        outline: 2px solid #fffd87;
+                        outline-offset: -2px;
+                }
+        </style>");
         if ($op == "del") {
                 $deleted = $conn->executeStatement(
                         "DELETE FROM {$blogTable} WHERE blogid = :blogid",
@@ -538,77 +598,148 @@ function mightyblogs_calendar($month,$day,$author){
         $conn = Database::getDoctrineConnection();
         $blogTable = Database::prefix('mod_mightyblogs');
         $accountsTable = Database::prefix('accounts');
+        $charset = getsetting('charset', 'ISO-8859-1');
+
         $monthDate = DateTime::createFromFormat('Y-m', $month);
         if (!$monthDate || $monthDate->format('Y-m') !== $month) {
                 $monthDate = new DateTime('first day of this month');
         } else {
                 $monthDate->setDate((int)$monthDate->format('Y'), (int)$monthDate->format('m'), 1);
         }
-        $start = clone $monthDate;
-        $start->modify('-'.$start->format('w').' days');
-        $end = clone $start;
-        $end->modify('+5 weeks');
+
+        $selectedDate = null;
+        if ($day !== '') {
+                $selectedDate = DateTime::createFromFormat('Y-m-d', $day);
+                if (!$selectedDate || $selectedDate->format('Y-m-d') !== $day) {
+                        $selectedDate = null;
+                }
+        }
+
+        $displayStart = clone $monthDate;
+        $dayOfWeek = (int) $displayStart->format('w');
+        if ($dayOfWeek > 0) {
+                $displayStart->modify('-'.$dayOfWeek.' days');
+        }
+        $displayEnd = clone $displayStart;
+        $displayEnd->modify('+41 days');
 
         $queryBuilder = $conn->createQueryBuilder();
         $queryBuilder
-                ->select("DISTINCT DATE(b.date) AS d")
+                ->select('DATE(b.date) AS blog_day', 'COUNT(*) AS total')
                 ->from($blogTable, 'b')
                 ->innerJoin('b', $accountsTable, 'a', 'a.acctid = b.author')
-                ->where('b.date >= :start')
-                ->andWhere('b.date <= :end')
-                ->orderBy('d');
-        $queryBuilder->setParameter('start', $start->format('Y-m-d 00:00:00'), ParameterType::STRING);
-        $queryBuilder->setParameter('end', $end->format('Y-m-d 23:59:59'), ParameterType::STRING);
+                ->where('b.date BETWEEN :start AND :end')
+                ->groupBy('blog_day')
+                ->orderBy('blog_day', 'ASC');
+        $queryBuilder->setParameter('start', $displayStart->format('Y-m-d 00:00:00'), ParameterType::STRING);
+        $queryBuilder->setParameter('end', $displayEnd->format('Y-m-d 23:59:59'), ParameterType::STRING);
         if ($author>""){
-                $queryBuilder->andWhere('a.login IN (:authors)');
-                $queryBuilder->setParameter('authors', array($author), Connection::PARAM_STR_ARRAY);
+                $queryBuilder->andWhere('a.login = :author');
+                $queryBuilder->setParameter('author', $author, ParameterType::STRING);
         }
         $result = $queryBuilder->executeQuery();
         $blogdays = array();
         foreach ($result->fetchAllAssociative() as $row){
-                $blogdays[$row['d']] = true;
+                $blogdays[$row['blog_day']] = (int)$row['total'];
         }
 
-        $calendar = "<table class='calendar' cellpadding='1' cellspacing='0'>";
-        $calendar.= "<tr>";
         $prevMonth = clone $monthDate;
         $prevMonth->modify('-1 month');
-        $link = "runmodule.php?module=mightyblogs&op=view&author=" .
-                rawurlencode($author) .
-                "&month=" . $prevMonth->format('Y-m') .
-                "&day=$day";
-        addnav("", $link);
-        $calendar .= "<td class='new'><a href='$link'>&lt;</a></td>";
-        $calendar.= "<td colspan='5' class='new'>".$monthDate->format('F y')."</td>";
         $nextMonth = clone $monthDate;
         $nextMonth->modify('+1 month');
-        $link = "runmodule.php?module=mightyblogs&op=view&author=" .
+        $dayParam = $day !== '' ? rawurlencode($day) : '';
+        $prevLink = "runmodule.php?module=mightyblogs&op=view&author=" .
+                rawurlencode($author) .
+                "&month=" . $prevMonth->format('Y-m') .
+                "&day=" . $dayParam;
+        $nextLink = "runmodule.php?module=mightyblogs&op=view&author=" .
                 rawurlencode($author) .
                 "&month=" . $nextMonth->format('Y-m') .
-                "&day=$day";
-        addnav("", $link);
-        $calendar .= "<td class='new'><a href='$link'>&gt;</a></td></tr>";
-        for ($d = clone $start; $d < $end; $d->modify('+1 day')){
-                if ($d->format('w')==0) $calendar .= "<tr>";
-                if (isset($blogdays[$d->format('Y-m-d')])){
+                "&day=" . $dayParam;
+        addnav("", $prevLink);
+        addnav("", $nextLink);
+
+        $labelId = 'mighty-calendar-label-' . $monthDate->format('Ym');
+        $calendar = array();
+        $calendar[] = "<div class='mighty-calendar' data-current-month='" .
+                htmlentities($monthDate->format('Y-m'), ENT_COMPAT, $charset) . "'";
+        if ($selectedDate instanceof DateTime) {
+                $calendar[] = " data-selected-day='" .
+                        htmlentities($selectedDate->format('Y-m-d'), ENT_COMPAT, $charset) . "'";
+        }
+        $calendar[] = ">";
+        $calendar[] = "<div class='calendar-nav'>";
+        $calendar[] = "<a class='calendar-nav__btn calendar-nav__btn--prev' href='" .
+                htmlentities($prevLink, ENT_COMPAT, $charset) . "'>&laquo;</a>";
+        $calendar[] = "<span class='calendar-nav__label' id='" .
+                htmlentities($labelId, ENT_COMPAT, $charset) . "'>" .
+                htmlentities($monthDate->format('F Y'), ENT_COMPAT, $charset) . "</span>";
+        $calendar[] = "<a class='calendar-nav__btn calendar-nav__btn--next' href='" .
+                htmlentities($nextLink, ENT_COMPAT, $charset) . "'>&raquo;</a>";
+        $calendar[] = "</div>";
+
+        $weekdays = array(
+                translate_inline('Sun'),
+                translate_inline('Mon'),
+                translate_inline('Tue'),
+                translate_inline('Wed'),
+                translate_inline('Thu'),
+                translate_inline('Fri'),
+                translate_inline('Sat')
+        );
+        $calendar[] = "<div class='calendar-grid' role='grid' aria-labelledby='" .
+                htmlentities($labelId, ENT_COMPAT, $charset) . "'>";
+        foreach ($weekdays as $weekday){
+                $calendar[] = "<span class='calendar-day-label' role='columnheader'>" .
+                        htmlentities($weekday, ENT_COMPAT, $charset) . "</span>";
+        }
+
+        $current = clone $displayStart;
+        for ($i = 0; $i < 42; $i++){
+                $cellClasses = array('calendar-day');
+                $formattedDate = $current->format('Y-m-d');
+                $isCurrentMonth = $current->format('m') === $monthDate->format('m');
+                $hasPosts = isset($blogdays[$formattedDate]);
+                if (!$isCurrentMonth){
+                        $cellClasses[] = 'off-month';
+                }
+                if ($hasPosts){
+                        $cellClasses[] = 'has-post';
+                }
+                if ($selectedDate instanceof DateTime && $selectedDate->format('Y-m-d') === $formattedDate){
+                        $cellClasses[] = 'is-selected';
+                }
+
+                $attributes = " data-date='" .
+                        htmlentities($formattedDate, ENT_COMPAT, $charset) . "'";
+                if ($hasPosts){
+                        $attributes .= " data-post-count='" .
+                                htmlentities($blogdays[$formattedDate], ENT_COMPAT, $charset) . "'";
+                }
+
+                $cellContent = $current->format('j');
+                if ($hasPosts){
+                        $targetMonth = $current->format('Y-m');
                         $link = "runmodule.php?module=mightyblogs&op=view&author=" .
                                 rawurlencode($author) .
-                                "&month=" . $monthDate->format('Y-m') .
-                                "&day=" . $d->format('Y-m-d');
+                                "&month=" . $targetMonth .
+                                "&day=" . $formattedDate;
                         addnav("", $link);
-                        $calendar .= "<td class='new'><a href='$link'>" .
-                                $d->format('d') .
-                                "</a></td>";
-                }else{
-                        if ($d->format('m')==$monthDate->format('m')){
-                                $calendar.="<td>".$d->format('d')."</td>";
-                        }else{
-                                $calendar.="<td class='offmonth'>".$d->format('d')."</td>";
-                        }
+                        $cellContent = "<a href='" .
+                                htmlentities($link, ENT_COMPAT, $charset) . "'>" .
+                                htmlentities($cellContent, ENT_COMPAT, $charset) . "</a>";
+                } else {
+                        $cellContent = htmlentities($cellContent, ENT_COMPAT, $charset);
                 }
-                if ($d->format('w')==6) $calendar .= "</tr>";
+
+                $calendar[] = "<span class='" . implode(' ', $cellClasses) . "'" .
+                        $attributes . ">" . $cellContent . "</span>";
+                $current->modify('+1 day');
         }
-        $calendar.="</table>";
-        return $calendar;
+
+        $calendar[] = "</div>";
+        $calendar[] = "</div>";
+
+        return implode('', $calendar);
 }
 ?>
