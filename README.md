@@ -10,10 +10,13 @@ Directories group modules by purpose:
 
 - **pvp/** – player versus player extensions and events
 - **administrative/** – tools for admins and moderation
+- **commentary/** – enhancements for chat and roleplay areas
 - **forest/** – general forest related tweaks
 - **forest_specials/** – additional forest encounters and bosses
-- **inventory/** - inventory and items 
+- **general/** – cross-area features and utilities
+- **inventory/** - inventory and items
 - **lodge/** – lodge upgrades
+- **mail/** – player mail quality-of-life tools
 - **mounts/** – mount related features
 - **systems/** – large feature systems (races, specialties etc.)
 - **village_modules/** – village shops and activities
@@ -38,6 +41,10 @@ Below is a short description for every module. Some modules rely on others; depe
 - **servercostlog** – log server expenses.
 - **suspendannounce** – announce server suspensions.
 - **welcomemail** – send welcome e‑mail to new users.
+
+### Commentary
+- **gm_rp_talk** – lets game masters participate in fzone roleplay chats without breaking character tools.
+- **sectionedchats** – splits village, superuser, and clan chat areas into RP and OOC channels with unread indicators.
 
 ### Dwellings
 - **dwcastles** - Castle type for dwellings core
@@ -71,6 +78,9 @@ Below is a short description for every module. Some modules rely on others; depe
 - **wedgieman** – the fearsome Wedgie Man.
 - **zombie** – zombie outbreak event.
 
+### General
+- **mightyblogs** – public blogging system that lets authorised users post long-form updates accessible from the village, cemetery, and index. Older releases had serious issues; upgrade servers to at least version 1.1.
+
 ### inventory
 - **inventory** - the entire updated item system by XChrisX for run with +nb core
 - **findloot** – hooks `battle-victory` to roll for loot items via the inventory system (`items/findloot.php`).
@@ -80,6 +90,11 @@ Below is a short description for every module. Some modules rely on others; depe
 - **lodgedkpointreset** – reset spent lodge points for a dragon kill.
 - **lodgenonexpiration** – purchase non‑expiration account upgrade.
 - **namechange** – allow players to change character name.
+
+### Mail
+- **mailarchive** – archive incoming messages into user-defined categories for long-term storage.
+- **mailnotepad** – provides personal notepad fields inside the mail interface.
+- **outbox** – review or optionally mirror sent messages, with support for a full separate outbox.
 
 ### Mounts
 - **mount_feeder** – forest event where a mysterious vendor sells mount feed (requires `inventory`).
