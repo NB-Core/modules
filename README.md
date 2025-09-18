@@ -149,3 +149,10 @@ Below is a short description for every module. Some modules rely on others; depe
 ## Additional notes
 
 Some modules require others to be installed first (as listed above). All modules assume a working NB-Core/lotgd installation. Enable or disable modules from the game’s Module Manager.
+
+## Additional modules
+
+Some additional modules have been created by [Jeffrey Hoegee](https://github.com/Avanae/lotgd-modules/tree/main).
+These work alongside the +nb framework (and the his edition), provided a proper installation is in place.
+
+Many thanks to my pal [Jeffrey Hoegee](https://github.com/Avanae/lotgd-modules/tree/main) for his contributions and for helping to broaden the ecosystem.
