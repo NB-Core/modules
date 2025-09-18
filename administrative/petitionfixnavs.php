@@ -103,7 +103,7 @@ function petitionfixnavs_run(){
 			pt_insert(translate_inline("/me has done the work and closed the petition"));
 			db_query($sql);
 			require_once("lib/systemmail.php");
-			systemmail($author,array("Your petition"),array("Your request has been processed on and is now done. If not, please petition again. (This is an automatic message).`n`nRegards %s",$session['user']['name']));			
+			systemmail($author,"Your petition",sprintf_translate("Your request has been processed on and is now done. If not, please petition again. (This is an automatic message).`n`nRegards %s",$session['user']['name']));			
 			invalidatedatacache("petition_counts");
 			if ($nextid!=0) redirect("viewpetition.php?op=view&id=$nextid");
 				else redirect("viewpetition.php");
