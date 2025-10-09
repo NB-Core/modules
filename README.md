@@ -4,6 +4,13 @@ This repository provides optional modules for the [NB-Core/lotgd](https://github
 
 These modules extend nearly every aspect of the game ranging from administrative helpers to new forest events. Copy the desired PHP files (and folders if present) into your game's `modules/` directory and activate them from the game admin panel.
 
+# Old Dragonprime modules (for legacy display, old versions and may not work, unmaintained)
+
+The moduels are location in **_old_dragonprime_snapshot**.
+
+You will find there mostly undocumented modules that were taken from dragonprime as a safety before it went down, some time before.
+This is history.
+
 ## Repository layout
 
 Directories group modules by purpose:

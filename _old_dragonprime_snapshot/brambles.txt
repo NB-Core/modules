@@ -1,0 +1,83 @@
+<?php
+/**ss**********************ss***************
+-- 	Brambles (Forest Special) by LoneStrider 
+ 	11.28.04
+	version 0.5 (Strider)
+	
+- 	Notes: Just a simple forest event to take away turns from
+	those who are trying to make their way through the deep forest.
+	I've expanded it to act like a couple of different forest events.
+
+-----------------------------------------------------------
+-	Requires:  LotGD 0.9.8	(made for LotGD 0.9.8 pr-10)
+  	Just drop into your /modules/ folder and install
+-----------------------------------------------------------
+
+Brambles version 0.5 notes (Strider)
+- Created 0.9.8 Version of Brambles from original 0.9.7
+- Removed the special "Deep Forest" attribute and created a general release
+
+Next Version Notes (Strider)
+- Add a few more consequences to running into Lonestrider
+
+/ Version History: 
+ ver 0.1 - v0.2: (strider of Legendgard)
+ - Created the script and made some story corrections for clarity.
+ - Originally built for Legendgard's Deep Forest Scripts
+ Ver 0.1 - First created Feb 2004
+
+**************************************ss***/
+// -Created by: Shawn Strider
+// Nov 2004  - Legendgard Script Release
+
+
+function brambles_getmoduleinfo(){
+	$info = array(
+		"name"=>"Brambles",
+		"version"=>"0.5",
+		"author"=>"LoneStrider of Legendgard",
+		"category"=>"Forest Specials",
+		"download"=>"http://dragonprime.net/users/strider/brambles.zip",
+	);
+	return $info;
+}
+
+function brambles_install(){
+	module_addeventhook("forest", "return 100;");
+	return true;
+}
+
+function brambles_uninstall(){
+	return true;
+}
+
+function brambles_dohook($hookname,$args){
+	return $args;
+}
+
+function brambles_runevent($type){
+	global $session;
+	$from = "forest.php?";
+	$session['user']['specialinc'] = "module:brambles";
+
+$op = httpget('op');
+	if ($op=="" || $op=="search"){
+
+	$lifecost=round($session['user']['hitpoints']*.5);
+	$turncost=round($session['user']['turns']*.10);
+	output(" `6 You cut your way through the `@Forest `6and find a patch of thick `iBrambles and Thorns`i!
+	Cutting into the mess of brambles, you see a human skull suspended in the vines. You fall backwards into the
+	thorns, cutting yourself on jagged rocks and sharp sticks. It takes you a moment to calm down, but soon you gain your
+	composure and continue to make your way through the thicket.`n`n");
+	
+	output("You lose `^$lifecost hitpoints `6and `^$turncost`6 turns while fighting through the brambles and thorns.");
+	$session['user']['hitpoints']-=$lifecost;
+	$session['user']['turns']-=$turncost; 
+
+	
+    }
+}
+function druid_run(){
+}
+
+?>

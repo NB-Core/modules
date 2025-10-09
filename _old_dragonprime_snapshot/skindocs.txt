@@ -1,0 +1,611 @@
+
+      Legend of the Green Dragon -- Skinning Documentation (version 0.3)
+      ==================================================================
+
+
+------------------------------------------------------------------------------
+ Contents
+------------------------------------------------------------------------------
+
+Introduction
+Before You Start
+Let's Begin
+Images Directory
+The CSS File
+The HTM File
+Testing
+References
+Tools
+Credits
+Closing
+Document History
+
+
+------------------------------------------------------------------------------
+ Introduction
+------------------------------------------------------------------------------
+
+So you want to create a new skin for LoGD. That's great, because they're
+looking for new skins! But where do you start? The general consensus is to
+take a look at how the existing skins work and go from there. Having 
+personally done that, I found it really wasn't that difficult. However, it 
+wasn't that easy either, so I decided to have a try at documenting it a bit 
+and this document was born. I hope it works for you.
+
+Disclaimer: I am not a CSS nor HTML expert. Everything I know about them was 
+learned from the Internet, either through trial and error or good ol' Google.
+So, any readers more versed in these subjects are encouraged to submit 
+corrections/improvements for any problems or errors I may have made. Thanks!
+
+
+------------------------------------------------------------------------------
+ Before You Start
+------------------------------------------------------------------------------
+
+A few things you need to know about before you start working on your skin.
+
+Obviously, you'll need at least some basic knowledge of CSS and HTML. You can
+find tutorials-a-plenty about these topics on the web; just do a search.
+Please note that *this* document is not meant to teach either of these topics.
+
+The other thing that will be handy to have is a LoGD server to test on. If 
+you want to do this yourself, check the documentation (especially the main 
+readme file) for LoGD to find out how to get the game running. Alternatively,
+seek out a friend that can do this and have them setup a server for you. ;)
+
+I should also note that this document is based on the current 0.9.8
+pre-releases of LoGD which you can find on DragonPrime.net.
+
+
+------------------------------------------------------------------------------
+ Let's Begin
+------------------------------------------------------------------------------
+
+The first thing we need to do is come up with a design. You don't necessarily
+need to have something fully fleshed out, but at least a good general idea of
+what you want the skin to look like. 
+
+Some general things to think about include:
+
+- what colours you want for the text and backgrounds
+- which fonts you want to use
+- any images you want to include
+
+So with your concept in hand, let's start coding. There are 2 main files used
+in a skin, the CSS file and the HTM file. The CSS controls the visual 
+aspects, while the HTM controls the layout.
+
+The easiest way to start is to take an existing skin, make copies of that 
+skin's CSS and HTM files, and then start modifying them to suit your design.
+
+
+------------------------------------------------------------------------------
+ Images Directory
+------------------------------------------------------------------------------
+
+If you have or want to create images for use in your skin, these will need
+to be stored in a subdirectory within the LoGD templates directory. It should
+be named the same as your skin. At this point, your directory structure will
+probably look something like this:
+
+  {LoGD dir}
+       |
+       +-- templates
+       :      |
+              +-- yourskin
+              |      |
+              |      +-- yourimg1.gif
+              |      +-- yourimg2.jpg
+              |      :
+              |
+              +-- yourskin.css
+              +-- yourskin.htm
+              :
+
+The recommended filetypes for images are either GIF or JPG. PNGs would have
+been great, but we are currently limited by the inconsistent support for them
+in IE.
+
+
+------------------------------------------------------------------------------
+ The CSS File
+------------------------------------------------------------------------------
+
+The CSS file controls the visual styles of your skin. For the most part, these
+are your colours, fonts, and element dimensions.
+
+I have organized my CSS files as follows: First, I have general tag styles, 
+followed by general class styles, and then specific tag-and-class styles.
+
+Note that the styles listed here are the core styles that the game requires.
+You are, of course, free to add additional styles to suit the design of your
+skin.
+
+
+General Tag Styles
+------------------
+
+These styles are useful for general style defaults you want to have in place
+when there isn't a more specific tag and/or class to use. Currently, there are
+4 main ones that are regularly used:
+
+  Tag       Typical Attributes  Tag Used For
+  --------  ------------------  ------------
+
+  td        font-family         - default for table data cells
+            font-size
+
+  a         color               - default for links
+            text-decoration
+
+  input     font-family         - default for input fields 
+            font-size           - e.g. village chats
+            border
+            color
+            background-color
+
+  select    border              - default for selection boxes
+            color               - e.g. user preferences drop-downs,
+            background-color           choosing lottery numbers
+
+
+General Class Styles
+--------------------
+
+These are useful for defining a more general style that can be used in many
+different html tags via the 'class=' attribute. There are 25 required classes:
+
+  Class           Typical Attributes  Class Used For
+  --------------  ------------------  --------------
+
+  .pagetitle      font-family         - main page title at the top of a page
+                  font-size           - e.g. "Degolburg, the Capital City",
+                  color                      "LoGD News", "The Forest"
+
+  .navhead        height              - headings in the navigation menu
+                  width               - e.g. "City Gates", "Combat Avenue",
+                  padding                    "Store Street", "Ale Alley"
+                  border
+                  color
+                  background-color
+                  float
+                  clear
+                  font-weight
+                  text-decoration
+                  text-align
+                  line-height
+                  
+  .navhelp        height              - a way to highlight items in nav menu
+                  width               - e.g. Skill headings like "Dark Arts"
+                  padding
+                  border
+                  float
+                  clear
+                  text-decoration
+
+  .navhi          color               - the hot key for a nav menu item
+                  background-color    - e.g. the 'F' in Forest, the 'T' in
+                  text-decoration            Travel
+
+  .input          border              - fields for text input
+                  color               - e.g. the large textarea in YOMs
+                  background-color
+
+  .button         font-family         - input buttons
+                  font-size           - e.g. Login, Submit, Search, Add
+                  border-top
+                  border-left
+                  border-right
+                  border-bottom
+                  color
+                  background-color
+
+  .trhead         color               - table headings
+                  background-color    - e.g. Alive, Level, Name, Location
+
+  .trlight        color               - light-coloured table rows
+                  background-color
+
+  .trdark         color               - dark-coloured table rows
+                  background-color
+
+  .trhilight      color               - highlighted table rows
+                  background-color    - e.g. the line your username is on
+
+  .colDkBlue      color               - dark blue text
+  .colDkGreen     color               - dark green text
+  .colDkCyan      color               - dark cyan text
+  .colDkRed       color               - dark red text
+  .colDkMagenta   color               - dark magenta text
+  .colDkYellow    color               - dark yellow text
+  .colDkWhite     color               - dark white text
+  .colDkOrange    color               - dark orange text
+  .colLtBlue      color               - light blue text
+  .colLtGreen     color               - light green text
+  .colLtCyan      color               - light cyan text
+  .colLtRed       color               - light red text
+  .colLtMagenta   color               - light magenta text
+  .colLtYellow    color               - light yellow text
+  .colLtOrange    color               - light orange text
+
+
+Specific Tag-and-Class Styles
+-----------------------------
+
+These styles are used when you have a specific look and feel for an exact
+tag *and* its class. 
+
+  Tag/Class           Typical Attributes  Tag/Class Used For
+  -----------------   ------------------  ------------------
+
+  a.nav               height              - the links in the navigation menu
+                      width               - e.g. Forest, Travel, Preferences
+                      padding
+                      float
+                      clear
+                      text-decoration
+
+  a:hover.nav         color               - mouseover effects for nav links
+                      background-color
+
+  a.motd              height              - links for motd, yom, and petition
+                      width
+                      padding
+                      float
+                      clear
+                      color
+                      background-color
+                      text-decoration
+                      text-align
+
+  a:hover.motd        height              - mouseover effects for motd, yom,
+                      width                 and petition
+                      padding
+                      color
+                      background-color
+
+  a.hotmotd           height              - when a new motd/yom is available
+                      width
+                      padding
+                      float
+                      clear
+                      color
+                      background-color
+                      font-weight
+                      text-decoration
+                      text-align
+
+  a.t                 font-size           - translator tool links
+                      height
+                      width
+                      border
+                      padding
+                      color
+                      background-color
+
+  a.thot              font-size           - translation tool links for lines
+                      height                currently without a translation
+                      width
+                      border
+                      padding
+                      color
+                      background-color
+
+  td.pageheader       height              - heading for main page
+                      background-color
+
+  td.popupheader      height              - heading in a popup
+                      background-color    - e.g. motd, yom
+
+  table.nav           width               - the overall navigation menu
+                      border
+                      color
+                      background-color
+
+  td.nav a.t          position            - forces translation links to a
+                      left                  certain position (typically to the
+                      height                left edge of the page)
+
+  td.nav a.thot       position            - forces untranslated translation
+                      left                  links to a certain position
+                      height                (typically to the left edge)
+
+  table.vitalinfo     width               - wrapper table for vital info
+                      border
+                      background-color
+
+  table.charinfo      width               - the table with character stats
+                      background-color
+
+  td.charhead         border              - character stat category heading
+                      color               - e.g. Vital Info, Equipment Info
+                      background-color
+
+  td.charinfo         border-top          - specific character stat data
+                      padding             - e.g. Name, Level, Hitpoints, Turns
+                      color
+
+  table.noborder      border              - table in page footer
+
+  td.footer           background-image    - table data in the page footer
+                      background-repeat
+                      background-position
+
+  td.noborder         border              - borderless data in page footer
+
+  div.debug           font-size           - debug messages
+                      height
+                      width
+                      border
+                      color
+                      background-color
+
+
+------------------------------------------------------------------------------
+ The HTM File
+------------------------------------------------------------------------------
+
+The HTM file controls the layouts of the various components of the skin.
+These are mostly done through extensive use of tables. 
+
+There are two main things to take note of in this file: 'template sections' 
+and 'replacement tokens'.
+
+
+Template Sections
+-----------------
+
+Each template section starts with a comment of the form: 
+
+  <!--!sectionname-->
+
+The end of that section is signified by the beginning of a new section
+(i.e. there is no "end-of-section" delimiter). Here is a table of the 
+sections currently available in the htm file.
+
+  Section Name            Description
+  ------------            -----------
+  
+  <!--!popuphead-->       - the header area in popup windows
+                            (e.g. motd, yom)
+
+  <!--!popupfoot-->       - the footer area in popup windows
+                            (e.g. copyright)
+
+  <!--!header-->          - the header area of the page
+                            (e.g. title, logo)
+
+  <!--!footer-->          - the footer area of the page
+                            (e.g. copyright, source, version, pagegen)
+
+  <!--!navhead-->         - the headings in the navigation menu
+                            (e.g. City Gates, Combat Avenue, Store Street)
+
+  <!--!navhelp-->         - a highlighted item in the navigation menu
+                            (e.g. Skill headings like "Dark Arts")
+
+  <!--!navitem-->         - a link in the navigation menu
+                            (e.g. Forest, Travel, Preferences)
+
+  <!--!statstart-->       - the start of the 'vital info' table
+
+  <!--!stathead-->        - a heading in the 'vital info' table
+                            (e.g. Vital Info, Equipment Info)
+
+  <!--!statrow-->         - a stat's name/value pair
+                            (e.g. "Name  Farmboy blarg", "Level  1")
+
+  <!--!statbuff-->        - a buff name/value pair
+                            (e.g. "Buzz (10 rounds left)")
+
+  <!--!statend-->         - the end of the vital info table
+
+  <!--!petitioncount-->   - the number and type of petitions there are
+
+  <!--!adwrapper-->       - a container for ads
+
+  <!--!login-->           - the login image, username/password fields,
+                            and button
+
+  <!--!loginfull-->       - a disabled login section for when the server 
+                            is full
+
+
+Replacement Tokens
+------------------
+
+Replacement tokens take the following form:
+
+  {tokenname}
+
+That is, the name of the token surrounded by curly braces. Note that some of
+the tokens will only work if they are found in certain template sections and
+still others are required to exist or the template won't work.
+
+Here is a table of the current replacement tokens, what sections they go in,
+and what they are for based on their context. Required tokens are marked with
+this: [R].
+
+  Token Name          Valid Section(s)    Token Used For
+  ----------          ----------------    --------------
+
+  {title}             popuphead           - the title that goes in 
+                                            <title></title>
+                                          - the actual title on the page
+                      header [R]          - the title that goes in 
+                                            <title></title>
+                                          - the actual title on the page
+                      navhead             - a heading in the navigation menu
+                      stathead            - a heading in the character 
+                                            stats info
+                      statrow             - a name of a specific stat
+                      statbuff            - a name of a buff
+
+  {copyright}         popupfoot           - the game's licensing and 
+                      footer                copyright information
+
+  {headscript}        header [R]          - JavaScript for the <head> section 
+                                            of the html page
+
+  {script}            header [R]          - any other JavaScript for the page
+
+  {motd}              header||footer [R]  - link for the 'Message of the Day'
+
+  {mail}              header||footer [R]  - link for 'Ye Olde Mail'
+
+  {petition}          header||footer [R]  - link for 'Petition for Help'
+
+  {navad}             any                 - An ad intended to be included in
+                                            the navigation area
+
+  {nav}               header||footer [R]  - the navigation menu
+
+  {text}              navhelp             - the text in a navhelp item
+                      navitem             - a link's text
+
+  {link}              navitem             - target URL for a navigation 
+                                            menu item
+
+  {accesskey}         navitem             - keyboard shortcut key for a 
+                                            navigation menu item
+
+  {popup}             navitem             - call to JavaScript function if a  
+                                            link is for a popup
+
+  {stats}             header||footer [R]  - the vital info table
+
+  {value}             statrow             - the value for a character stat
+                      statbuff            - the value of a buff
+
+  {headerad}          any                 - an ad intended for the header area
+                                            of the page
+
+  {bodyad}            any                 - an ad intended for the main body
+                                            area of the page
+
+  {petitioncount}     petitioncount       - a listing of the current number
+                                            and types of petitions
+
+  {petitiondisplay}   header||footer      - where the petitioncount will 
+                                            show up
+
+  {paypal}            header||footer [R]  - Paypal links/images
+
+  {verticalad}        any                 - a vertical ad
+
+  {pagegen}           footer              - the page generation times
+
+  {source}            header||footer [R]  - link to the PHP source of the page
+
+  {version}           footer [R]          - the current game's version info
+
+  {content}           adwrapper           - the content of an ad
+
+  {username}          login               - the username label
+
+  {password}          login               - the password label
+
+  {button}            login               - the text on the login button
+
+
+------------------------------------------------------------------------------
+ Testing
+------------------------------------------------------------------------------
+
+To test your skin, upload/copy/etc. your files to your LoGD server into the
+templates directory as indicated previously. Don't forget your images 
+directory if you have one.
+
+Login to the game and your new skin should automatically show up on the User
+Preferences page. 
+
+Now take your skin for a test drive and see how everything looks. Note that
+you will need to be an admin-type (or enlist the help of one) to see how the
+translator and the debugging styles look.
+
+
+------------------------------------------------------------------------------
+ References
+------------------------------------------------------------------------------
+
+Here are some of the sites I've used while working on skins.
+
+The Web Design Group's HTML Reference
+http://www.htmlhelp.com/reference/html40/
+
+W3 School's CSS2 Reference
+http://www.w3schools.com/css/css_reference.asp
+
+Dave Raggett's Introduction to CSS (especially for the Colour Palette)
+http://www.w3.org/MarkUp/Guide/Style
+
+Code Style's Font Samplers
+http://www.codestyle.org/css/font-family/
+
+
+------------------------------------------------------------------------------
+ Tools
+------------------------------------------------------------------------------
+
+Here are some of the tools I've used while working on skins.
+
+XEmacs (http://www.xemacs.org/)
+- Currently my favourite text editor. Think of it as a GUI version of
+  Emacs. Originally for the X-Windows system, it's been ported to other
+  platforms as well.
+
+Mozilla Suite and Firefox (http://www.mozilla.org/)
+- My web browsers of choice. The best part about these is the Web Developer
+  Extension (http://www.chrispederick.com/work/firefox/webdeveloper/). Among
+  other things, this extension lets you swap out CSS files on the fly with 
+  any website, even live ones! 
+
+For any graphics I make, I use Paint Shop Pro and Photoshop. Unfortunately,
+these are commercial, though they both have trial versions you can download. 
+The free alternative I sometimes use is The Gimp (http://www.gimp.org/).
+
+
+------------------------------------------------------------------------------
+ Credits
+------------------------------------------------------------------------------
+
+Thanks, of course, must go out to MightyE and Kendaer for their fantastic
+game and their incredible amount of involvement with both the user and
+the modder community. Thanks also to the users and modders who tried out
+my skins and gave their feedback.
+
+
+------------------------------------------------------------------------------
+ Closing
+------------------------------------------------------------------------------
+
+And finally, thanks to you for reading at least some of this.. I hope it 
+helps you with creating your own skins for LoGD and I can't wait to see some
+of them get posted to DragonPrime!
+
+If you would like to contact me about anything in this document, the best 
+place would be on the DragonPrime.net forums (post or PM), but you're also 
+welcome to PM me on the main lotgd.net forums or even YOM me on Central or 
+Dragoncat. My username on all those servers is 'blarg'. Or if you would 
+prefer to email me, send it to blarg at wazooenterprises dot com with 'LoGD'
+somewhere in the subject.
+
+Now stop reading and get creating! :D
+
+-- Ben "blarg" Wong
+
+
+------------------------------------------------------------------------------
+ Document History
+------------------------------------------------------------------------------
+
+2004/11/09  - version 0.3
+            - fixed some spelling/wording errors
+            - added a small section about tools
+
+2004/10/30  - version 0.2
+            - Added 'valid section' column to the table of replacement tokens
+
+2004/10/28  - version 0.1
+            - Completed first draft of this document
+            - Posted to DragonPrime

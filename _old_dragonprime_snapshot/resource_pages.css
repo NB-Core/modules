@@ -1,0 +1,38 @@
+.main{
+	font-family: Verdana, sans-serif;
+	font-size: 12px;
+	
+	background-color: #000000;
+	color: #FFCC00;
+	
+	padding: 8px;
+	
+	border-color: #FFCC00;
+	border-style: solid;
+	border-width: 2px;
+}
+a.link:visited{
+	color: #FFAA00;
+	text-decoration: none;
+}
+a.link:hover{
+	color: #FFFFFF;
+	text-decoration: none;
+}
+a.link{
+	color: #FFAA00;
+	text-decoration: none;
+}
+div.helpcode{
+	color: #FFFF00;
+	font-family: Courier New, san-serif;
+	font-size: 12px;
+	
+	white-space: pre;
+	overflow: auto;
+	padding: 4px;
+	
+	border-color: #FFCC00;
+	border-style: solid;
+	border-width: 1px;
+}
