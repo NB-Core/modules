@@ -1,141 +1,134 @@
 <?php
+
 declare(strict_types=1);
-//functions for the specsystem
+
+// Functions for the specialty system helpers
 
 /**
- * Calculate usable points for a specialty.
- *
- * @param string|null $modulename Target module or null for overall points
- * @return int
+ * Determine how many chakra points can be spent on a specialty.
  */
-function specialtysystem_availableuses(?string $modulename = null): int {
-	$upper=specialtysystem_getskillpoints();
-	$lower=specialtysystem_getskillpoints($modulename);
-	$uses=specialtysystem_getuses();
-	if ($modulename==false) {
-		$av=$upper-$uses;
-	} else {
-		$rest=$upper-$uses;
-		$av=($rest>$lower?$lower:$rest);
-	}
-	return $av;
+function specialtysystem_availableuses(?string $modulename = null): int
+{
+    $upper = specialtysystem_getskillpoints();
+    $lower = specialtysystem_getskillpoints($modulename);
+    $uses = specialtysystem_getuses();
+    if ($modulename === null) {
+        $av = $upper - $uses;
+    } else {
+        $rest = $upper - $uses;
+        $av = ($rest > $lower ? $lower : $rest);
+    }
+    return $av;
 }
 
 /**
- * Fetch accumulated skill points.
- *
- * @param string|null $modulename Module name or null for all
- * @return int
+ * Get the total skill points a player has for a specialty or overall.
  */
-function specialtysystem_getskillpoints(?string $modulename = null): int {
-	require_once("modules/specialtysystem/datafunctions.php");
-	$ret=0;
-	if ($modulename==false) {
-		$data=specialtysystem_get();
-		if (!is_array($data)) return 0;
-		foreach ($data as $key=>$value) {
-			//$value=unserialize($value);
-			if (!is_array($value)) continue;
-			if (array_key_exists('noaddskillpoints',$value)==false) $value['noaddskillpoints']=0;
-			if ($value['noaddskillpoints']>0) $value['skillpoints']=max(0,$value['skillpoints']-$value['noaddskillpoints']);;
-			// do not add points if  he is not supposed to get them from that spec
-			$ret+=(int) $value['skillpoints'];
-		}//debug($ret);
-	} else {
-		$data=specialtysystem_get($modulename);//debug("SKILL2");debug($data);
-		if ($data!==false) $ret=$data['skillpoints'];
-	}
-	return $ret;
+function specialtysystem_getskillpoints(?string $modulename = null): int
+{
+    require_once 'modules/specialtysystem/datafunctions.php';
+    $ret = 0;
+    if ($modulename === null) {
+        $data = specialtysystem_get();
+        if (!is_array($data)) {
+            return 0;
+        }
+        foreach ($data as $value) {
+            if (!is_array($value)) {
+                continue;
+            }
+            if (array_key_exists('noaddskillpoints', $value) === false) {
+                $value['noaddskillpoints'] = 0;
+            }
+            if ($value['noaddskillpoints'] > 0) {
+                $value['skillpoints'] = max(0, $value['skillpoints'] - $value['noaddskillpoints']);
+            }
+            $ret += (int) $value['skillpoints'];
+        }
+    } else {
+        $data = specialtysystem_get($modulename);
+        if ($data !== false) {
+            $ret = (int) $data['skillpoints'];
+        }
+    }
+    return $ret;
 }
 
 /**
- * Get number of used points for current day.
- *
- * @return int
+ * Current total of chakra points spent this round.
  */
-function specialtysystem_getuses(): int {
-	$data2=get_module_pref("uses","specialtysystem");
-	return $data2;
+function specialtysystem_getuses(): int
+{
+    return (int) get_module_pref('uses', 'specialtysystem');
 }
 
 /**
- * Persist used points value.
- *
- * @param int $value
+ * Overwrite the number of used chakra points for the round.
  */
-function specialtysystem_setuses(int $value): void {
-	set_module_pref("uses",$value,"specialtysystem");
-	return;
+function specialtysystem_setuses(int $value): void
+{
+    set_module_pref('uses', $value, 'specialtysystem');
 }
 
 /**
- * Increase uses for a specialty.
- *
- * @param string $modulename
- * @param int $value
+ * Increase the per-round chakra usage counter.
  */
-function specialtysystem_incrementuses(string $modulename, int $value): void {
-	require_once("modules/specialtysystem/datafunctions.php");
-	$uses=get_module_pref("uses","specialtysystem");
-	if ($uses!='') $uses+=(int)$value;
-		else $uses=$value;
-	set_module_pref("uses",$uses,"specialtysystem");
-	return;
+function specialtysystem_incrementuses(string $modulename, int $value): void
+{
+    require_once 'modules/specialtysystem/datafunctions.php';
+    $uses = get_module_pref('uses', 'specialtysystem');
+    if ($uses != '') {
+        $uses += (int) $value;
+    } else {
+        $uses = (int) $value;
+    }
+    set_module_pref('uses', $uses, 'specialtysystem');
 }
 
 /**
- * Add a section headline to the fight navigation collector.
- *
- * @param string $name
- * @param int|null $uses
- * @param int|null $max
+ * Start a new fight navigation block.
  */
-function specialtysystem_addfightheadline(string $name, ?int $uses = null, ?int $max = null): void {
-	global $specialtycollector;
-	if (!is_array($specialtycollector)) $specialtycollector=array();
-	if ($uses!=false) {
-		$header=sprintf_translate("$name (%s/%s points)`0",$uses,$max);
-	} else {
-		$header=translate_inline($name)."`0";
-	}
-	$specialtycollector[]=array('headline'=>$header); //Each header makes a new array in Specialtycollector.
-	return;
+function specialtysystem_addfightheadline(string $name, ?int $uses = null, ?int $max = null): void
+{
+    global $specialtycollector;
+    if (!is_array($specialtycollector)) {
+        $specialtycollector = [];
+    }
+    if ($uses !== null && $max !== null && $uses != 0 && $max != 0) {
+        $header = sprintf_translate("$name (%s/%s points)`0", $uses, $max);
+    } else {
+        $header = translate_inline($name) . '`0';
+    }
+    $specialtycollector[] = ['headline' => $header];
 }
 
 /**
- * Append an entry to the fight navigation collector.
- *
- * @param string $name
- * @param string|null $link
- * @param int|null $uses
+ * Add an individual navigation link to the current fight block.
  */
-function specialtysystem_addfightnav(string $name, ?string $link = null, ?int $uses = null): void {
-	global $specialtycollector;
-	if (is_array('name')) {
-		$name=sprintf_translate($name);
-	} elseif ($uses) {
-		$name=sprintf_translate(" > %s`7 (%s)",$name,$uses);
-
-	}else {
-		$name=translate_inline($name);
-	}
-	if (!is_array($specialtycollector) && $link=false) {
-		$specialtycollector[end($specialtycollector)][]=array($name);//Makes sure it adds it to the last array created.
-	} else {
-		$specialtycollector[]=implode("|||",array($name,$link));
-	}
-	return;
+function specialtysystem_addfightnav($name, ?string $link = null, ?int $uses = null): void
+{
+    global $specialtycollector;
+    if (is_array($name)) {
+        $name = sprintf_translate(...$name);
+    } elseif ($uses !== null) {
+        $name = sprintf_translate(' > %s`7 (%s)', $name, $uses);
+    } else {
+        $name = translate_inline($name);
+    }
+    if (is_array($specialtycollector) && $link === null) {
+        $specialtycollector[end($specialtycollector)][] = [$name];
+    } else {
+        $specialtycollector[] = implode('|||', [$name, $link]);
+    }
 }
 
 /**
- * Return and reset the fight navigation collector.
- *
- * @return array
+ * Retrieve and clear the collected fight navigation block.
  */
-function specialtysystem_getfightnav(): array {
-	global $specialtycollector;
-	$return=$specialtycollector;
-	$specialtycollector=false;
-	return $return;
+function specialtysystem_getfightnav()
+{
+    global $specialtycollector;
+    $return = $specialtycollector;
+    $specialtycollector = false;
+    return $return;
 }
-?>
