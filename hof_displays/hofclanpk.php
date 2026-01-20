@@ -90,7 +90,7 @@ function hofclanpk_run(){
 			} else {
 				rawoutput("<tr class='".($i%2?"trdark":"trlight")."'><td align='center'>");
 			}
-			output_notl($i+$pageoffset);
+			output_notl("%s", $i + $pageoffset);
 			rawoutput("</td><td align='center'>");
 			output_notl("`^%s`0",$row['clanname']);
 			rawoutput("</td><td align='center'>");
