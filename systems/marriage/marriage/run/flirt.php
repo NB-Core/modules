@@ -645,16 +645,20 @@ switch ($subop) {
 		$respond=translate_inline("Respond");				
 		$view=translate_inline("View");
 		while ($row=db_fetch_assoc($result)) {
+			// Normalize values to prevent null from reaching holiday text processing and keep display stable for missing account rows.
+			$proposerName = (string)($row['name'] ?? translate_inline('Unknown'));
+			$proposalDate = (string)($row['date'] ?? '');
+			$responseDate = (string)($row['responsedate'] ?? '');
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
-			if ($old!=$row['acctid']) output_notl($row['name']);
+			if ($old!=$row['acctid']) output_notl("%s", $proposerName);
 			$old=$row['acctid'];
 			rawoutput("</td><td>");
-			output_notl($row['date']);
+			output_notl("%s", $proposalDate);
 			rawoutput("</td><td>");
-			output_notl($row['responsedate']);
+			output_notl("%s", $responseDate);
 			rawoutput("</td><td>");
-			if ($row['responsedate']=='1970-01-01 00:00:00') {
+			if ($responseDate=='1970-01-01 00:00:00') {
 				rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=proposalrespond' method='POST'>");
 				addnav("","runmodule.php?module=marriage&op=flirt&subop=proposalrespond");
 				rawoutput("<input type='hidden' name='target' value='".($row['acctid'])."'>");
