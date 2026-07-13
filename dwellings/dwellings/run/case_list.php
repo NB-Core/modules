@@ -1,155 +1,226 @@
 <?php
-	page_header("Dwellings Registry");
-	$sortby = httpget('sortby');
-	$ref = httpget('ref');
-	$page = httpget('page');
- 	$order = httpget('order');
-	$showonly = httpget('showonly');
-	$dw=db_prefix('dwellings');
-	$ac=db_prefix('accounts');
-	
-	$limit = "";
-	if($order=="") $order="desc";
-	if($sortby=="") $sortby="dwid";
-	
-	if($ref == "hof"){
-		page_header("Dwellings Registry");
-	    addnav("Navigation");
-	    addnav("Return to HoF","hof.php");
-	}else{
-	    addnav("Navigation");
-	    addnav("Back to the Hamlet","runmodule.php?module=dwellings");
-	}
-	$dwellsperpage = get_module_setting("listnum");
-	$onlyshow = "";
-	if($showonly!="") $onlyshow = " WHERE type='".$showonly."'";
-	if($ref == "hamlet"){
-		if($showonly!=""){
-			$onlyshow=$onlyshow." and $dw.location='".$session['user']['location']."'";
-		}else{	
-			$onlyshow=" WHERE $dw.location='".$session['user']['location']."'";
-		}
-	}
-	$sql = "SELECT count(dwid) AS c FROM " . db_prefix("dwellings") . "$onlyshow";
-	$result = db_query($sql);
-	$row = db_fetch_assoc($result);
-	$totaldwellings = $row['c'];
-	$pageoffset = (int)$page;
-	if ($pageoffset>0) $pageoffset--;
-	$pageoffset*=$dwellsperpage;
-	$limit=" LIMIT $pageoffset,$dwellsperpage ";
-	//}
-	addnav("Pages");
-	$pnum=0;
-	for ($i = 0; $i < $totaldwellings; $i += $dwellsperpage){
-		$pnum = $i/$dwellsperpage+1;
-		if ($page == $pnum) {
-			addnav(array(" ?`b`#Page %s`0 (%s-%s)`b", $pnum, $i+1, min($i+$dwellsperpage,$totaldwellings)), "runmodule.php?module=dwellings&op=list&ref=$ref&sortby=$sortby&showonly=$showonly&order=$order&page=$pnum");
-		} else {
-			addnav(array(" ?Page %s (%s-%s)", $pnum, $i+1, min($i+$dwellsperpage,$totaldwellings)), "runmodule.php?module=dwellings&op=list&ref=$ref&sortby=$sortby&showonly=$showonly&order=$order&page=$pnum");
-		}
-	}
-	modulehook("dwellings-list-type",array("ref"=>$ref,"order"=>$order,"showonly"=>$showonly,"sortby"=>$sortby));
-	$sql = "SELECT $dw.*,$ac.name AS ownername FROM $dw LEFT JOIN $ac ON $dw.ownerid=$ac.acctid $onlyshow ORDER BY $sortby $order $limit";
-	$result = db_query_cached($sql,"hamlet-$onlyshow-$sortby-$order-$limit",60);
-	$name = translate_inline("Name");
-	$owner = translate_inline("Owner");
-	$type = translate_inline("Type");		
-	$desc = translate_inline("Description");
-	$status = translate_inline("Status");
-	$loc = translate_inline("Location");
-	$interact = translate_inline("Interact");
-	$imgdesc="<img src=modules/dwellings/images/desc.gif>";
-	$imgasc="<img src=modules/dwellings/images/asc.gif>";		
-	rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999'>");
-	rawoutput("<tr class='trhead'>");
-	rawoutput("<td><a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=name&showonly=$showonly&order=desc&page=$pnum'>$imgdesc</a>");
-	rawoutput("<a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=name&showonly=$showonly&order=asc&page=$pnum'>$imgasc</a>");
-	rawoutput("$name</td>");
-	addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=name&showonly=$showonly&order=desc&page=$pnum");
-	addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=name&showonly=$showonly&order=asc&page=$pnum");
 
-	rawoutput("<td><a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=ownerid&showonly=$showonly&order=desc&page=$pnum'>$imgdesc</a>");
-	rawoutput("<a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=ownerid&showonly=$showonly&order=asc&page=$pnum'>$imgasc</a>");
-	rawoutput("$owner</td>");
-	addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=ownerid&showonly=$showonly&order=desc&page=$pnum");
-	addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=ownerid&showonly=$showonly&order=asc&page=$pnum");
+require_once('modules/dwellings/run/table_helpers.php');
 
-	rawoutput("<td>$desc</td>");
- 	if($showonly == ""){	   
-		rawoutput("<td><a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=type&showonly=$showonly&order=desc&page=$pnum'>$imgdesc</a>");
-		rawoutput("<a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=type&showonly=$showonly&order=asc&page=$pnum'>$imgasc</a>");
-		rawoutput("$type</td>");
-		addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=type&showonly=$showonly&order=desc&page=$pnum");
-		addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=type&showonly=$showonly&order=asc&page=$pnum");
-	}else{
-		addnav("Show Only Types");
-		addnav("Show All","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=status&showonly=&order=asc&page=$pnum");
-	}
-	if($ref != "hamlet"){
-		rawoutput("<td><a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=location&showonly=$showonly&order=desc&page=$pnum'>$imgdesc</a>");
-		rawoutput("<a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=location&showonly=$showonly&order=asc&page=$pnum'>$imgasc</a>");
-		rawoutput("$loc</td>");
-		addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=location&showonly=$showonly&order=desc&page=$pnum");
-		addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=location&showonly=$showonly&order=asc&page=$pnum");
-	}
-	rawoutput("<td><a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=status&showonly=$showonly&order=desc&page=$pnum'>$imgdesc</a>");
-	rawoutput("<a href='runmodule.php?module=dwellings&op=list&ref=$ref&sortby=status&showonly=$showonly&order=asc&page=$pnum'>$imgasc</a>");
-	rawoutput("$status</td>");
-	addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=status&showonly=$showonly&order=desc&page=$pnum");
-	addnav("","runmodule.php?module=dwellings&op=list&ref=$ref&sortby=status&showonly=$showonly&order=asc&page=$pnum");
+page_header('Dwellings Registry');
 
-	if($ref!="hof"){
-		rawoutput("<td>$interact</td>");
-	}
-	rawoutput("</tr>");
-//		for ($i = 0; $i < db_num_rows($result); $i++){ 
-//			$row = db_fetch_assoc($result);
-// Better to have it here, so we can translate everything at once.
-	$status1 = translate_inline("`#Occupied");
-	$status2 = translate_inline("`@Financing");
-	$status3 = translate_inline("`QIn Construction");
-	$status4 = translate_inline("`!Abandoned");
-	$status5 = translate_inline("`%For Sale");
-	while ($row = db_fetch_assoc($result)) {
-		rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-		$ctype = translate_inline(ucwords(get_module_setting("dwname",$row['type'])));
-// That's much better :) (No, it isn't but it looks like you're a really cool coder...)
-		$name = "status".$row['status'];
-		$status = $$name;
-		$stat=modulehook("dwellings-status",array("rowstatus"=>$row['status'],"dwid"=>$row['dwid'],"type"=>$row['type'],"status"=>$status));
-		$status=$stat['status'];
-		$name = $row['name'];
-		if($name == ""){ 
-			$name = translate_inline("Unnamed");
-		}
-		output_notl($name);
-		rawoutput("</td><td>");
-		output_notl($row['ownername'] ?? translate_inline("Abandoned"));
-		rawoutput("</td><td>");
-		$windowpeer = $row['windowpeer'];
-		if($windowpeer == ""){
-				$windowpeer = translate_inline("This dwelling has no public description yet.");
-			if ($row['status']==2){
-				$windowpeer = translate_inline("This dwelling is still being built.");
-			}
-		}
-		output_notl("%s", $windowpeer);
-		rawoutput("</td><td>");
-		if($showonly == ""){
-			output_notl($ctype);
-			rawoutput("</td><td>");
-		}
-		if($ref != "hamlet"){
-			output_notl($row['location']);
-			rawoutput("</td><td>");
-		}
-		output_notl("%s",$status);
-		if($ref!="hof"){
-			rawoutput("</td><td>");
-			modulehook("dwellings-list-interact",array("type"=>$row['type'],"dwid"=>$row['dwid'],"owner"=>$row['ownerid'],"status"=>$row['status'],"location"=>$row['location']));
-		}
-		rawoutput("</td></tr>");			 
-	}
-	rawoutput("</table>");
-?>
+$ref = httpget('ref');
+$showonly = trim((string) httpget('showonly'));
+
+$allowedRefs = ['', 'hamlet', 'hof'];
+if (!in_array($ref, $allowedRefs, true)) {
+    $ref = '';
+}
+
+// Keep type filtering but strictly validate the token before using it in SQL.
+if ($showonly !== '' && !preg_match('/^[a-z0-9_]+$/i', $showonly)) {
+    $showonly = '';
+}
+
+$dw = db_prefix('dwellings');
+$ac = db_prefix('accounts');
+$page = max(1, (int) httpget('page'));
+$hamletPerPage = 100;
+
+if ($showonly !== '') {
+    /*
+     * Validate the requested filter token against the dwelling type registry.
+     * The dwellingtypes table stores module identifiers in the `module` column
+     * (not `type`), so checking `type` triggers SQLSTATE[42S22].
+     */
+    $typeCheckSql = "SELECT module FROM " . db_prefix('dwellingtypes') . " WHERE module='$showonly' LIMIT 1";
+    $typeCheckResult = db_query($typeCheckSql);
+    if (!db_num_rows($typeCheckResult)) {
+        $showonly = '';
+    }
+}
+
+if ($ref === 'hof') {
+    addnav('Navigation');
+    addnav('Return to HoF', 'hof.php');
+} else {
+    addnav('Navigation');
+    addnav('Back to the Hamlet', 'runmodule.php?module=dwellings');
+}
+
+$whereParts = [];
+if ($showonly !== '') {
+    $whereParts[] = "$dw.type='$showonly'";
+    addnav('Show Only Types');
+    addnav('Show All', "runmodule.php?module=dwellings&op=list&ref=$ref&showonly=");
+}
+
+if ($ref === 'hamlet') {
+    $location = $session['user']['location'];
+    $whereParts[] = "$dw.location='$location'";
+}
+
+$whereSql = '';
+if (!empty($whereParts)) {
+    $whereSql = ' WHERE ' . implode(' AND ', $whereParts);
+}
+
+// Preserve compatibility hooks while deprecated URL sort/order params are intentionally ignored.
+modulehook('dwellings-list-type', [
+    'ref' => $ref,
+    'order' => '',
+    'showonly' => $showonly,
+    'sortby' => '',
+]);
+
+$sql = "SELECT $dw.*, $ac.name AS ownername
+        FROM $dw
+        LEFT JOIN $ac ON $dw.ownerid = $ac.acctid
+        $whereSql
+        ORDER BY $dw.name ASC, $dw.dwid ASC";
+
+if ($ref === 'hamlet') {
+    /*
+     * Hamlet can contain thousands of rows on long-running servers.
+     * Keep legacy SQL pagination to avoid rendering every row up front.
+     */
+    $countSql = "SELECT COUNT($dw.dwid) AS count
+            FROM $dw
+            LEFT JOIN $ac ON $dw.ownerid = $ac.acctid
+            $whereSql";
+    $countResult = db_query_cached($countSql, 'dwellings-list-count-' . md5($whereSql), 60);
+    $countRow = db_fetch_assoc($countResult);
+    $totalRows = (int) ($countRow['count'] ?? 0);
+    $totalPages = max(1, (int) ceil($totalRows / $hamletPerPage));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $hamletPerPage;
+
+    $sql .= " LIMIT $offset,$hamletPerPage";
+    $result = db_query_cached($sql, 'dwellings-list-' . md5($whereSql . '|page=' . $page), 60);
+} else {
+    $result = db_query_cached($sql, 'dwellings-list-' . md5($whereSql), 60);
+}
+
+// Load DataTables so sorting/filter/paging is handled client-side.
+dwellings_require_datatable_assets();
+
+$nameLabel = translate_inline('Name');
+$ownerLabel = translate_inline('Owner');
+$typeLabel = translate_inline('Type');
+$descLabel = translate_inline('Description');
+$statusLabel = translate_inline('Status');
+$locLabel = translate_inline('Location');
+$interactLabel = translate_inline('Interact');
+
+$headers = [$nameLabel, $ownerLabel, $descLabel];
+if ($showonly === '') {
+    $headers[] = $typeLabel;
+}
+if ($ref !== 'hamlet') {
+    $headers[] = $locLabel;
+}
+$headers[] = $statusLabel;
+if ($ref !== 'hof') {
+    $headers[] = $interactLabel;
+}
+
+dwellings_render_datatable_open('dwellings-list-table', $headers);
+
+$status1 = translate_inline('`#Occupied');
+$status2 = translate_inline('`@Financing');
+$status3 = translate_inline('`QIn Construction');
+$status4 = translate_inline('`!Abandoned');
+$status5 = translate_inline('`%For Sale');
+
+while ($row = db_fetch_assoc($result)) {
+    // Row striping is assigned by DataTables via stripeClasses during redraws.
+    rawoutput('<tr><td>');
+
+    $ctype = translate_inline(ucwords(get_module_setting('dwname', $row['type'])));
+    $statusName = 'status' . $row['status'];
+    $status = $$statusName;
+
+    // Keep status customization hook intact for module compatibility.
+    $stat = modulehook('dwellings-status', [
+        'rowstatus' => $row['status'],
+        'dwid' => $row['dwid'],
+        'type' => $row['type'],
+        'status' => $status,
+    ]);
+    $status = $stat['status'];
+
+    $dwellingName = $row['name'];
+    if ($dwellingName === '') {
+        $dwellingName = translate_inline('Unnamed');
+    }
+    output_notl($dwellingName);
+
+    rawoutput('</td><td>');
+    output_notl($row['ownername'] ?? translate_inline('Abandoned'));
+
+    $windowpeer = $row['windowpeer'];
+    if ($windowpeer === '') {
+        $windowpeer = translate_inline('This dwelling has no public description yet.');
+        if ((int) $row['status'] === 2) {
+            $windowpeer = translate_inline('This dwelling is still being built.');
+        }
+    }
+
+    rawoutput('</td><td>');
+    output_notl('%s', $windowpeer);
+
+    if ($showonly === '') {
+        rawoutput('</td><td>');
+        output_notl($ctype);
+    }
+
+    if ($ref !== 'hamlet') {
+        rawoutput('</td><td>');
+        output_notl('%s', $row['location']);
+    }
+
+    rawoutput('</td><td>');
+    output_notl('%s', $status);
+
+    if ($ref !== 'hof') {
+        rawoutput("</td><td class='is-actions'>");
+        // Keep interaction hook call unchanged so custom links/actions continue to render.
+        modulehook('dwellings-list-interact', [
+            'type' => $row['type'],
+            'dwid' => $row['dwid'],
+            'owner' => $row['ownerid'],
+            'status' => $row['status'],
+            'location' => $row['location'],
+        ]);
+    }
+
+    rawoutput('</td></tr>');
+}
+
+$tableOptions = [
+    'order' => [[0, 'asc']],
+];
+if ($ref === 'hamlet') {
+    /*
+     * Enhancement mode: DataTables styles/search/order only the currently
+     * loaded server page. Global search/sort requires async/server endpoints
+     * and is intentionally out of scope for this legacy flow.
+     */
+    $tableOptions['paging'] = false;
+}
+if ($ref !== 'hof') {
+    $tableOptions['columnDefs'] = [
+        ['targets' => [count($headers) - 1], 'orderable' => false, 'searchable' => false],
+    ];
+}
+
+dwellings_render_datatable_close('dwellings-list-table', $tableOptions);
+
+if ($ref === 'hamlet' && $totalRows > 0) {
+    addnav('Pages');
+    for ($p = 1; $p <= $totalPages; $p++) {
+        $from = (($p - 1) * $hamletPerPage) + 1;
+        $to = min($p * $hamletPerPage, $totalRows);
+        $pageUrl = "runmodule.php?module=dwellings&op=list&ref=hamlet&showonly=$showonly&page=$p";
+        if ($p === $page) {
+            addnav(["`b`#Page %s`0 (%s-%s)`b", $p, $from, $to], $pageUrl);
+        } else {
+            addnav(["Page %s (%s-%s)", $p, $from, $to], $pageUrl);
+        }
+    }
+}

@@ -56,6 +56,9 @@ function dwellingseditor_run(){
 	if($op != "") addnav("Dwelling List","runmodule.php?module=dwellingseditor");
 	addnav("Find Dwellings by User","runmodule.php?module=dwellingseditor&op=usersearch");
 	addnav("Operations");
+	if ($op != "abandoned") {
+		addnav("Demolish Abandoned Dwellings", "runmodule.php?module=dwellingseditor&op=abandoned");
+	}
 	if($op != "typsu") addnav("Type Pref Editor","runmodule.php?module=dwellingseditor&op=typesu");  
 	modulehook("dwellingseditor-main");
 	$typeid = httpget("typeid");

@@ -90,10 +90,13 @@
 					$clickhere = translate_inline("Click here to confirm!");
 					rawoutput("<a href='runmodule.php?module=dwellings&op=manage&subop=sell&sellgold=$sellgold&sellgems=$sellgems&dwid=$dwid&confirm=1'>$clickhere</a>");
 					addnav("","runmodule.php?module=dwellings&op=manage&subop=sell&sellgold=$sellgold&sellgems=$sellgems&dwid=$dwid&confirm=1");
-			}					
-			villagenav();
-			page_footer();
-			break;
+					addnav("Navigation");
+					// Cancelling or escaping a sale confirmation must keep the player scoped to the current dwelling.
+					addnav("Back to Dwelling","runmodule.php?module=dwellings&op=enter&dwid=$dwid");
+					addnav("Back to Management","runmodule.php?module=dwellings&op=manage&dwid=$dwid");
+			}
+
+			return;
 		}
 
 		if($subop!="") 

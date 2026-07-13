@@ -18,9 +18,31 @@ if($type == "" && $dwid>0){
 	$row = db_fetch_assoc($result); 
 	$type = $row['type'];
 }
-$sql = "SELECT name,description,ownerid FROM ".db_prefix("dwellings")." WHERE dwid=$dwid";
+$sql = "SELECT name,description,ownerid,status FROM ".db_prefix("dwellings")." WHERE dwid=$dwid";
 $result = db_query($sql);
 $row = db_fetch_assoc($result); 
+$canenter = false;
+if ($row) {
+	$canenter = ((int) $row['status'] === 1 && (int) $session['user']['acctid'] === (int) $row['ownerid']);
+	if (!$canenter && (int) $row['status'] === 1) {
+		$sql = "SELECT keyid FROM ".db_prefix("dwellingkeys")."
+			WHERE dwid = $dwid
+			AND keyowner = ".$session['user']['acctid']."
+			LIMIT 1";
+		$keyresult = db_query($sql);
+		$canenter = (bool) db_fetch_assoc($keyresult);
+	}
+}
+if (!$canenter) {
+	if ((int) get_module_pref("dwelling_saver", "dwellings") === $dwid) {
+		set_module_pref("dwelling_saver", 0, "dwellings");
+	}
+	page_header("Dwellings");
+	output("`4You can no longer enter this dwelling.`0");
+	addnav("Navigation");
+	addnav("Return to Hamlet","runmodule.php?module=dwellings");
+	return;
+}
 if($row['name'] == ""){
 	$name = translate_inline("Unnamed");
 }else{
