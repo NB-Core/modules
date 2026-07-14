@@ -1,16 +1,35 @@
 <?php
-function dwellingform(){
+/**
+ * Render the dwelling editor form.
+ *
+ * When a positive dwid is present in the request, the form is populated from
+ * that existing dwelling record. Otherwise, it uses a complete default
+ * new-dwelling payload so every rendered field has an initialized value before
+ * submission to the save handler.
+ */
+function dwellingform()
+{
 	$dwid = httpget("dwid");
-	$dwell=array();
-	if($dwid>0){
-		$sql = "SELECT * FROM ".db_prefix("dwellings")." WHERE dwid=$dwid";
+	$dwell = array();
+
+	if ($dwid > 0) {
+		$sql = "SELECT * FROM " . db_prefix("dwellings") . " WHERE dwid=$dwid";
 		$res = db_query($sql);
 		$dwell = db_fetch_assoc($res);
 	} else {
-		$dwellings=array(
-			"ownerid"=>0,
-			"name"=>"Bonkhouse",
-		);	
+		$dwell = array(
+			"ownerid" => 0,
+			"name" => "Bonkhouse",
+			"type" => "",
+			"location" => getsetting('villagename', LOCATION_FIELDS),
+			"gold" => 0,
+			"gems" => 0,
+			"goldvalue" => 0,
+			"gemvalue" => 0,
+			"status" => 1,
+			"description" => "",
+			"windowpeer" => "",
+		);
 	}
 	page_header("Create a dwelling");
 	require_once("lib/showform.php");        
@@ -28,11 +47,10 @@ function dwellingform(){
 	output("(Look up User ID)");
 	rawoutput("</a>");        
 	addnav("","runmodule.php?module=dwellingseditor&op=lookup");
-	rawoutput("</td><td align=left><input name='ownerid' value=\"".htmlentities($dwell['ownerid'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
+	rawoutput("</td><td align=left><input name='dwell[ownerid]' value=\"".htmlentities($dwell['ownerid'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Name:");
-	rawoutput("</td><td align=left><input name='name' value=\"".htmlentities($dwell['name'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
-	rawoutput("</td><td align=left><input name='name' value=\"".htmlentities($dwell['name'], ENT_COMPAT, "ISO-8859-1")."\"></td></tr>");
+	rawoutput("</td><td align=left><input name='dwell[name]' value=\"".htmlentities($dwell['name'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Type:");
 	rawoutput("</td><td nowra align=left>");
@@ -45,7 +63,7 @@ function dwellingform(){
 	}
 	ksort($types);
 	reset($types);
-	rawoutput("<select name='type'>");
+	rawoutput("<select name='dwell[type]'>");
 	foreach($types as $typ=>$name) {
 		$name = translate_inline(sanitize(get_module_setting("dwname",$name)));
 		rawoutput("<option value='$typ'".($dwell['type']==$typ?" selected":"").">$name</option>");
@@ -64,7 +82,7 @@ function dwellingform(){
 	}
 	ksort($locs);
 	reset($locs);
-	rawoutput("<select name='location'>");
+	rawoutput("<select name='dwell[location]'>");
 	foreach($locs as $loc=>$name) {
 		rawoutput("<option value='$loc'".($dwell['location']==$loc?" selected":"").">$name</option>");
 	}
@@ -72,16 +90,16 @@ function dwellingform(){
 	require_once("lib/nltoappon.php");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Gold in coffers:");
-	rawoutput("</td><td align=left><input name='gold' value=\"".htmlentities($dwell['gold'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
+	rawoutput("</td><td align=left><input name='dwell[gold]' value=\"".htmlentities($dwell['gold'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Gems in coffers:");
-	rawoutput("</td><td align=left><input name='gems' value=\"".htmlentities($dwell['gems'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
+	rawoutput("</td><td align=left><input name='dwell[gems]' value=\"".htmlentities($dwell['gems'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Gold value:");
-	rawoutput("</td><td align=left><input name='goldvalue' value=\"".htmlentities($dwell['goldvalue'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
+	rawoutput("</td><td align=left><input name='dwell[goldvalue]' value=\"".htmlentities($dwell['goldvalue'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Gems value:");
-	rawoutput("</td><td align=left><input name='gemvalue' value=\"".htmlentities($dwell['gemvalue'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
+	rawoutput("</td><td align=left><input name='dwell[gemvalue]' value=\"".htmlentities($dwell['gemvalue'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\"></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Status:");
 	rawoutput("</td><td nowrap align=left>");
@@ -94,17 +112,17 @@ function dwellingform(){
 	$stats = modulehook("dwellings-status", $stats);
 	ksort($stats);
 	reset($stats);
-	rawoutput("<select name='status'>");
+	rawoutput("<select name='dwell[status]'>");
 	foreach($stats as $stat=>$name) {
 		rawoutput("<option value='$stat'".($dwell['status']==$stat?" selected":"").">$name</option>");
 	}
 	rawoutput("</td></tr><tr><td>");
 	//'storedinfo
 	output("Internal Description:");
-	rawoutput("</td><td><textarea name='description' rows='10' cols='60' class='input'>".stripslashes(htmlentities($dwell['description'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."</textarea></td></tr>");
+	rawoutput("</td><td><textarea name='dwell[description]' rows='10' cols='60' class='input'>".stripslashes(htmlentities($dwell['description'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."</textarea></td></tr>");
 	rawoutput("<tr><td nowrap align=left>");
 	output("Public Description:");
-	rawoutput("</td><td><textarea name='windowpeer' rows='10' cols='60' class='input'>".stripslashes(htmlentities($dwell['windowpeer'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."</textarea></td></tr>");
+	rawoutput("</td><td><textarea name='dwell[windowpeer]' rows='10' cols='60' class='input'>".stripslashes(htmlentities($dwell['windowpeer'], ENT_COMPAT, getsetting("charset", "ISO-8859-1")))."</textarea></td></tr>");
 	$button = translate_inline("Save");
 	if($dwid == "")$button = translate_inline("Create");
 	rawoutput("<tr><td><input type='submit' class='button' value='$button'></td></tr></form>");
