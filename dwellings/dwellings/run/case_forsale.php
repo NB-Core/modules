@@ -87,10 +87,7 @@ if (httpget('subop') == 'buy') {
 
     dwellings_render_datatable_open('dwellings-forsale-table', [$nameLabel, $typeLabel, $costLabel, $opsLabel]);
 
-    if (!db_num_rows($result)) {
-        $none = translate_inline('None');
-        rawoutput("<tr><td align='center' colspan='4'><i>$none</i></td></tr>");
-    } else {
+    if (db_num_rows($result)) {
         while ($row = db_fetch_assoc($result)) {
             $rtype = $row['type'];
             if ((get_module_setting('lvlbuy'))
@@ -132,6 +129,7 @@ if (httpget('subop') == 'buy') {
         }
     }
 
+    // Empty bodies are intentional; DataTables uses its emptyTable text without colspan warnings.
     // Keep action column unsortable because it only contains an interaction link.
     dwellings_render_datatable_close('dwellings-forsale-table', [
         'order' => [[1, 'asc']],

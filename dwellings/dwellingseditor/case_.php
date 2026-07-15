@@ -2,6 +2,7 @@
 $sortby = httpget('sortby');
 $ref = httpget('ref');
 $page = httpget('page');
+$currentPage = max(1, (int) $page);
 $order = httpget('order');
 $showonly = httpget('showonly');
 $ownerid = httpget('ownerid');
@@ -26,7 +27,7 @@ $sql = "SELECT count(dwid) AS c FROM " . db_prefix("dwellings") . "$onlyshow";
 $result = db_query($sql);
 $row = db_fetch_assoc($result);
 $totaldwellings = $row['c'];
-$pageoffset = (int)$page;
+$pageoffset = $currentPage;
 if ($pageoffset>0) $pageoffset--;
 $pageoffset*=$dwellsperpage;
 $from = $pageoffset+1;
@@ -34,11 +35,11 @@ $to = min($pageoffset+$dwellsperpage,$totaldwellings);
 $limit=" LIMIT $pageoffset,$dwellsperpage ";
 addnav("Pages");
 for ($i = 0; $i < $totaldwellings; $i += $dwellsperpage){
-	$pnum = $i/$dwellsperpage+1;
-	if ($page == $pnum) {
-		addnav(array(" ?`b`#Page %s`0 (%s-%s)`b", $pnum, $i+1, min($i+$dwellsperpage,$totaldwellings)), "runmodule.php?module=dwellingseditor&&ref=$ref&sortby=$sortby&showonly=$showonly&ownerid=$ownerid&order=$order&page=$pnum");
+	$navPage = $i/$dwellsperpage+1;
+	if ($currentPage == $navPage) {
+		addnav(array(" ?`b`#Page %s`0 (%s-%s)`b", $navPage, $i+1, min($i+$dwellsperpage,$totaldwellings)), "runmodule.php?module=dwellingseditor&&ref=$ref&sortby=$sortby&showonly=$showonly&ownerid=$ownerid&order=$order&page=$navPage");
 	} else {
-		addnav(array(" ?Page %s (%s-%s)", $pnum, $i+1, min($i+$dwellsperpage,$totaldwellings)), "runmodule.php?module=dwellingseditor&&ref=$ref&sortby=$sortby&showonly=$showonly&ownerid=$ownerid&order=$order&page=$pnum");
+		addnav(array(" ?Page %s (%s-%s)", $navPage, $i+1, min($i+$dwellsperpage,$totaldwellings)), "runmodule.php?module=dwellingseditor&&ref=$ref&sortby=$sortby&showonly=$showonly&ownerid=$ownerid&order=$order&page=$navPage");
 	}
 }
 $sql = "SELECT * FROM ".db_prefix("dwellings")." $onlyshow ORDER BY $sortby $order $limit";
@@ -54,41 +55,41 @@ $imgdesc="<img src=modules/dwellings/images/desc.gif>";
 $imgasc="<img src=modules/dwellings/images/asc.gif>";        
 rawoutput("<table style='width:100%;' border=0 cellpadding=1 cellspacing=1 bgcolor='#999999'>");
 rawoutput("<tr class='trhead'>");
-rawoutput("<td align=center cellpadding=0 nowrap><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum'>$imgdesc</a>");
-rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum'>$imgasc</a>");
+rawoutput("<td align=center cellpadding=0 nowrap><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage'>$imgdesc</a>");
+rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage'>$imgasc</a>");
 rawoutput("$id</td>");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=dwid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage");
 
-rawoutput("<td align=center style=\"width:150px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum'>$imgdesc</a>");
-rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum'>$imgasc</a>");
+rawoutput("<td align=center style=\"width:150px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage'>$imgdesc</a>");
+rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage'>$imgasc</a>");
 rawoutput("$name</td>");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=name&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage");
 
-rawoutput("<td align=center style=\"width:75px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum'>$imgdesc</a>");
-rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum'>$imgasc</a>");
+rawoutput("<td align=center style=\"width:75px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage'>$imgdesc</a>");
+rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage'>$imgasc</a>");
 rawoutput("$owner</td>");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=ownerid&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage");
 
-rawoutput("<td align=center><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum'>$imgdesc</a>");
-rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum'>$imgasc</a>");
+rawoutput("<td align=center><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage'>$imgdesc</a>");
+rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage'>$imgasc</a>");
 rawoutput("$type</td>");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=type&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage");
 if (is_module_active("cities")){
-	rawoutput("<td align=center style=\"width:75px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum'>$imgdesc</a>");
-	rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum'>$imgasc</a>");
+	rawoutput("<td align=center style=\"width:75px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage'>$imgdesc</a>");
+	rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage'>$imgasc</a>");
 	rawoutput("$loc</td>");
-	addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum");
-	addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum");
+	addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage");
+	addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=location&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage");
 }
-rawoutput("<td align=center style=\"width:50px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum'>$imgdesc</a>");
-rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum'>$imgasc</a>");
+rawoutput("<td align=center style=\"width:50px\"><a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage'>$imgdesc</a>");
+rawoutput("<a href='runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage'>$imgasc</a>");
 rawoutput("$status</td>");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=desc&page=$pnum");
-addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=asc&page=$pnum");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=desc&page=$currentPage");
+addnav("","runmodule.php?module=dwellingseditor&&ref=$ref&sortby=status&showonly=$showonly&ownerid=$ownerid&order=asc&page=$currentPage");
 
 rawoutput("<td align=center style=\"width:50px\">$edit</td></tr>");
 $i = 0;

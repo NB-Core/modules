@@ -17,6 +17,16 @@ function dwellings_require_datatable_assets()
         return;
     }
 
+    if (!class_exists('\\Lotgd\\Output')
+        || !method_exists('\\Lotgd\\Output', 'requireVendorAsset')
+        || !method_exists('\\Lotgd\\Output', 'addHeadMarkup')
+    ) {
+        // Legacy LotGD cores may not expose the modern Output asset helpers.
+        // Leave the semantic table markup in place and skip DataTables enhancement.
+        $assetsLoaded = true;
+        return;
+    }
+
     \Lotgd\Output::requireVendorAsset('jquery', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
     \Lotgd\Output::requireVendorAsset('datatables', 'css', \Lotgd\Output::VENDOR_BUCKET_PRE);
     \Lotgd\Output::requireVendorAsset('datatables', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
@@ -110,7 +120,7 @@ function dwellings_render_datatable_close($tableId, array $options = [])
         'lengthChange' => true,
         'autoWidth' => false,
         'pageLength' => 25,
-	'lengthMenu' => [10, 25, 50, 100, -1],
+        'lengthMenu' => [10, 25, 50, 100, -1],
         // Keep striping in DataTables so redraw operations always preserve parity.
         'stripeClasses' => ['trlight', 'trdark'],
         'language' => [
@@ -119,6 +129,15 @@ function dwellings_render_datatable_close($tableId, array $options = [])
     ];
 
     $config = array_merge($defaultOptions, $options);
+
+    if (!class_exists('\\Lotgd\\Output')
+        || !method_exists('\\Lotgd\\Output', 'requireVendorAsset')
+        || !method_exists('\\Lotgd\\Output', 'addHeadMarkup')
+    ) {
+        // Without the modern asset loader, render a plain HTML table and skip JS initialization.
+        return;
+    }
+
     $idJson = json_encode('#' . $tableId);
     $configJson = json_encode($config);
 
