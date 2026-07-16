@@ -90,7 +90,7 @@ foreach ($stringFields as $field) {
  */
 $assignments = [];
 foreach ($values as $field => $value) {
-    if (in_array($field, $numericFields)) {
+    if (in_array($field, $numericFields, true)) {
         $assignments[] = "$field=$value";
     } else {
         $assignments[] = "$field='$value'";
@@ -100,14 +100,34 @@ foreach ($values as $field => $value) {
 if ($dwid > 0) {
     $sql = 'UPDATE ' . db_prefix('dwellings') . ' SET ' . implode(',', $assignments) . " WHERE dwid=$dwid";
 } else {
-    $columns = array_keys($values);
+    /*
+     * storedinfo is maintained internally by dwelling modules and is not
+     * rendered by the editor form. New rows still need an explicit empty
+     * TEXT value for strict MySQL installations where the column may be
+     * declared NOT NULL without a default. Keep this insert-only so routine
+     * editor saves do not erase existing module data.
+     */
+    $insertValuesByColumn = $values;
+    if (!array_key_exists('storedinfo', $insertValuesByColumn)) {
+        $escapedValue = dwellingseditor_escape_sql_value('');
+
+        if ($escapedValue === null) {
+            output('`$Dwelling save failed: no compatible SQL escaping helper is available in this runtime.`0`n');
+            dwellingseditor_add_save_recovery_navs($dwid);
+            return;
+        }
+
+        $insertValuesByColumn['storedinfo'] = $escapedValue;
+    }
+
+    $columns = array_keys($insertValuesByColumn);
     $insertValues = [];
 
     foreach ($columns as $field) {
-        if (in_array($field, $numericFields)) {
-            $insertValues[] = $values[$field];
+        if (in_array($field, $numericFields, true)) {
+            $insertValues[] = $insertValuesByColumn[$field];
         } else {
-            $insertValues[] = "'" . $values[$field] . "'";
+            $insertValues[] = "'" . $insertValuesByColumn[$field] . "'";
         }
     }
 
