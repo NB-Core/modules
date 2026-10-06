@@ -66,7 +66,7 @@ $races = array(
 			\"schema\"=>\"module-racemist\",
 			)
 		);",
-		"text"=>array("`^`bYou make your way to the edge of a snow covered cliff. Looking down, you see a huge city with snowy rooftops, the heart of Water Country. Its beauty hides the endless civil wars that it has experienced. Inside the dark alleys of the city...the fight for survival between the poverty-stricken goes unnoticed.`n`nKirigakure is located here, protected by a dense forest of tall snowy pine trees. The village earned the nickname `4\"The Village Hidden In The Bloody Mist\"`^ because of its gruesome graduation exam in the past. The well-known Seven Shinobi Swordsmen of the Mist were born from this very village...`n", $water, $water),
+		"text"=>array("`^`bYou make your way to the edge of a snow covered cliff. Looking down, you see a huge city with snowy rooftops, the heart of Water Country`b. Its beauty hides the endless civil wars that it has experienced. Inside the dark alleys of the city...the fight for survival between the poverty-stricken goes unnoticed.`n`nKirigakure is located here, protected by a dense forest of tall snowy pine trees. The village earned the nickname `4\"The Village Hidden In The Bloody Mist\"`^ because of its gruesome graduation exam in the past. The well-known Seven Shinobi Swordsmen of the Mist were born from this very village...`n", $water, $water),
 		"clock"=>"`n`6As you make your way down the misty trail to the city, a lumberjack mumbles that it's `^%s`6 as he passes you by.`n",
 		"calendar"=>"`n`6Another person whispers in your ear, \"`^Today is `&%3\$s %2\$s`^, `&%4\$s`^.  It is `&%1\$s`^.`6\"`n",
 		"title"=> array("%s", $water),
