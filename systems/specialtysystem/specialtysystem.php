@@ -18,12 +18,13 @@ function specialtysystem_getmoduleinfo(): array
     return [
         'name' => 'Specialty Core System',
         'author' => '`2Oliver Brendel',
-        'version' => '1.02',
+        'version' => '1.03',
         'download' => '',
         'category' => 'Specialty System',
         'settings' => [
             'Specialty System Settings,title',
             'nospecs' => "Disable Specialty Selection after DK and set to 'SS' for this system,bool|0",
+            'resourcename' => 'Name of the resource spent on specialties (e.g. Chakra or Reiatsu)|Chakra',
         ],
         'prefs' => [
             'Specialtysystem User Prefs,title',
@@ -67,6 +68,7 @@ function specialtysystem_install(): bool
         'dragonkill_active' => ['name' => 'dragonkill_active', 'type' => 'tinyint', 'default' => '0'],
         'dk_min' => ['name' => 'dragonkill_minimum_requirement', 'type' => 'smallint', 'default' => '0'],
         'stat_requirements' => ['name' => 'stat_requirements', 'type' => 'varchar(500)', 'default' => ''],
+        'race_requirements' => ['name' => 'race_requirements', 'type' => 'varchar(500)', 'default' => ''],
         'noaddskillpoints' => ['name' => 'noaddskillpoints', 'type' => 'tinyint unsigned', 'default' => '0'],
         'basic_uses' => ['name' => 'basic_uses', 'type' => 'tinyint unsigned', 'default' => '0'],
         'key-PRIMARY' => ['name' => 'modulename', 'type' => 'key', 'unique' => '1', 'columns' => 'modulename'],
@@ -80,16 +82,83 @@ function specialtysystem_install(): bool
 }
 
 /**
- * Remove the Specialty System table and reset player specialties.
+ * Remove the Specialty System table and reset player specialties, or - with
+ * a module name - remove one add-on from the registry.
  */
-function specialtysystem_uninstall(): bool
+function specialtysystem_uninstall(?string $modulename = null): bool
 {
+    // Called with a module name by add-ons (through specialtysystem/uninstall.php):
+    // remove only that add-on from the registry.
+    if ($modulename !== null) {
+        \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . db_prefix('specialtysystem') . ' WHERE modulename = :modulename',
+            ['modulename' => $modulename]
+        );
+        invalidatedatacache('specialtygetspecs');
+
+        return true;
+    }
+
     $sql = 'UPDATE ' . db_prefix('accounts') . " SET specialty='' WHERE specialty='SS'";
     db_query($sql);
     $sql = 'DROP TABLE ' . db_prefix('specialtysystem') . ';';
     db_query($sql);
 
     return true;
+}
+
+/**
+ * Translated name of the resource spent on specialties (default "Chakra").
+ */
+function specialtysystem_resourcename(): string
+{
+    $name = (string) get_module_setting('resourcename', 'specialtysystem');
+    if ($name === '') {
+        $name = 'Chakra';
+    }
+
+    return translate_inline($name, 'module-specialtysystem');
+}
+
+/**
+ * Check a specialty's race requirements against a race.
+ *
+ * Entries are race names; a leading "!" excludes that race. An empty list
+ * means no restriction. With only exclusions, every other race may pick it.
+ *
+ * @param string $serialized Serialized race requirement list from the registry
+ * @param string $race       Race of the player
+ *
+ * @return array{0: bool, 1: list<string>} Availability and display labels
+ */
+function specialtysystem_check_races(string $serialized, string $race): array
+{
+    $requirements = $serialized !== '' ? unserialize($serialized, ['allowed_classes' => false]) : [];
+    if (!is_array($requirements) || $requirements === []) {
+        return [true, []];
+    }
+    $race = sanitize($race);
+    $allowed = [];
+    $labels = [];
+    $available = true;
+    foreach ($requirements as $entry) {
+        $entry = (string) $entry;
+        if (str_starts_with($entry, '!')) {
+            $entry = substr($entry, 1);
+            if ($race === $entry) {
+                $available = false;
+            }
+            $labels[] = translate_inline('Not') . ' ' . translate_inline($entry, 'race');
+        } else {
+            $allowed[] = $entry;
+            $labels[] = translate_inline($entry, 'race');
+        }
+    }
+    if ($allowed !== [] && !in_array($race, $allowed, true)) {
+        $available = false;
+    }
+
+    return [$available, $labels];
 }
 
 /**
@@ -125,7 +194,7 @@ function specialtysystem_showfightnav(string $script, bool $force = false): void
     }
 
     require_once 'modules/specialtysystem/functions.php';
-    Nav::add(['`bChakra (%s points)`b', specialtysystem_availableuses()]);
+    Nav::add(['`b%s (%s points)`b', specialtysystem_resourcename(), specialtysystem_availableuses()]);
     ksort($specs);
     foreach ($specs as $key => $data) {
         $colour = $colours[$key];
@@ -174,10 +243,13 @@ function specialtysystem_dohook(string $hookname, array $args)
                 addnav('Specialty System Repair Utility', 'runmodule.php?module=specialtysystem&op=repair');
             }
             break;
-        case 'newdayintercept':
+        case 'newday-intercept':
             require_once 'modules/specialtysystem/datafunctions.php';
-            if (httpget('ssystem') != '') {
-                specialtysystem_set(['active' => httpget('ssystem')]);
+            $ssystem = (string) httpget('ssystem');
+            if ($ssystem !== '') {
+                if (isset(specialtysystem_getspecs()[$ssystem])) {
+                    specialtysystem_set(['active' => $ssystem]);
+                }
             } elseif (get_module_setting('nospecs') && $session['user']['specialty'] == '') {
                 $session['user']['specialty'] = 'SS';
             }
@@ -192,7 +264,8 @@ function specialtysystem_dohook(string $hookname, array $args)
             require_once 'modules/specialtysystem/datafunctions.php';
             if ($session['user']['specialty'] == '' || $session['user']['specialty'] == '0') {
                 $choices = specialtysystem_getspecs();
-                addnav('Chakra Specialties');
+                $specHeader = ['%s Specialties', specialtysystem_resourcename()];
+                addnav($specHeader);
                 $first = false;
                 output_notl('`c');
                 foreach ($choices as $key => $data) {
@@ -209,6 +282,12 @@ function specialtysystem_dohook(string $hookname, array $args)
                     $spec = $data['spec_colour'] . translate_inline($data['spec_name'], 'module-' . $data['modulename']);
                     output_notl('%s:`n`n', $spec);
                     $available = true;
+                    [$raceOk, $raceLabels] = specialtysystem_check_races((string) ($data['race_requirements'] ?? ''), (string) $session['user']['race']);
+                    if ($raceLabels !== []) {
+                        output('`4Race Requirements:`n');
+                        output_notl('%s%s`n`n', $raceOk ? '`2' : '`$', implode(', ', $raceLabels));
+                        $available = $raceOk;
+                    }
                     if (isset($data['stat_requirements']) && $data['stat_requirements'] != '') {
                         output('`4Minimum Requirements:`n');
                         $unserialized = unserialize($data['stat_requirements']);
@@ -233,7 +312,7 @@ function specialtysystem_dohook(string $hookname, array $args)
                         $t1 = appoencode(translate_inline($data['spec_shortdescription'], 'module-' . $data['modulename']));
                         rawoutput("$t1<br>");
                     } else {
-                        addnav('Chakra Specialties');
+                        addnav($specHeader);
                         addnav_notl(" ?$spec", "newday.php?setspecialty=SS&ssystem={$data['modulename']}$resline");
                         $t1 = appoencode(translate_inline($data['spec_shortdescription'], 'module-' . $data['modulename']));
                         rawoutput("<a href='newday.php?setspecialty=SS&ssystem={$data['modulename']}$resline'>$t1</a><br>");
@@ -326,7 +405,7 @@ function specialtysystem_dohook(string $hookname, array $args)
                     } else {
                         trigger_error($message, E_USER_WARNING);
                     }
-                    output('`$Your chakra path is unclear. Please choose a specialty again on the next new day.`0');
+                    output('`$Your %s path is unclear. Please choose a specialty again on the next new day.`0', specialtysystem_resourcename());
                     $args['SS'] = translate_inline('Specialty Placeholder');
                     break;
                 }
@@ -440,9 +519,9 @@ function specialtysystem_dohook(string $hookname, array $args)
             $specRow = $availableSpecs[$data];
             $name = translate_inline($specRow['spec_name'], 'module-' . $specRow['modulename']);
             if ($bonus == 1) {
-                output('`n`2Because of your inclination to %s%s`2, you receive `^1`2 extra chakra use for today.`n', $specRow['spec_colour'], $name);
+                output('`n`2Because of your inclination to %s%s`2, you receive `^1`2 extra %s use for today.`n', $specRow['spec_colour'], $name, specialtysystem_resourcename());
             } else {
-                output('`n`2Because of your inclination to %s%s`2, you receive `^%s`2 extra chakra uses (`@%s for high intelligence`2) for today.`n', $specRow['spec_colour'], $name, $bonus, $intel);
+                output('`n`2Because of your inclination to %s%s`2, you receive `^%s`2 extra %s uses (`@%s for high intelligence`2) for today.`n', $specRow['spec_colour'], $name, $bonus, specialtysystem_resourcename(), $intel);
             }
             set_module_pref('cache', '', 'specialtysystem');
             break;

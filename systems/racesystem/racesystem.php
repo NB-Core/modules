@@ -3,7 +3,7 @@
 function racesystem_getmoduleinfo(){
 	$info = array(
 		"name"=>"Race System",
-		"version"=>"1.0",
+		"version"=>"1.01",
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Races",
 		"download"=>"",
@@ -46,10 +46,11 @@ function racesystem_install(){
 
 function racesystem_uninstall(){
 	global $session; //no other races planned, so a full race reset here
-	$sql = "UPDATE " . db_prefix("accounts") . " SET location='".getsetting("villagename", LOCATION_FIELDS)."'";
-	db_query($sql);
-	$sql = "UPDATE  " . db_prefix("accounts") . " SET race='" . RACE_UNKNOWN;
-	db_query($sql);
+	$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+	$conn->executeStatement(
+		"UPDATE " . db_prefix("accounts") . " SET location = :location, race = :race",
+		['location' => getsetting("villagename", LOCATION_FIELDS), 'race' => RACE_UNKNOWN]
+	);
 	return true;
 }
 
