@@ -128,9 +128,9 @@ Below is a short description for every module. Some modules rely on others; depe
 - **circulum_presave** – character restore helper.
 - **circulum_uchiha** – Uchiha clan bonus (requires `circulum`).
 - **marriage** – marriage system for players.
-- **racesystem** – alternative race handling.
+- **racesystem** – alternative race handling. Races are defined in `racesystem/races.php`; drop in another file (e.g. the one from [bleach_modules](https://github.com/NB-Core/bleach_modules)) to change the setting.
 - **savedays** – track and save player day counters.
-- **specialtysystem** – core specialty framework.
+- **specialtysystem** – core specialty framework. The setting `resourcename` names the resource spent on skills (default "Chakra"); specialties may restrict themselves to races via `race_requirements`.
 - **specialtysystem_basic** – basic ninja skills (requires `specialtysystem`).
 - **specialtysystem_earth** – earth specialties (requires `specialtysystem`).
 - **specialtysystem_fire** – fire specialties (requires `specialtysystem`).
