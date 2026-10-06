@@ -400,19 +400,49 @@ function specialtysystem_dohook(string $hookname, array $args)
             require_once 'modules/specialtysystem/datafunctions.php';
             specialtysystem_newday();
             $data = specialtysystem_get('active');
-            if ($data == false) {
+            $availableSpecs = specialtysystem_getspecs();
+            $activeIsRegistered = is_string($data) && $data !== '' && isset($availableSpecs[$data]);
+
+            /**
+             * Guard against rare legacy/corrupted desync where accounts.specialty='SS'
+             * but specialtysystem "active" is empty or points at an unregistered module.
+             *
+             * This only heals broken internal state for SS users and does not replace
+             * the normal choose-specialty flow for players selecting a specialty.
+             */
+            if (! $activeIsRegistered) {
+                if (is_array($availableSpecs) && $availableSpecs !== []) {
+                    ksort($availableSpecs);
+                    $repairCandidate = array_key_first($availableSpecs);
+                    $playerSpecData = specialtysystem_get();
+                    if (is_array($playerSpecData)) {
+                        foreach (array_keys($availableSpecs) as $moduleName) {
+                            if (isset($playerSpecData[$moduleName])) {
+                                $repairCandidate = $moduleName;
+                                break;
+                            }
+                        }
+                    }
+                    if (is_string($repairCandidate) && $repairCandidate !== '') {
+                        specialtysystem_set(['active' => $repairCandidate]);
+                        debuglog('Specialtysystem newday repair: acctid=' . (int) $session['user']['acctid'] . ' active=' . $repairCandidate);
+                        $data = $repairCandidate;
+                    }
+                }
+            }
+
+            if (!is_string($data) || $data === '' || !isset($availableSpecs[$data])) {
                 output_notl('Error with your specialty! Report to admin!');
                 break;
             }
             require_once 'modules/specialtysystem/functions.php';
             $current = specialtysystem_setuses(-$bonus);
-            $temp = specialtysystem_getspecs($data);
-            $data = array_shift($temp);
-            $name = translate_inline($data['spec_name'], 'module-' . $data['modulename']);
+            $specRow = $availableSpecs[$data];
+            $name = translate_inline($specRow['spec_name'], 'module-' . $specRow['modulename']);
             if ($bonus == 1) {
-                output('`n`2Because of your inclination to %s%s`2, you receive `^1`2 extra chakra use for today.`n', $data['spec_colour'], $name);
+                output('`n`2Because of your inclination to %s%s`2, you receive `^1`2 extra chakra use for today.`n', $specRow['spec_colour'], $name);
             } else {
-                output('`n`2Because of your inclination to %s%s`2, you receive `^%s`2 extra chakra uses (`@%s for high intelligence`2) for today.`n', $data['spec_colour'], $name, $bonus, $intel);
+                output('`n`2Because of your inclination to %s%s`2, you receive `^%s`2 extra chakra uses (`@%s for high intelligence`2) for today.`n', $specRow['spec_colour'], $name, $bonus, $intel);
             }
             set_module_pref('cache', '', 'specialtysystem');
             break;
@@ -436,7 +466,11 @@ function specialtysystem_run(): void
             specialtysystem_register();
             page_header('Specialtysystem');
             output('`2Successfully refreshed!');
-            villagenav();
+	    addnav("Navigation");
+	    require_once("lib/superusernav.php");
+	    superusernav();
+	    addnav("Actions");
+            addnav('Refresh Specialty System Add-Ons', 'runmodule.php?module=specialtysystem&op=refresh');
             page_footer();
             break;
         case 'repair':
@@ -450,7 +484,6 @@ function specialtysystem_run(): void
             require_once 'modules/specialtysystem/datafunctions.php';
 
             page_header('Specialtysystem Repair Utility');
-            addnav('', 'runmodule.php?module=specialtysystem&op=repair');
 
             $acctId = (int) (httppost('acctid') ?: httpget('acctid'));
             $action = httppost('action');
@@ -521,10 +554,11 @@ function specialtysystem_run(): void
                 output('`$%s`0`n', $error);
             }
 
-            rawoutput('<form method="get" action="runmodule.php?module=specialtysystem&op=repair">');
+            rawoutput('<form method="post" action="runmodule.php?module=specialtysystem&op=repair">');
             rawoutput('<label>' . translate_inline('Account ID') . ': <input name="acctid" value="' . ($acctId > 0 ? (int) $acctId : '') . '" /></label> ');
             rawoutput('<button type="submit">' . translate_inline('Load Account') . '</button>');
             rawoutput('</form>');
+            addnav('', 'runmodule.php?module=specialtysystem&op=repair');
 
             if ($userInfo !== null) {
                 output('`n`bAccount`b: %s (%s) `0[`#%s`0]`n', $userInfo['name'], $userInfo['login'], $userInfo['acctid']);

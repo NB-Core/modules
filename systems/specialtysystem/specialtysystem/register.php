@@ -23,6 +23,7 @@ function specialtysystem_register(): void
         $data['stat_requirements'] = $data['stat_requirements'] ?? [];
         $data['race_requirements'] = $data['race_requirements'] ?? [];
         $data['noaddskillpoints'] = $data['noaddskillpoints'] ?? 0;
+        $data['basic_uses'] = $data['basic_uses'] ?? 0;
 
         $insert[] = "('" . addslashes($data['spec_name']) . "','{$data['spec_colour']}','" . addslashes($data['spec_shortdescription']) . "','" . addslashes($data['spec_longdescription']) . "','{$data['modulename']}','{$data['fightnav_active']}','{$data['newday_active']}','{$data['dragonkill_active']}','{$data['dragonkill_minimum_requirement']}','" . addslashes(serialize($data['stat_requirements'])) . "','" . addslashes(serialize($data['race_requirements'])) . "','{$data['noaddskillpoints']}','{$data['basic_uses']}')";
     }
