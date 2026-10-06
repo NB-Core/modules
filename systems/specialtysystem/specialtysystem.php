@@ -82,10 +82,23 @@ function specialtysystem_install(): bool
 }
 
 /**
- * Remove the Specialty System table and reset player specialties.
+ * Remove the Specialty System table and reset player specialties, or - with
+ * a module name - remove one add-on from the registry.
  */
-function specialtysystem_uninstall(): bool
+function specialtysystem_uninstall(?string $modulename = null): bool
 {
+    // Called with a module name by add-ons (through specialtysystem/uninstall.php):
+    // remove only that add-on from the registry.
+    if ($modulename !== null) {
+        \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+            'DELETE FROM ' . db_prefix('specialtysystem') . ' WHERE modulename = :modulename',
+            ['modulename' => $modulename]
+        );
+        invalidatedatacache('specialtygetspecs');
+
+        return true;
+    }
+
     $sql = 'UPDATE ' . db_prefix('accounts') . " SET specialty='' WHERE specialty='SS'";
     db_query($sql);
     $sql = 'DROP TABLE ' . db_prefix('specialtysystem') . ';';
