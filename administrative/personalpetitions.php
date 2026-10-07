@@ -38,7 +38,7 @@ function personalpetitions_install() {
                         2=>"`iClosed`i",
                         3=>"`!Informational`0",
                         4=>"`^Escalated`0",
-                        5=>"`\\$Top Level`0",
+                        5=>"`\$Top Level`0",
                         6=>"`%Bug`0",
                         7=>"`#Awaiting Points`0",
                 );
@@ -56,13 +56,19 @@ function personalpetitions_install() {
                         db_query("INSERT INTO $table (id,name,active) VALUES (".(int)$id.",'".db_real_escape_string($name)."',1)");
                 }
 
+                // The previous version kept custom categories in this setting and
+                // gave them the statuses 50, 51, ... in list order (empty entries
+                // included). Keep those ids so existing petitions stay in their
+                // category.
                 $list = get_module_setting('categories');
                 if ($list != '') {
-                        $cats = explode(',', $list);
-                        foreach ($cats as $cat) {
+                        $id = 50;
+                        foreach (explode(',', $list) as $cat) {
                                 $cat = trim($cat);
-                                if ($cat == '') continue;
-                                db_query("INSERT INTO $table (name,active) VALUES ('".db_real_escape_string($cat)."',1)");
+                                if ($cat != '') {
+                                        db_query("INSERT INTO $table (id,name,active) VALUES (".$id.",'".db_real_escape_string($cat)."',1)");
+                                }
+                                $id++;
                         }
                 }
 

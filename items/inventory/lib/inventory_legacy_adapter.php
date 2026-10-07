@@ -276,6 +276,43 @@ function inventory_legacy_invalidate_user_read_caches($userId)
 }
 
 /**
+ * Return the ids of all accounts that hold the given item.
+ *
+ * @param int $itemId
+ *
+ * @return array<int, int>
+ */
+function inventory_legacy_item_holders($itemId)
+{
+    $itemId = (int) $itemId;
+    $inventory = db_prefix('inventory');
+    $holders = [];
+    $result = db_query("SELECT DISTINCT userid FROM {$inventory} WHERE itemid = {$itemId}");
+    while ($row = db_fetch_assoc($result)) {
+        $holders[] = (int) $row['userid'];
+    }
+
+    return $holders;
+}
+
+/**
+ * Invalidate the read caches of every account that holds the given item.
+ *
+ * Inventory snapshots embed the item's own columns (name, class, sell
+ * values, ...), so changing an item definition must refresh every holder.
+ *
+ * @param int $itemId
+ *
+ * @return void
+ */
+function inventory_legacy_invalidate_item_holders($itemId)
+{
+    foreach (inventory_legacy_item_holders($itemId) as $userId) {
+        inventory_legacy_invalidate_user_read_caches($userId);
+    }
+}
+
+/**
  * Remove an item from every inventory and invalidate the read caches of the
  * accounts that held it.
  *
@@ -292,11 +329,7 @@ function inventory_legacy_delete_item_from_all_inventories($itemId)
 {
     $itemId = (int) $itemId;
     $inventory = db_prefix('inventory');
-    $holders = [];
-    $result = db_query("SELECT DISTINCT userid FROM {$inventory} WHERE itemid = {$itemId}");
-    while ($row = db_fetch_assoc($result)) {
-        $holders[] = (int) $row['userid'];
-    }
+    $holders = inventory_legacy_item_holders($itemId);
     db_query("DELETE FROM {$inventory} WHERE itemid = {$itemId}");
     $removed = (int) db_affected_rows();
     foreach ($holders as $userId) {

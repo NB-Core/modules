@@ -622,6 +622,8 @@ function inject_item($injection, $exclude=false) {
 			// Rename-safe invalidation: clear caches for both old and new names to
 			// avoid stale name lookups and stale negative-cache markers.
 			inventory_legacy_invalidate_item_read_caches((int) $test['itemid'], [$oldName, $newName]);
+			// Inventory snapshots carry the item's columns, so refresh every holder too.
+			inventory_legacy_invalidate_item_holders((int) $test['itemid']);
 			debug("Updated Item '".$injection['name']."'. SQL = '$sql'");
 		} else {
 			debug("Nothing to update for '".$injection['name']."'");
