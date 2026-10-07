@@ -167,6 +167,48 @@ function specialtysystem_check_races(string $serialized, string $race): array
  * The navigation uses a cached copy of the specialties stored in the
  * "cache" userpref to avoid expensive database calls.
  */
+/**
+ * Whether the fight menu currently offers this skill at this cost.
+ *
+ * Skill links carry the add-on, the skill and its cost in the query string.
+ * Pages that skip the navigation allowlist (travel fights of the cities
+ * module, for example) would otherwise accept any add-on file name and any
+ * cost, including negative ones that refill the player's points. The request
+ * must name a registered fight specialty, and that add-on's freshly built
+ * fight menu must contain exactly this skill and cost, which also means the
+ * player can currently afford it.
+ */
+function specialtysystem_skill_offered(string $module, string $skillname, string $cost): bool
+{
+    require_once 'modules/specialtysystem/datafunctions.php';
+    $specs = specialtysystem_getspecs();
+    if ($skillname === '' || !isset($specs[$module]) || (int) $specs[$module]['fightnav_active'] !== 1) {
+        return false;
+    }
+    require_once "modules/$module.php";
+    $fightnav = $module . '_fightnav';
+    if (!function_exists($fightnav)) {
+        return false;
+    }
+    $menu = $fightnav();
+    if (!is_array($menu)) {
+        return false;
+    }
+    $offered = false;
+    array_walk_recursive($menu, function ($entry) use ($skillname, $cost, &$offered): void {
+        if ($offered || !is_string($entry) || strpos($entry, '|||') === false) {
+            return;
+        }
+        $link = explode('|||', $entry, 2)[1];
+        parse_str($link, $query);
+        $offered = (string) array_key_first($query) === $skillname
+            && isset($query['cost'])
+            && (string) $query['cost'] === $cost;
+    });
+
+    return $offered;
+}
+
 function specialtysystem_showfightnav(string $script, bool $force = false): void
 {
     global $session;
@@ -458,10 +500,16 @@ function specialtysystem_dohook(string $hookname, array $args)
             if (httpget('skill') != 'SS') {
                 break;
             }
-            $module = httpget('skillmodule');
-            require_once "modules/$module.php";
+            $module = (string) httpget('skillmodule');
+            $skillname = (string) httpget('skillname');
+            // Add-on, skill and cost all come from the query string. Only run a
+            // skill the fight menu currently offers; add-ons read their cost
+            // from httpget('cost'), which this check pins as well.
+            if (!specialtysystem_skill_offered($module, $skillname, (string) httpget('cost'))) {
+                break;
+            }
             $fname = $module . '_apply';
-            $value = $fname(httpget('skillname'));
+            $value = $fname($skillname);
             set_module_pref('cache', '', 'specialtysystem');
             break;
         case 'fightnav-specialties':
