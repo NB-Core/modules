@@ -56,7 +56,7 @@ function datemanager_datecheck(string $startdate, string $enddate, int $lenient_
     }
 
     $now = new DateTimeImmutable('now');
-    $window = datemanager_normalize_window($startdate, $enddate, $now);
+    $window = datemanager_normalize_window($startdate, $enddate, $now, $lenient_days_over);
 
     if ($window === null) {
         debug("Unable to normalize dates for date manager: " . $startdate . " // " . $enddate);
@@ -87,7 +87,7 @@ function datemanager_datecheck(string $startdate, string $enddate, int $lenient_
  *
  * @return array{start: DateTimeImmutable, end: DateTimeImmutable}|null
  */
-function datemanager_normalize_window(string $startdate, string $enddate, ?DateTimeImmutable $now = null): ?array
+function datemanager_normalize_window(string $startdate, string $enddate, ?DateTimeImmutable $now = null, int $lenientDays = 0): ?array
 {
     if (!datemanager_datevalid($startdate) || !datemanager_datevalid($enddate)) {
         return null;
@@ -109,10 +109,17 @@ function datemanager_normalize_window(string $startdate, string $enddate, ?DateT
     $end = $end->setTime(23, 59, 59);
 
     if ($end < $start) {
-        if ($now < $end) {
+        // The window runs across New Year.
+        $end = $end->modify('+1 year');
+    }
+
+    // Before this year's start, the previous occurrence is still the current
+    // one while now lies within its end plus the leniency days.
+    if ($now < $start) {
+        $previousEnd = $end->modify('-1 year');
+        if ($now <= $previousEnd->modify('+' . $lenientDays . ' days')) {
             $start = $start->modify('-1 year');
-        } else {
-            $end = $end->modify('+1 year');
+            $end = $previousEnd;
         }
     }
 
@@ -134,7 +141,7 @@ function datemanager_normalize_window(string $startdate, string $enddate, ?DateT
 function datemanager_get_time_remaining(string $start, string $end, int $lenientDays = 0): ?DateInterval
 {
     $now = new DateTimeImmutable('now');
-    $window = datemanager_normalize_window($start, $end, $now);
+    $window = datemanager_normalize_window($start, $end, $now, $lenientDays);
 
     if ($window === null) {
         return null;
