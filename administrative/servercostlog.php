@@ -1,4 +1,10 @@
 <?php
+
+declare(strict_types=1);
+
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 function servercostlog_getmoduleinfo(){
 	$info = array(
 		"name"=>"Server Cost Log",
@@ -23,7 +29,7 @@ function servercostlog_install(){
 		'key-two'=> array('name'=>'amount', 'type'=>'key', 'unique'=>'0', 'columns'=>'amount'),
 	);
 	require_once("lib/tabledescriptor.php");
-	synctable(db_prefix("servercostlog"), $table, true);
+        synctable(Database::prefix("servercostlog"), $table, true);
 	return true;
 }
 
@@ -56,26 +62,28 @@ function servercostlog_run(){
 	addnav("Enter Payment","runmodule.php?module=servercostlog&op=enter");
 	addnav("Check Monthly Balance","runmodule.php?module=servercostlog&op=balance");
 	addnav("Months");
-	$ic=db_prefix('servercostlog');		
-	$sql = "SELECT substring(date,1,7) AS month, substring(date,1,4) AS year, sum(amount) AS servercost FROM $ic GROUP BY month,year ORDER BY year,month DESC";
-	$result=db_query($sql);
-	//deep look at paylog.php
-	while ($row = db_fetch_assoc($result)){
+        $connection = Database::getDoctrineConnection();
+        $ic = Database::prefix('servercostlog');
+        $sql = "SELECT substring(date,1,7) AS month, substring(date,1,4) AS year, sum(amount) AS servercost FROM $ic GROUP BY month,year ORDER BY year,month DESC";
+        $result = $connection->executeQuery($sql);
+        //deep look at paylog.php
+        $rows = $result->fetchAllAssociative();
+        foreach ($rows as $row){
 		addnav(array("%s %s %s", date("Y m",strtotime($row['month']."-01")), getsetting("paypalcurrency", "USD"), $row['servercost']),"runmodule.php?module=servercostlog&op=view&month={$row['month']}");
 	}
 	switch ($op) {
 		case "balance":
-			$ic=db_prefix('servercostlog');
-			$pl=db_prefix('paylog');
-			$sql = "SELECT substring(date,1,7) AS month, substring(date,1,4) AS year, sum(amount) AS servercost FROM $ic GROUP BY month,year ORDER BY year,month DESC";
-			$result = db_query($sql);
-			$payments=array();
-			while ($row=db_fetch_assoc($result)) {
+                        $ic=Database::prefix('servercostlog');
+                        $pl=Database::prefix('paylog');
+                        $sql = "SELECT substring(date,1,7) AS month, substring(date,1,4) AS year, sum(amount) AS servercost FROM $ic GROUP BY month,year ORDER BY year,month DESC";
+                        $result = $connection->executeQuery($sql);
+                        $payments=array();
+                        foreach ($result->fetchAllAssociative() as $row) {
 				$payments[date("Y m",strtotime($row['month']."-01"))]['costs']=$row['servercost'];
 			}
-			$sql = "SELECT substring(processdate,1,7) AS month, substring(processdate,1,4) AS year, sum(amount)-sum(txfee) AS profit FROM $pl GROUP BY year,month order by year,month DESC";
-			$result=db_query($sql);
-			while ($row = db_fetch_assoc($result)){
+                        $sql = "SELECT substring(processdate,1,7) AS month, substring(processdate,1,4) AS year, sum(amount)-sum(txfee) AS profit FROM $pl GROUP BY year,month order by year,month DESC";
+                        $result=$connection->executeQuery($sql);
+                        foreach ($result->fetchAllAssociative() as $row){
 				$payments[date("Y m",strtotime($row['month']."-01"))]['income']=$row['profit'];
 			}
 			//deep look at paylog.php
@@ -114,36 +122,55 @@ function servercostlog_run(){
 			if ($month=="") $month = date("Y-m");
 			$startdate = $month."-01 00:00:00";
 			$enddate = date("Y-m-d H:i:s",strtotime("+1 month",strtotime($startdate)));
-			$sql = "SELECT $ic.* FROM $ic WHERE date>='$startdate' AND date < '$enddate' ORDER BY servercostid DESC";
-			$result = db_query($sql);
+                        $sql = "SELECT $ic.* FROM $ic WHERE date>=:startdate AND date < :enddate ORDER BY servercostid DESC";
+                        $result = $connection->executeQuery($sql, [
+                                'startdate' => $startdate,
+                                'enddate' => $enddate,
+                        ], [
+                                'startdate' => ParameterType::STRING,
+                                'enddate' => ParameterType::STRING,
+                        ]);
 			rawoutput("<table border='0' cellpadding='2' cellspacing='0' width='100%'>");
 			rawoutput("<tr class='trhead'><td>". translate_inline("Date") ."</td><td>". translate_inline("Type") ."</td><td>".translate_inline("Amount")."</td><td>".translate_inline("Details")."</td></tr>");
 			$i=0;
-			while ($row=db_fetch_assoc($result)) {
+                        foreach ($result->fetchAllAssociative() as $row) {
 				$i++;
 				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
 				output_notl($row['date']);
 				rawoutput("</td><td>");
-				if ($row['type']==1) $type='Monthly Regular Payment';
-					elseif ($row['type']==2) $type='One-Time Payment';
+                                if ($row['type']==1) $type='Monthly Regular Payment';
+                                        elseif ($row['type']==2) $type='One-Time Payment';
+                                        else $type='Unknown';
 				output($type);
 				rawoutput("</td><td>");
-				output_notl($row['amount']);
+				output_notl("%s", $row['amount']);
 				rawoutput("</td><td>");
-				output_notl($row['comment']);
+				output_notl("%s", $row['comment']);
 				rawoutput("</td></tr>");
 			}
 			rawoutput("</table>");
 			break;
 		case "save":
-			$amount=httppost('amount');
-			$type=httppost('type');
-			$date=httppost('date');
-			$comment=str_replace(chr(13),'`n',httppost('comment'));
-			$sql="INSERT INTO ".db_prefix('servercostlog')." VALUES ";
-			$sql.="(0,'$date','$type','$amount','$comment');";
-			$result=db_query($sql);
-			if ($result==1)
+                        $amount=(float) httppost('amount');
+                        $type=(int) httppost('type');
+                        $date=httppost('date');
+			$commentInput = httppost('comment');
+			$commentInput = $commentInput !== false ? $commentInput : '';
+			$comment=str_replace(chr(13),'`n',$commentInput);
+                        $formattedAmount = sprintf('%.2f', $amount);
+                        $table = Database::prefix('servercostlog');
+                        $result=$connection->insert($table, [
+                                'date' => $date,
+                                'type' => $type,
+                                'amount' => $formattedAmount,
+                                'comment' => $comment,
+                        ], [
+                                'date' => ParameterType::STRING,
+                                'type' => ParameterType::INTEGER,
+                                'amount' => ParameterType::STRING,
+                                'comment' => ParameterType::STRING,
+                        ]);
+                        if ($result==1)
 				output("`7The Entry has been generated.");
 				else
 				output("`\$There has been an error while processing the entry!");

@@ -80,16 +80,17 @@ function forgottenpasswordblocker_istheserverfull() {
 }
 
 function forgottenpasswordblocker_selfreferral() {
-	global $_COOKIE;
-	$who=httpget('r');
-	if ($who=='') return false;
-	$sql = "SELECT uniqueid FROM " . db_prefix("accounts") . " WHERE login='$who'";
-	$result = db_query($sql);
-	$ref = db_fetch_assoc($result);
-	if (db_num_rows($result) == 0) return false;
-	if (isset($_COOKIE['lgi']) && $_COOKIE['lgi']==$ref['uniqueid']) 
-		return true;
-		else
+        global $_COOKIE;
+        $who=httpget('r');
+        if ($who=='') return false;
+        $whoEscaped = db_real_escape_string($who);
+        $sql = "SELECT uniqueid FROM " . db_prefix("accounts") . " WHERE login='$whoEscaped'";
+        $result = db_query($sql);
+        $ref = db_fetch_assoc($result);
+        if (db_num_rows($result) == 0) return false;
+        if (isset($_COOKIE['lgi']) && $_COOKIE['lgi']==$ref['uniqueid'])
+                return true;
+                else
 		return false;
 }
 

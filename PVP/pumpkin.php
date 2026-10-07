@@ -160,8 +160,7 @@ debug($sql);
 				pumpkin_leftdays();
 				output_notl("`n");
 			}
-			$out=file_get_contents("modules/pumpkin/snow.js");
-			output_notl($out,true);
+                        output_notl('<script src="modules/pumpkin/snow.js" defer></script>', true);
 			break;
 		case "gypsy":
 			addnav(array("Ask about the %s`0",$name),"runmodule.php?module=pumpkin&op=ask");

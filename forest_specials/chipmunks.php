@@ -43,8 +43,9 @@ function chipmunks_runevent($type,$link){
 		default:
 			$session['user']['specialinc'] = "module:chipmunks";
 			if ($session['user']['gold']>0) {
-				$gold=number_format(min(e_rand(94,104),e_rand(1,$session['user']['gold'])),0);			
-				output("`qYou suddenly feel a pull and before you realize a `gC`lhipmunk`q rallies out of your pocket with `^%s gold`q in its paws!`0`n`n", $gold);
+				$gold=(int)min(e_rand(94,104),e_rand(1,$session['user']['gold']));			
+				$goldtext=number_format($gold,0);			
+				output("`qYou suddenly feel a pull and before you realize a `gC`lhipmunk`q rallies out of your pocket with `^%s gold`q in its paws!`0`n`n", $goldtext);
 				$session['user']['gold']-=$gold;
 				increment_module_pref("goldstolen",$gold);
 				//addnav("Navigation");

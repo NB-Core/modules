@@ -7,6 +7,7 @@ Oliver
 
 */
 
+
 function mrblack_getmoduleinfo()
 {
 	$info = array(
@@ -248,6 +249,7 @@ function mrblack_runevent($type,$link)
 		//break; //didn't know how to call it right, but let just the fight now occurr
 	case "combat": case "fight":
 		include("battle.php");
+		require_once("lib/battle-skills.php");
 		if ($victory){ //no exp at all for such a foul act
 		output("`@Mr. Black is critically wounded and somehow your vision blurs. You have managed to survive...somehow.");
 		addnews("%s`^ has somehow survived the deadly bites of `2Mr. Black`^, companion of `\$Lady Erwin`^.",$session['user']['name']);
@@ -257,6 +259,7 @@ function mrblack_runevent($type,$link)
 		$badguy=array();
 		$session['user']['badguy']="";
     }elseif ($defeat){ //but a loss of course if you die
+		require_once("lib/battle-skills.php");
 		$exploss = $session['user']['experience']*get_module_setting("experienceloss")/100;
 		output("`@Mr. Black bites you down mercilessly because you have tried to harm the Lady once.`n");
 		if ($exploss>0) output(" You lose `^%s percent`@  of your experience and all of your gold.",get_module_setting("experienceloss"));
@@ -276,6 +279,7 @@ function mrblack_runevent($type,$link)
 		if ($suspendbuffs) unsuspend_buffs('allowintrain',"");
     }else{
 		require_once("lib/fightnav.php");
+		require_once("lib/battle-skills.php");
 		$allow = true;
 		fightnav($allow,false);
 		if ($session['user']['superuser'] & SU_DEVELOPER) addnav("Escape to Village","village.php");

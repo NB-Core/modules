@@ -14,7 +14,7 @@ function erosennin_getmoduleinfo() {
 	$info = array(
 			"name"=>"Ero Sennin - The Perverted Hermit",
 			"author"=>"`2Oliver Brendel",
-			"version"=>"1.02",
+			"version"=>"1.03",
 			"category"=>"Forest Specials",
 			"download"=>"http://lotgd-downloads.com",
 			"settings"=>array(
@@ -45,6 +45,7 @@ function erosennin_dohook($hookname,$args) {
 
 function erosennin_runevent($type,$link) {
 	global $session;
+	require_once("lib/forest.php");
 	$from = "forest.php?";
 	$session['user']['specialinc'] = "module:erosennin";
 	$op = httpget('op');

@@ -27,6 +27,9 @@ function halloween_install(){
 	module_addhook("pvpadjust");
 	module_addhook("newday");
 	module_addhook("findloot-categories");
+	module_addhook("adminpvp-allow-execution");
+	module_addhook("pvpbalance-allow-execution");
+	module_addhook_priority("village-desc", 75);
 	return true;
 }
 
@@ -47,6 +50,30 @@ function halloween_dohook($hookname,$args){
 	if ($check!=1) return $args;
 
 	switch ($hookname) {
+		case "village-desc":
+			static $countdownShown = false;
+
+			if ($countdownShown) {
+				break;
+			}
+
+			$countdownShown = true;
+
+			$leniency = (int) get_module_setting("leniency");
+			$remaining = datemanager_get_time_remaining($start, $end, $leniency);
+
+			if ($remaining === null) {
+				break;
+			}
+
+			$countdown = datemanager_format_countdown($remaining);
+			$message = sprintf_translate("`qThe `vHalloween`q festivities conclude in %s.`0", $countdown);
+			output_notl("`n%s`n", $message);
+			break;
+		case "adminpvp-allow-execution":
+		case "pvpbalance-allow-execution":
+			$args['continue'] = false;
+			return $args;
 		case "newday":
 			if ($session['user']['playerfights']<30) {
 				$session['user']['playerfights']=30;

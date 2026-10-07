@@ -42,7 +42,7 @@ function lodge_colortable_run(){
 	$from = "runmodule.php?module=lodge_colortable";
 	page_header("Color Table");
 	output("`b`c`@Color Table`0`c`b`n");
-	$colors = $output->get_colormap_escaped_array();
+	$colors = $output->getColormapEscapedArray();
 	rawoutput("<table><tr><td>");
 	output("`2Color Code");
 	rawoutput("</td><td>");

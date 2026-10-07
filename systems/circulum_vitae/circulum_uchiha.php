@@ -55,6 +55,7 @@ function circulum_uchiha_dohook($hookname, $args) {
 				if ($session['user']['dragonkills']!=$dk) {
 					set_module_pref('dkgot',$session['user']['dragonkills']);
 					require_once('lib/increment_specialty.php');
+					// user gets 5 free uses of Katon (fire) each day
 					for ($i=0;$i<5;$i++) {					
 						increment_specialty('`$');
 					}

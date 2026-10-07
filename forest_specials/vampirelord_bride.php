@@ -35,12 +35,21 @@ function vampirelord_bride_dohook($hookname,$args) {
 	return $args;
 }
 
-function vampirelord_bride_addimage($args) {
-	if (is_module_active('addimages')) {
-		if (get_module_pref('user_addimages','addimages')) {
-			output_notl("`c<img src=\"modules/vampirelord_bride/".$args."\" alt=\"$args\">`c<br>\n",true);
-		}
+/**
+ * Renders vampire bride event images through the shared addimages module.
+ *
+ * @param string $filename Image filename from modules/vampirelord_bride/.
+ *
+ * @return void
+ */
+function vampirelord_bride_addimage($filename)
+{
+	if (!is_module_active('addimages')) {
+		return;
 	}
+
+	require_once("modules/addimages/addimages_func.php");
+	addimage('vampirelord_bride/' . $filename, sanitize($filename));
 }
 
 function vampirelord_bride_runevent($type,$link) {

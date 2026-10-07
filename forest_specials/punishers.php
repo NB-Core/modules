@@ -21,7 +21,7 @@ function punishers_getmoduleinfo()
 		"experienceloss"=>"Percentage: How many experience is lost after a fight,floatrange,1,100,1|10",
 	),
 	"requires"=>array(
-		"alignment"=>"1.72|WebPixie<br> `#Lonny Luberts<br>`^and Chris Vorndran",
+		"alignment"=>"1.9|WebPixie<br> `#Lonny Luberts<br>`^and Chris Vorndran",
 		),
 	);
 	return $info;

@@ -50,6 +50,25 @@ function vampirelord_dohook($hookname,$args){
 	return $args;
 }
 
+
+/**
+ * Renders a module image through the shared addimages handler when available.
+ *
+ * @param string $pic Relative image path below modules/.
+ * @param string $caption Caption text shown in the lightbox.
+ *
+ * @return void
+ */
+function vampirelord_addimage($pic, $caption = 'Original')
+{
+	if (!is_module_active('addimages')) {
+		return;
+	}
+
+	require_once("modules/addimages/addimages_func.php");
+	addimage($pic, sanitize($caption));
+}
+
 function vampirelord_runevent($type, $link){
 	global $session;
 	$vampirelord=get_module_setting("vampirelord");
@@ -91,9 +110,7 @@ function vampirelord_runevent($type, $link){
 	case "leave":
 		$did=vampirelord_suck();
 		if ($did==true) {
-			if (get_module_pref('user_addimages','addimages')) {
-				rawoutput("<center><img src='modules/vampirelord/vl.jpg' alt'Baluski'></center><br><br>");
-			}
+			vampirelord_addimage('vampirelord/vl.jpg', 'Baluski');
 		}
 		output("`n`7You leave this foul place as fast as you can.");
 		$session['user']['specialinc'] = "";
@@ -105,9 +122,7 @@ function vampirelord_runevent($type, $link){
 		} else {
 			$session['user']['maxhitpoints'] -= $lifecost;
 			if($session['user']['hitpoints']>$session['user']['maxhitpoints']) $session['user']['hitpoints']=$session['user']['maxhitpoints'];
-			if (get_module_pref('user_addimages','addimages')) {
-				rawoutput("<center><img src='modules/vampirelord/vl.jpg' alt'Baluski'></center><br><br>");
-			}
+			vampirelord_addimage('vampirelord/vl.jpg', 'Baluski');
 			output("`n`n`7You shudder in horror as the %s`7 forces his teeth into you neck. You feel your life essence draining as the blood gets sucked out...",$vampirelord);
 			output("`nAs a reward the %s`7 casts an ancient spell upon you... you would hardly call it words what he 'says'...`n`n`@",$vampirelord);
 			$add=get_module_setting("bonus");

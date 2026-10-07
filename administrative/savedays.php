@@ -3,6 +3,9 @@
 // translator ready
 // mail ready
 
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 function savedays_getmoduleinfo(){
 	$info = array(
 		"name"=>"Save Days",
@@ -38,29 +41,53 @@ function savedays_dohook($hookname,$args){
 
 	switch($hookname){
 	case "newday-runonce":
-		$update="UPDATE ".db_prefix('module_userprefs')."
-				SET value = value + 1 
-				WHERE modulename = 'savedays' 
-				AND setting = 'daysmissed';";
-		db_query($update); 
-		$select="SELECT acctid
-				FROM ".db_prefix('accounts')."
-				WHERE acctid not in (SELECT userid
-									FROM module_userprefs
-									WHERE modulename = 'savedays' 
-									AND setting = 'daysmissed')";
-		$result=db_query($select);
-		$end=db_num_rows($result);
-		if($end>0){
-			$insert="INSERT 
-					INTO ".db_prefix('module_userprefs')." (modulename, setting, userid, value)
-					VALUES ";			
-			while ($row=db_fetch_assoc($result)) {
-				$userid=$row['acctid'];
-				$insert.="('savedays','daysmissed',$userid,1),";
-			}
-			$insert = substr($insert,0,strlen($insert)-1);
-			db_query($insert);
+		$connection = Database::getDoctrineConnection();
+		$moduleUserPrefsTable = Database::prefix('module_userprefs');
+		$accountsTable = Database::prefix('accounts');
+
+		$connection->executeStatement(
+			"UPDATE {$moduleUserPrefsTable}
+				SET value = value + 1
+				WHERE modulename = :module
+				AND setting = :setting",
+			[
+				'module' => 'savedays',
+				'setting' => 'daysmissed',
+			],
+			[
+				'module' => ParameterType::STRING,
+				'setting' => ParameterType::STRING,
+			]
+		);
+
+		$result = $connection
+			->createQueryBuilder()
+			->select('a.acctid')
+			->from($accountsTable, 'a')
+			->where(
+				"NOT EXISTS (
+					SELECT 1
+					FROM {$moduleUserPrefsTable} mup
+					WHERE mup.userid = a.acctid
+					AND mup.modulename = :module
+					AND mup.setting = :setting
+				)"
+			)
+			->setParameter('module', 'savedays', ParameterType::STRING)
+			->setParameter('setting', 'daysmissed', ParameterType::STRING)
+			->executeQuery();
+
+		$statement = $connection->prepare(
+			"INSERT INTO {$moduleUserPrefsTable} (modulename, setting, userid, value)
+				VALUES (:module, :setting, :userid, :value)"
+		);
+		$statement->bindValue('module', 'savedays', ParameterType::STRING);
+		$statement->bindValue('setting', 'daysmissed', ParameterType::STRING);
+		$statement->bindValue('value', 1, ParameterType::INTEGER);
+
+		while (($row = $result->fetchAssociative()) !== false) {
+			$statement->bindValue('userid', (int) $row['acctid'], ParameterType::INTEGER);
+			$statement->executeStatement();
 		}
 		break;
 	case "newday":

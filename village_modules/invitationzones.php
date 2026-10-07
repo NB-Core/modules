@@ -41,11 +41,6 @@ function invitationzones_install(){
 	return true;
 }
 
-function mailarchive_uninstall() {
-
-	return true;
-}
-
 function invitationzones_uninstall(){
 	if(db_table_exists(db_prefix("fightingzones_battles"))){
 		db_query("DROP TABLE ".db_prefix("fightingzones_battles"));

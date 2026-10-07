@@ -299,6 +299,7 @@ function ladyerwin_runevent($type,$link) {
 			//break; //didn't know how to call it right, but let just the fight now occurr
 		case "combat": case "fight":
 			include("battle.php");
+			require_once("lib/battle-skills.php");
 			if ($victory){ //no exp at all for such a foul act
 				output("`@The protector dies by your hand. You have managed to survive...somehow.");
 				addnews("%s`^ has somehow survived the deadly strokes of %s`^, protector of `$ Lady Erwin`^.",$session['user']['name'],get_module_setting("protectorname"));

@@ -311,7 +311,8 @@ class marriage implements module_base {
 			if ($fields=='') $fields=array_keys($row);
 			$save.="INSERT INTO ".db_prefix('marriage_actions')." (".implode(",",$fields)." VALUES ('".addslashes(implode("','",$row))."');";
 		}
-		set_module_pref('restoresave',$save,'marriage',$args['acctid']);
+		/*was a good idea, but 4k per message and we only have 64kb ... runs full quickly, leading to undeletable accs... so sadly, love has to go on... */
+		//set_module_pref('restoresave',$save,'marriage',$args['acctid']);
 		/*save all flirt info except ignores*/
 
 		$sql="DELETE FROM ".db_prefix('marriage_optout')." WHERE acctid=$acctid";

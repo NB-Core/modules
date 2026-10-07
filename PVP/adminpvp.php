@@ -1,4 +1,7 @@
 <?php
+
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
 function adminpvp_getmoduleinfo(){
 	$info = array(
 		"name"=>"Admin PvP Immunity",
@@ -24,16 +27,38 @@ function adminpvp_uninstall(){
 }
 
 function adminpvp_dohook($hookname,$args){
-	global $session;
-	switch ($hookname) {
-	case "pvpmodifytargets":
-		$who=explode(",",get_module_setting('who'));
+        global $session;
+        $hookResponse = modulehook('adminpvp-allow-execution', [
+                'hookname' => $hookname,
+                'args' => $args,
+                'continue' => true,
+        ]);
+
+        if (array_key_exists('args', $hookResponse)) {
+                $args = $hookResponse['args'];
+        }
+
+        if (isset($hookResponse['continue']) && false === $hookResponse['continue']) {
+                return $args;
+        }
+        switch ($hookname) {
+        case "pvpmodifytargets":
+                $who=explode(",",get_module_setting('who'));
 		$alt=array();
-		$sql="SELECT acctid FROM ".db_prefix('accounts')." WHERE uniqueid='".$session['user']['uniqueid']."';";
-		$result=db_query($sql);
-		while ($row=db_fetch_assoc($result)) {
-			$alt[]=$row['acctid'];
-		}
+                $conn    = Database::getDoctrineConnection();
+                $table   = Database::prefix('accounts');
+                $result  = $conn->executeQuery(
+                        "SELECT acctid FROM {$table} WHERE uniqueid = :uniqueid",
+                        [
+                                'uniqueid' => $session['user']['uniqueid'],
+                        ],
+                        [
+                                'uniqueid' => ParameterType::STRING,
+                        ]
+                );
+                while ($row=$result->fetchAssociative()) {
+                        $alt[]=$row['acctid'];
+                }
 		foreach ($args as $key=>$row) {
 			if (in_array($row['acctid'],$who)) {
 				$args[$key]['invalid'] = 1;

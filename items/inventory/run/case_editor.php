@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 	page_header("Item Editor");
 	require_once("lib/superusernav.php");
 	superusernav();
@@ -31,6 +31,9 @@
 		case "newitem":
 			$id=httpget("id");
 			$subop=httpget("subop");
+			// Default for brand-new items (no id yet) to avoid undefined-variable
+			// warnings when the editor form is rendered.
+			$item = array();
 			require_once("modules/inventory/lib/itemhandler.php");
 			if ($id != "") {
 				$item = get_item((int)$id);
@@ -124,27 +127,182 @@
 		case "takeitem":
 			$id = (int)httpget('id');
 			add_item($id);
-			output("`\$Item no. %s added once, you now have %s pieces.", $id, check_qty($id));
+			output("`\$Item no. %s added once, you now have %s pieces.`0", $id, check_qty($id));
 		default:
 		case "showitems":
-			$sql = "SELECT itemid, class, name, description, gold, gems FROM ".db_prefix("item")." ORDER BY class ASC";
+			\Lotgd\Output::requireVendorAsset('jquery', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+			\Lotgd\Output::requireVendorAsset('datatables', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+			\Lotgd\Output::requireVendorAsset('datatables', 'css', \Lotgd\Output::VENDOR_BUCKET_MID);
+			$sql = "SELECT itemid, class, name, description, gold, gems FROM " . db_prefix("item")
+				. " ORDER BY class ASC, name ASC";
+			$result       = db_query($sql);
+			$edit         = translate_inline("Edit");
+			$del          = translate_inline("Delete");
+			$give         = translate_inline("Give");
+			$take         = translate_inline("Take");
+			$conf         = addslashes(translate_inline("Do you really want to delete this item?"));
+			$labelUncateg = translate_inline("(Uncategorized)");
+			// collect all rows + unique categories for the multiselect
+			$rows       = [];
+			$categories = [];
+			while ($row = db_fetch_assoc($result)) {
+				$hasClass = isset($row['class']) && $row['class'] !== '';
+				$row['_catLabel'] = $hasClass ? htmlspecialchars($row['class']) : $labelUncateg;
+				$row['_catOrder'] = $hasClass ? htmlspecialchars($row['class']) : 'zzz';
+				if (!in_array($row['_catLabel'], $categories, true)) {
+					$categories[] = $row['_catLabel'];
+				}
+				$rows[] = $row;
+			}
+			sort($categories);
+
+			$catSelectLabel = translate_inline("Filter by category:");
+			$catAllLabel    = translate_inline("(All categories)");
+			$catJsonOptions = json_encode(array_values($categories), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG);
+			rawoutput(
+				'<div style="margin-bottom:0.8em;">'
+				. '<label for="inv-cat-filter" style="font-weight:bold;margin-right:0.5em;">' . $catSelectLabel . '</label>'
+				. '<select id="inv-cat-filter" multiple size="5" style="min-width:200px;vertical-align:top;">'
+				. '<option value="">' . $catAllLabel . '</option>'
+				. '</select>'
+				. '<small style="display:block;margin-top:3px;opacity:.75;">'
+				. translate_inline("Hold Ctrl / Cmd to select multiple. No selection = show all.")
+				. '</small>'
+				. '</div>'
+			);
+			rawoutput(
+				'<table id="inv-items-dt" class="dataTable" style="width:100%;">'
+				. '<thead><tr>'
+				. '<th>' . translate_inline("Category")    . '</th>'
+				. '<th>' . translate_inline("Name")        . '</th>'
+				. '<th>' . translate_inline("Item Id")     . '</th>'
+				. '<th>' . translate_inline("Description") . '</th>'
+				. '<th>' . translate_inline("Gold")        . '</th>'
+				. '<th>' . translate_inline("Gems")        . '</th>'
+				. '<th>' . translate_inline("Actions")     . '</th>'
+				. '</tr></thead><tbody>'
+			);
+			foreach ($rows as $row) {
+				addnav("", "runmodule.php?module=inventory&op=editor&op2=newitem&id=" . $row['itemid']);
+				addnav("", "runmodule.php?module=inventory&op=editor&op2=delitem&id=" . $row['itemid']);
+				addnav("", "runmodule.php?module=inventory&op=editor&op2=takeitem&id=" . $row['itemid']);
+				addnav("", "runmodule.php?module=inventory&op=editor&op2=giveitem&id=" . $row['itemid']);
+				rawoutput(
+					'<tr>'
+					. '<td data-order="' . $row['_catOrder'] . '">' . $row['_catLabel'] . '</td>'
+					. '<td>' . appoencode($row['name']) . '</td>'
+					. '<td>' . (int)$row['itemid'] . '</td>'
+					. '<td>' . htmlspecialchars(substr($row['description'], 0, 80)) . '</td>'
+					. '<td>' . (int)$row['gold'] . '</td>'
+					. '<td>' . (int)$row['gems'] . '</td>'
+					. '<td style="white-space:nowrap;">'
+					. '[<a href="runmodule.php?module=inventory&op=editor&op2=newitem&id=' . $row['itemid'] . '">'
+					. $edit . '</a>'
+					. ' - <a href="runmodule.php?module=inventory&op=editor&op2=delitem&id=' . $row['itemid'] . '"'
+					. ' onclick="return confirm(\'' . $conf . '\');">'
+					. $del . '</a>'
+					. ' - <a href="runmodule.php?module=inventory&op=editor&op2=takeitem&id=' . $row['itemid'] . '">'
+					. $take . '</a>'
+					. ' - <a href="runmodule.php?module=inventory&op=editor&op2=giveitem&id=' . $row['itemid'] . '">'
+					. $give . '</a>]'
+					. '</td>'
+					. '</tr>'
+				);
+			}
+			rawoutput('</tbody></table>');
+			rawoutput('<script>
+(function(){
+	var allCats = ' . $catJsonOptions . ';
+	var sel = document.getElementById("inv-cat-filter");
+	allCats.forEach(function(c){
+		var o = document.createElement("option");
+		o.value = c; o.textContent = c;
+		sel.appendChild(o);
+	});
+	$.fn.dataTable.ext.search.push(function(settings, data){
+		if (settings.nTable.id !== "inv-items-dt") return true;
+		var chosen = Array.from(sel.selectedOptions).map(function(o){ return o.value; });
+		if (!chosen.length || chosen.indexOf("") !== -1) return true;
+		return chosen.indexOf(data[0]) !== -1;
+	});
+	$(function(){
+		var dt = $("#inv-items-dt").DataTable({
+			pageLength: 25,
+			stripeClasses: ["trlight","trdark"],
+			order: [[0,"asc"],[1,"asc"]],
+			columnDefs: [
+				{ type: "num", targets: [2,4,5] },
+				{ orderable: false, searchable: false, targets: 6 }
+			],
+			createdRow: function(row, data){
+				if (parseInt(data[4]) > 0) $("td:eq(4)",row).addClass("colLtBrown");
+				if (parseInt(data[5]) > 0) $("td:eq(5)",row).addClass("colkhaki");
+			}
+		});
+		sel.addEventListener("change", function(){ dt.draw(); });
+	});
+})();
+</script>');
+			break;
+		case "giveitem":
+			$id = (int)httpget('id');
+			require_once("modules/inventory/lib/itemhandler.php");
+			$item = get_item($id);
+			if (!$item) {
+				output("`4The selected item could not be found.`0`n");
+				break;
+			}
+
+			output("`^Give item:`0 %s`n`n", $item['name']);
+			if (!empty($item['uniqueforserver']) || !empty($item['uniqueforplayer'])) {
+				output("`iThis item is unique, so the quantity is limited to 1.`i`n`n");
+			}
+
+			rawoutput("<form action='runmodule.php?module=inventory&op=editor&op2=giveitem2&id=$id' method='post'>");
+			output("Target account ID:`n");
+			rawoutput(" <input name='targetacctid' size='8'><br>");
+			output("Quantity:`n");
+			rawoutput(" <input name='quantity' value='1' size='5'><br><br>");
+			rawoutput("<input type='submit' class='button' value='".translate_inline("Give Item")."'>");
+			rawoutput("</form>");
+			addnav("", "runmodule.php?module=inventory&op=editor&op2=giveitem2&id=$id");
+			break;
+		case "giveitem2":
+			$id = (int)httpget('id');
+			$targetAcctid = (int)httppost('targetacctid');
+			$quantity = max(1, (int)httppost('quantity'));
+			require_once("modules/inventory/lib/itemhandler.php");
+			$item = get_item($id);
+			if (!$item) {
+				output("`4The selected item could not be found.`0`n");
+				break;
+			}
+
+			/*
+			 * Unique item rules are checked before add_item() so admins receive a
+			 * specific validation message instead of a generic inventory add failure.
+			 */
+			if ((!empty($item['uniqueforserver']) || !empty($item['uniqueforplayer'])) && $quantity > 1) {
+				output("`4This item is unique, so you may only give 1 copy at a time.`0`n");
+				break;
+			}
+
+			if ($targetAcctid <= 0) {
+				output("`4Please enter a valid target account ID.`0`n");
+				break;
+			}
+			$sql = "SELECT acctid, name FROM ".db_prefix("accounts")." WHERE acctid = $targetAcctid LIMIT 1";
 			$result = db_query($sql);
-			$edit = translate_inline("Edit");
-			$del = translate_inline("Delete");
-			$take = translate_inline("Take");
-			$conf = translate_inline("Do you really want to delete this item?");
-			$oldclass = "";
-			for ($i=0;$i<db_num_rows($result);$i++) {
-				$row=db_fetch_assoc($result);
-				$class = $row['class'];
-				if ($class <> $oldclass) output("`n`n`^`b%s`b`0`n", $row['class']);
-				$oldclass = $class;
-				output_notl("`^%s `7- `&`i%s`i `7- [", $row['name'], substr($row['description'],0,47)."...");
-				rawoutput("<a href='runmodule.php?module=inventory&op=editor&op2=newitem&id=".$row['itemid']."'>$edit</a> - <a href='runmodule.php?module=inventory&op=editor&op2=delitem&id=".$row['itemid']."' onClick=\"return confirm('$conf');\">$del</a> - <a href='runmodule.php?module=inventory&op=editor&op2=takeitem&id=".$row['itemid']."'>$take</a>");
-				addnav("", "runmodule.php?module=inventory&op=editor&op2=newitem&id=".$row['itemid']);
-				addnav("", "runmodule.php?module=inventory&op=editor&op2=delitem&id=".$row['itemid']);
-				addnav("", "runmodule.php?module=inventory&op=editor&op2=takeitem&id=".$row['itemid']);
-				output_notl("]`0`n");
+			$target = db_fetch_assoc($result);
+			if (!$target) {
+				output("`4The target account could not be found.`0`n");
+				break;
+			}
+
+			if (add_item($id, $quantity, $targetAcctid)) {
+				output("`@Successfully gave %s`@ %s`@ to %s.`0`n", $quantity, $item['name'], $target['name']);
+			} else {
+				output("`4Could not give %s`@ %s`@ to %s.`0`n", $quantity, $item['name'], $target['name']);
 			}
 			break;
 		case "delitem":
@@ -362,19 +520,53 @@
 			}
 			break;
 		case "showbuffs":
-			$sql = "SELECT buffid, buffname, buffshortname FROM ".db_prefix("itembuffs")." ORDER BY buffid ASC";
+			\Lotgd\Output::requireVendorAsset('jquery', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+			\Lotgd\Output::requireVendorAsset('datatables', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+			\Lotgd\Output::requireVendorAsset('datatables', 'css', \Lotgd\Output::VENDOR_BUCKET_MID);
+			$sql = "SELECT buffid, buffname, buffshortname FROM " . db_prefix("itembuffs")
+				. " ORDER BY buffname ASC";
 			$result = db_query($sql);
-			$edit = translate_inline("Edit");
-			$del = translate_inline("Delete");
-			$conf = translate_inline("Do you really want to delete this buff?");
-			for ($i=0;$i<db_num_rows($result);$i++) {
-				$row=db_fetch_assoc($result);
-				output_notl("`^%s `7- `&`i%s`i `7- [", $row['buffname'], $row['buffshortname']);
-				rawoutput("<a href='runmodule.php?module=inventory&op=editor&op2=newbuff&id=".$row['buffid']."'>$edit</a> - <a href='runmodule.php?module=inventory&op=editor&op2=delbuff&id=".$row['buffid']."' onClick=\"return confirm('$conf');\">$del</a>");
-				addnav("", "runmodule.php?module=inventory&op=editor&op2=newbuff&id=".$row['buffid']);
-				addnav("", "runmodule.php?module=inventory&op=editor&op2=delbuff&id=".$row['buffid']);
-				output_notl("]`0`n");
+			$edit   = translate_inline("Edit");
+			$del    = translate_inline("Delete");
+			$conf   = addslashes(translate_inline("Do you really want to delete this buff?"));
+			rawoutput(
+				'<table id="inv-buffs-dt" class="dataTable" style="width:100%;">'
+				. '<thead><tr>'
+				. '<th>' . translate_inline("Buff Id")    . '</th>'
+				. '<th>' . translate_inline("Buff Name")  . '</th>'
+				. '<th>' . translate_inline("Short Name") . '</th>'
+				. '<th>' . translate_inline("Actions")    . '</th>'
+				. '</tr></thead><tbody>'
+			);
+			while ($row = db_fetch_assoc($result)) {
+				addnav("", "runmodule.php?module=inventory&op=editor&op2=newbuff&id=" . $row['buffid']);
+				addnav("", "runmodule.php?module=inventory&op=editor&op2=delbuff&id=" . $row['buffid']);
+				rawoutput(
+					'<tr>'
+					. '<td>' . (int)$row['buffid'] . '</td>'
+					. '<td>' . htmlspecialchars($row['buffname']) . '</td>'
+					. '<td>' . htmlspecialchars($row['buffshortname']) . '</td>'
+					. '<td style="white-space:nowrap;">'
+					. '[<a href="runmodule.php?module=inventory&op=editor&op2=newbuff&id=' . $row['buffid'] . '">'
+					. $edit . '</a>'
+					. ' - <a href="runmodule.php?module=inventory&op=editor&op2=delbuff&id=' . $row['buffid'] . '"'
+					. ' onclick="return confirm(\'' . $conf . '\');">' . $del . '</a>]'
+					. '</td>'
+					. '</tr>'
+				);
 			}
+			rawoutput('</tbody></table>');
+			rawoutput('<script>$(function(){
+	$("#inv-buffs-dt").DataTable({
+		pageLength: 25,
+		stripeClasses: ["trlight","trdark"],
+		order: [[1,"asc"]],
+		columnDefs: [
+			{ type: "num", targets: 0 },
+			{ orderable: false, searchable: false, targets: 3 }
+		]
+	});
+});</script>');
 			break;
 		case "delbuff":
 			$id = httpget('id');

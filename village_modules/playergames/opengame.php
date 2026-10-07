@@ -1,4 +1,9 @@
 <?php
+
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 $players=httpget('players');
 $mode=httpget('mode');
 $game=httpget('game');
@@ -33,34 +38,69 @@ switch ($mode) {
 		$players=implode(",",$players);
 		redirect($link."&op=opengame&game=$game&players=$players&gamename=".rawurlencode($gamename));
 		break; //well, not necessary
-	case "startgame":
-		$gold=get_module_setting('fee',$game);
-		$session['user']['gold']-=$gold;
-		$time=gmdate("Y-m-d H:i:s", time());
-		$sql="INSERT INTO ".db_prefix("playergames")." (playerone,playeronename,players,nextturn,module,gamename,startdate) VALUES (";
-		$sql.=$session['user']['acctid'].",";
-		$sql.="'".addslashes($session['user']['name'])."',";
-		$sql.="'$players',";
-		$sql.=$session['user']['acctid'].",";
-		$sql.="'$game',";
-		$sql.="'".addslashes(rawurldecode($gamename))."',";
-		$sql.="'".$time."'";
-		$sql.=");";
-		$result=db_query($sql);
-		if ($result) {
-			$sql="SELECT number from ".db_prefix("playergames")." WHERE startdate='".$time."';";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result); //should be unique... if he hasn't stopped time
-			$players=explode(",",$players);
-			$msgtext=array("`@Your friend %s`@ has invited you to play a game together!`n`nGo to the game parlor and look for the game '%s' with the number '%s'!",$session['user']['name'],get_module_setting('gamename',$game),$row['number']);
-			require_once("./lib/systemmail.php");
-			while (list($key,$val)=each($players)) {
-				systemmail($val,array("You have been invited to a game!"),$msgtext);
-			}
-			redirect("runmodule.php?module=$game&number=".$row['number']);
-		} else {
-			output("Error while creating the game! Let your admin know about this!");
-		}
+        case "startgame":
+                $gold=get_module_setting('fee',$game);
+                $session['user']['gold']-=$gold;
+                $time=gmdate("Y-m-d H:i:s", time());
+
+                $connection = Database::getDoctrineConnection();
+                $playerGamesTable = Database::prefix('playergames');
+
+                $invitedPlayers = [];
+                if ($players) {
+                        $invitedPlayers = array_values(array_filter(array_map('intval', explode(',', $players))));
+                }
+
+                $playersList = implode(',', $invitedPlayers);
+
+                $result = $connection->executeStatement(
+                        "INSERT INTO {$playerGamesTable} (playerone, playeronename, players, nextturn, module, gamename, startdate)"
+                        . " VALUES (:playerone, :playeronename, :players, :nextturn, :module, :gamename, :startdate)",
+                        [
+                                'playerone' => $session['user']['acctid'],
+                                'playeronename' => $session['user']['name'],
+                                'players' => $playersList,
+                                'nextturn' => $session['user']['acctid'],
+                                'module' => $game,
+                                'gamename' => rawurldecode($gamename),
+                                'startdate' => $time,
+                        ],
+                        [
+                                'playerone' => ParameterType::INTEGER,
+                                'playeronename' => ParameterType::STRING,
+                                'players' => ParameterType::STRING,
+                                'nextturn' => ParameterType::INTEGER,
+                                'module' => ParameterType::STRING,
+                                'gamename' => ParameterType::STRING,
+                                'startdate' => ParameterType::STRING,
+                        ]
+                );
+
+                if ($result) {
+                        $statement = $connection->executeQuery(
+                                "SELECT number FROM {$playerGamesTable} WHERE startdate = :startdate AND playerone = :playerone",
+                                [
+                                        'startdate' => $time,
+                                        'playerone' => $session['user']['acctid'],
+                                ],
+                                [
+                                        'startdate' => ParameterType::STRING,
+                                        'playerone' => ParameterType::INTEGER,
+                                ]
+                        );
+                        $row=$statement->fetchAssociative(); //should be unique... if he hasn't stopped time
+                        $msgtext=array("`@Your friend %s`@ has invited you to play a game together!`n`nGo to the game parlor and look for the game '%s' with the number '%s'!",$session['user']['name'],get_module_setting('gamename',$game),$row['number']);
+                        require_once("./lib/systemmail.php");
+                        foreach ($invitedPlayers as $val) {
+                                if ($val <= 0) {
+                                        continue;
+                                }
+                                systemmail($val,array("You have been invited to a game!"),$msgtext);
+                        }
+                        redirect("runmodule.php?module=$game&number=".$row['number']);
+                } else {
+                        output("Error while creating the game! Let your admin know about this!");
+                }
 		
 		break;	
 		
@@ -72,22 +112,33 @@ switch ($mode) {
 		output_notl("`n`n");
 		output("Currently invited (Click on someone to kick him from the list):");
 		output_notl("`n`n");
-		if ($players) {
-			$nameplayers=explode(",",$players);
-			$sql="SELECT acctid, name from ".db_prefix("accounts")." WHERE ";
-			while (list($key,$val)=each($nameplayers)) {
-				$sql.=" acctid=".$val." OR";
-			} 
-			$sql=substr($sql,0,strlen($sql)-3);
-			$result=db_query($sql);
-			while ($row=db_fetch_assoc($result)) {
-				rawoutput("<a href='$locallink&mode=kick&who={$row['acctid']}'>");
-				output_notl("`@".$row['name']."`@");
-				rawoutput("</a>");
-				addnav("","$locallink&mode=kick&who={$row['acctid']}");
-				output_notl("`n");
-			}
-		} else output("`^None!");
+                $nameplayers = [];
+                if ($players) {
+                        $nameplayers = array_values(array_filter(array_map('intval', explode(',', $players))));
+                }
+
+                if ($nameplayers) {
+                        $connection = Database::getDoctrineConnection();
+                        $accountsTable = Database::prefix('accounts');
+
+                        $result = $connection->executeQuery(
+                                "SELECT acctid, name FROM {$accountsTable} WHERE acctid IN (:acctids)",
+                                [
+                                        'acctids' => $nameplayers,
+                                ],
+                                [
+                                        'acctids' => ArrayParameterType::INTEGER,
+                                ]
+                        );
+
+                        while (($row = $result->fetchAssociative()) !== false) {
+                                rawoutput("<a href='$locallink&mode=kick&who={$row['acctid']}'>");
+                                output_notl("`@".$row['name']."`@");
+                                rawoutput("</a>");
+                                addnav("","$locallink&mode=kick&who={$row['acctid']}");
+                                output_notl("`n");
+                        }
+                } else output("`^None!");
 		addnav("Edit Gamename",$locallink."&mode=gamename");
 		if (get_module_setting("maxplayers",$game)>count($nameplayers)) {
 			addnav("Invite Player",$locallink."&mode=invite");
