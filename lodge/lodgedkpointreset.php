@@ -114,7 +114,7 @@ function lodgedkpointreset_run() {
                         if (class_exists('\\Lotgd\\ServerFunctions')) {
                                 \Lotgd\ServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
                         } elseif (class_exists('ServerFunctions')) {
-                                ServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
+                                \ServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
                         } elseif (class_exists('LotgdServerFunctions')) {
                                 LotgdServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
                         }
