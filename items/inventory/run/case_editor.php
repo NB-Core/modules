@@ -306,12 +306,15 @@
 			}
 			break;
 		case "delitem":
-			$id = httpget('id');
+			$id = (int) httpget('id');
+			// Look the item up before deleting it, its name keys a read cache too.
+			$deletedItem = get_item_by_id($id);
 			$sql = "DELETE FROM ".db_prefix("item")." WHERE itemid = $id LIMIT 1";
 			$result = db_query($sql);
 			if (db_affected_rows($result)) output("Item successfully deleted.`n`n");
 			else output("While deleting this item an error occurred. Probably someone has already deleted this item.`n`n");
-			$removed = inventory_legacy_delete_item_from_all_inventories((int) $id);
+			inventory_legacy_invalidate_item_read_caches($id, is_array($deletedItem) ? (string) $deletedItem['name'] : null);
+			$removed = inventory_legacy_delete_item_from_all_inventories($id);
 			if ($removed) output("This item has been removed %s times from players' inventories.`n`n", $removed);
 			else output("No item has been deleted from players' inventories.`n`n");
 			invalidatedatacache("item-activation-fightnav-specialties");
