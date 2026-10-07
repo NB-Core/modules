@@ -17,6 +17,7 @@ function vampirelord_bride_getmoduleinfo() {
 			"weapon"=>"Name of her Weapon,text|`QTen`qro",
 			"name"=>"Name of the Bride,text|`!S`^asam`!i",
 			"experienceloss"=>"Percentage: How many experience is lost after a fight,floatrange,1,100,1|10",
+			"testers"=>"Account IDs that skip the alignment and curse seal checks (for testing; comma separated),text|",
 		),
 	"requires"=>array(
 		"vampirelord"=>"1.1|Mike Counts, rewritten `2Oliver Brendel",
@@ -30,6 +31,17 @@ function vampirelord_bride_install() {
 }
 function vampirelord_bride_uninstall() {
 	return true;
+}
+
+/**
+ * Whether the current player is listed in the given setting (comma separated
+ * account IDs; an empty setting lists nobody).
+ */
+function vampirelord_bride_account_listed(string $setting): bool
+{
+	global $session;
+	$ids = array_filter(array_map('intval', explode(',', (string) get_module_setting($setting, 'vampirelord_bride'))));
+	return in_array((int) $session['user']['acctid'], $ids, true);
 }
 function vampirelord_bride_dohook($hookname,$args) {
 	return $args;
@@ -76,11 +88,11 @@ function vampirelord_bride_runevent($type,$link) {
 			vampirelord_bride_addimage('wedding_1.jpg');
 			$ali=vampirelord_bride_get();
 			output_notl("`n`n");
-			if ($ali==0 || $session['user']['acctid']==7) {
+			if ($ali==0 || vampirelord_bride_account_listed('testers')) {
 				$gender=(!$session['user']['sex']?translate_inline("nin"):translate_inline("cutie"));
 				output("\"`\$So, what do we have here? An evil %s trying to sneak through the woods?",$gender);
 				output(" Trying to interrupt...something?`3\"...");
-				if ((is_module_active('curse_seal') && get_module_pref('hasseal','curse_seal')>0) || $session['user']['acctid']==7) {
+				if ((is_module_active('curse_seal') && get_module_pref('hasseal','curse_seal')>0) || vampirelord_bride_account_listed('testers')) {
 					output("Her eyes narrow as she focusses you and continues... \"`\$You bear the sign of my husband. The sign only he can have bestowed you, I don't smell the `@Snake`\$ taint on you... so you fight him?");
 					addnav("Who are you?",$link."op=who");
 					addnav("Choices");
