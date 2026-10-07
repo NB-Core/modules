@@ -35,12 +35,13 @@ function vampirelord_bride_uninstall() {
 
 /**
  * Whether the current player is listed in the given setting (comma separated
- * account IDs; an empty setting lists nobody).
+ * account IDs; an empty setting lists nobody; entries that are not plain numbers
+ * are ignored).
  */
 function vampirelord_bride_account_listed(string $setting): bool
 {
 	global $session;
-	$ids = array_filter(array_map('intval', explode(',', (string) get_module_setting($setting, 'vampirelord_bride'))));
+	$ids = array_map('intval', preg_grep('/^\d+$/', array_map('trim', explode(',', (string) get_module_setting($setting, 'vampirelord_bride')))));
 	return in_array((int) $session['user']['acctid'], $ids, true);
 }
 function vampirelord_bride_dohook($hookname,$args) {
