@@ -44,9 +44,9 @@ function specialtysystem_lightning_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_lightning_fightnav(): array {
+function specialtysystem_lightning_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_lightning");
@@ -78,7 +78,7 @@ function specialtysystem_lightning_fightnav(): array {
 		specialtysystem_addfightnav("Ikazuchi Hakai","lightning8&cost=23",23);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -92,7 +92,7 @@ function specialtysystem_lightning_apply(string $skillname): void {
 	switch($skillname){
 		case "lightning1":
 			apply_buff('lightning1',array(
-				"startmsg"=>"`i`tRaigeki no Yoroi!`i`n`qYou `vsurround yourself with electricity.`b",
+				"startmsg"=>"`i`tRaigeki no Yoroi!`i`n`qYou `vsurround yourself with electricity.",
 				"name"=>"`tRaigeki no Yoroi",
 				"rounds"=>5,
 				"wearoff"=>"The electricity around you was neutralized.",
@@ -185,7 +185,7 @@ function specialtysystem_lightning_apply(string $skillname): void {
 			break;
 		case "lightning8":
 			apply_buff('lightning8',array(
-				"startmsg"=>"`^I`tkazuchi `^H`takai!`i`n`qYou `vplace your hands on the ground and send an enormous bolt of lightning that cuts through the ground towards {badguy}.`b",
+				"startmsg"=>"`^I`tkazuchi `^H`takai!`i`n`qYou `vplace your hands on the ground and send an enormous bolt of lightning that cuts through the ground towards {badguy}.",
 				"name"=>"`^I`tkazuchi `^H`takai",
 				"rounds"=>1,
 				"areadamage"=>true,
@@ -198,7 +198,7 @@ function specialtysystem_lightning_apply(string $skillname): void {
 			break;
 
 	}
-	specialtysystem_incrementuses("specialtysystem_lightning",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_lightning",(int)httpget('cost'));
 	return;
 }
 
@@ -213,7 +213,7 @@ function specialtysystem_lightning_dohook(string $hookname, array $args): array 
 	switch ($hookname) {
 	case "specialtysystem-register":
 		$args[]=array(
-			"spec_name"=>'Rai Ninjutsu',
+			"spec_name"=>'Raiton Ninjutsu',
 			"spec_colour"=>'`t',
 			"spec_shortdescription"=>'`t`bThe shocking technique!`b',
 			"spec_longdescription"=>'`5Growing up, you always loved watching lightning strikes ... so you studied rai ninjutsu, giving you the power to control lightning.',

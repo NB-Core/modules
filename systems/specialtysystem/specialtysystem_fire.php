@@ -44,9 +44,9 @@ function specialtysystem_fire_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_fire_fightnav(): array {
+function specialtysystem_fire_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_fire");
@@ -75,7 +75,7 @@ function specialtysystem_fire_fightnav(): array {
 		specialtysystem_addfightnav("`@Gamayo `\$Emu`qdan","gamaemudan&cost=11",11);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -184,7 +184,7 @@ function specialtysystem_fire_apply(string $skillname): void {
 			));
 
 	}
-	specialtysystem_incrementuses("specialtysystem_fire",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_fire",(int)httpget('cost'));
 	return;
 }
 

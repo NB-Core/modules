@@ -44,9 +44,9 @@ function specialtysystem_water_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_water_fightnav(): array {
+function specialtysystem_water_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_water");
@@ -78,7 +78,7 @@ function specialtysystem_water_fightnav(): array {
 		specialtysystem_addfightnav("Daibakure no Jutsu","water8&cost=20",20);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -200,7 +200,7 @@ function specialtysystem_water_apply(string $skillname): void {
 			break;
 
 	}
-	specialtysystem_incrementuses("specialtysystem_water",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_water",(int)httpget('cost'));
 	return;
 }
 

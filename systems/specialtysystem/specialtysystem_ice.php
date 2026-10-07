@@ -44,9 +44,9 @@ function specialtysystem_ice_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_ice_fightnav(): array {
+function specialtysystem_ice_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_ice");
@@ -75,7 +75,7 @@ function specialtysystem_ice_fightnav(): array {
 		specialtysystem_addfightnav("Souryuu Boufuusetsu","ice7&cost=20",20);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -182,7 +182,7 @@ function specialtysystem_ice_apply(string $skillname): void {
 			break;
 
 	}
-	specialtysystem_incrementuses("specialtysystem_ice",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_ice",(int)httpget('cost'));
 	return;
 }
 
