@@ -96,12 +96,17 @@ function datemanager_normalize_window(string $startdate, string $enddate, ?DateT
     $now = $now ?? new DateTimeImmutable('now');
     $currentYear = (int) $now->format('Y');
 
-    $start = DateTimeImmutable::createFromFormat('Y-m-d', sprintf('%04d-%s', $currentYear, $startdate));
-    $end = DateTimeImmutable::createFromFormat('Y-m-d', sprintf('%04d-%s', $currentYear, $enddate));
+    // '!' resets the time to midnight; without it the current time of day is
+    // filled in, which made the end date expire during its own day. The window
+    // runs from the start of the first day to the end of the last day.
+    $start = DateTimeImmutable::createFromFormat('!Y-m-d', sprintf('%04d-%s', $currentYear, $startdate));
+    $end = DateTimeImmutable::createFromFormat('!Y-m-d', sprintf('%04d-%s', $currentYear, $enddate));
 
     if (!$start || !$end) {
         return null;
     }
+
+    $end = $end->setTime(23, 59, 59);
 
     if ($end < $start) {
         if ($now < $end) {

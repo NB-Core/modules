@@ -60,6 +60,7 @@ function personalpetitions_install() {
                 // gave them the statuses 50, 51, ... in list order (empty entries
                 // included). Keep those ids so existing petitions stay in their
                 // category.
+                $customIds = array();
                 $list = get_module_setting('categories');
                 if ($list != '') {
                         $id = 50;
@@ -67,6 +68,7 @@ function personalpetitions_install() {
                                 $cat = trim($cat);
                                 if ($cat != '') {
                                         db_query("INSERT INTO $table (id,name,active) VALUES (".$id.",'".db_real_escape_string($cat)."',1)");
+                                        $customIds[] = $id;
                                 }
                                 $id++;
                         }
@@ -79,8 +81,15 @@ function personalpetitions_install() {
 
                 db_query("DELETE FROM ".db_prefix('module_settings')." WHERE modulename='personalpetitions' AND setting='categories'");
 
-                // Ensure seeded rows have default values for new columns
+                // Ensure seeded rows have default values for new columns. The
+                // petition counter only lists categories with a sortOrder, so give
+                // every seeded one a position, in the order the counter of the
+                // previous version used (custom categories first).
                 db_query("UPDATE $table SET important = 0, sortOrder = NULL");
+                $order = array_merge($customIds, array(5, 4, 0, 1, 3, 7, 6, 2));
+                foreach ($order as $pos => $statusId) {
+                        db_query("UPDATE $table SET sortOrder = ".(int)$pos." WHERE id = ".(int)$statusId);
+                }
         }
         return true;
 }
