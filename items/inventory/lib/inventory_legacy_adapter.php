@@ -276,6 +276,37 @@ function inventory_legacy_invalidate_user_read_caches($userId)
 }
 
 /**
+ * Remove an item from every inventory and invalidate the read caches of the
+ * accounts that held it.
+ *
+ * Writes that bypass the repository must invalidate the caches of every
+ * affected account, or reads keep returning the removed rows until the shared
+ * cache expires. A delete by item id cannot name those accounts up front, so
+ * they are collected first.
+ *
+ * @param int $itemId
+ *
+ * @return int Number of inventory rows removed.
+ */
+function inventory_legacy_delete_item_from_all_inventories($itemId)
+{
+    $itemId = (int) $itemId;
+    $inventory = db_prefix('inventory');
+    $holders = [];
+    $result = db_query("SELECT DISTINCT userid FROM {$inventory} WHERE itemid = {$itemId}");
+    while ($row = db_fetch_assoc($result)) {
+        $holders[] = (int) $row['userid'];
+    }
+    db_query("DELETE FROM {$inventory} WHERE itemid = {$itemId}");
+    $removed = (int) db_affected_rows();
+    foreach ($holders as $userId) {
+        inventory_legacy_invalidate_user_read_caches($userId);
+    }
+
+    return $removed;
+}
+
+/**
  * Invalidate item-level read cache keys used by repository and legacy paths.
  *
  * @param int|null                          $itemId

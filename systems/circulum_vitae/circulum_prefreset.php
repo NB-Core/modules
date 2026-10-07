@@ -43,7 +43,9 @@ function circulum_prefreset_dohook($hookname, $args) {
 			}
 			if (get_module_setting('inventoryreset')) {
 				$sql="DELETE FROM ".db_prefix("inventory")." WHERE userid=".$session['user']['acctid'].";";
-				db_query($sql);			
+				db_query($sql);
+				require_once("modules/inventory/lib/itemhandler.php");
+				inventory_legacy_invalidate_user_read_caches((int) $session['user']['acctid']);
 			}
 			if (is_module_active("prizemount")) {
 				$sql = "DELETE FROM " . db_prefix("module_userprefs") . " WHERE modulename='prizemount' AND setting='oldmount' AND userid='{$session['user']['acctid']}'";

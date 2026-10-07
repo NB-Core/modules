@@ -426,16 +426,22 @@ function recaptcha_render_v3_token(string $sitekey, string $action, string $form
                         return;
                     }
                     event.preventDefault();
+                    var submitter = event.submitter || null;
                     executeRecaptcha(true, true).then(function () {
                         handledSubmit = true;
-                        // requestSubmit() preserves native validation and legacy
-                        // onSubmit handlers such as login password hashing. Older
-                        // browsers fall back to direct submit after the token refresh.
-                        if (typeof form.requestSubmit === 'function') {
-                            form.requestSubmit();
-                        } else {
-                            form.submit();
+                        // Native validation and inline onsubmit handlers (such as
+                        // legacy login password hashing) already ran for this
+                        // submit event. Dispatching another one with
+                        // requestSubmit() would run them twice, so send the form
+                        // directly and carry the clicked button's name along.
+                        if (submitter && submitter.name) {
+                            var carrier = document.createElement('input');
+                            carrier.type = 'hidden';
+                            carrier.name = submitter.name;
+                            carrier.value = submitter.value;
+                            form.appendChild(carrier);
                         }
+                        HTMLFormElement.prototype.submit.call(form);
                     });
                 });
             }

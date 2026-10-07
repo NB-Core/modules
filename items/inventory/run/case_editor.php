@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 	page_header("Item Editor");
 	require_once("lib/superusernav.php");
 	superusernav();
@@ -311,9 +311,8 @@
 			$result = db_query($sql);
 			if (db_affected_rows($result)) output("Item successfully deleted.`n`n");
 			else output("While deleting this item an error occurred. Probably someone has already deleted this item.`n`n");
-			$sql = "DELETE FROM ".db_prefix("inventory")." WHERE itemid = $id";
-			$result = db_query($sql);
-			if (db_affected_rows($result)) output("This item has been removed %s times from players' inventories.`n`n", db_affected_rows($result));
+			$removed = inventory_legacy_delete_item_from_all_inventories((int) $id);
+			if ($removed) output("This item has been removed %s times from players' inventories.`n`n", $removed);
 			else output("No item has been deleted from players' inventories.`n`n");
 			invalidatedatacache("item-activation-fightnav-specialties");
 			invalidatedatacache("item-activation-forest");

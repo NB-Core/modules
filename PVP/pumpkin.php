@@ -247,9 +247,8 @@ function pumpkin_run(){
 			page_header("Superuser Halloween Controlcenter");
 			$sql="SELECT i.itemid AS itemid FROM ".db_prefix("item")." AS i WHERE i.name='$name';";
 			$row=db_fetch_assoc(db_query($sql));
-			$sql="DELETE FROM ".db_prefix('inventory')." WHERE itemid=".$row['itemid'];
-			db_query($sql);
-			output("Affected rows: %s",db_affected_rows());
+			require_once("modules/inventory/lib/itemhandler.php");
+			output("Affected rows: %s",inventory_legacy_delete_item_from_all_inventories($row['itemid']));
 			superusernav();
 			page_footer();
 			break;
