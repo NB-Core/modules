@@ -80,6 +80,13 @@ function advertisingtracker_dohook($hookname,$args){
 function advertisingtracker_run(){
 	global $session;
 	$op=httpget('op');
+	// The navs below are shown by rank; require the same rank for the action itself.
+	$needed=SU_EDIT_USERS;
+	if ($op=="") $needed=SU_EDIT_COMMENTS;
+	if ($op=="wipe" || $op=="presearchmail" || $op=="searchmail") $needed=SU_MEGAUSER;
+	if (($session['user']['superuser'] & $needed)!=$needed) {
+		redirect("superuser.php");
+	}
 	require_once("lib/superusernav.php");
 	superusernav();
 	page_header("Advertising Tracker");
@@ -123,7 +130,7 @@ function advertisingtracker_run(){
 			output("`4Think carefully before you do this! The char gets deleted, so the char restorer (if installed) will work. Though, it's a bad thing. ONLY do this if you have an absolute jerk on your server you want to get off immediately and still have his actions logged.`n`n");
 			switch ($action) {
 				case "reallywipe":
-					$target=httpget('target');
+					$target=(int)httpget('target');
 					$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1";
 					$result=db_query($sql);
 					$account=db_fetch_assoc($result);
@@ -171,7 +178,7 @@ function advertisingtracker_run(){
 					break;
 					
 				case "confirm":
-					$target=httpget('target');
+					$target=(int)httpget('target');
 					$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1";
 					$result=db_query($sql);
 					$row=db_fetch_assoc($result);

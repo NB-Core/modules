@@ -39,6 +39,10 @@ function showmuted_dohook($hookname,$args){
 function showmuted_run(){
 	global $session;
 	$op=httpget('op');
+	// Same ranks as the superuser link.
+	if (!($session['user']['superuser'] & (SU_EDIT_COMMENTS|SU_EDIT_PETITIONS))) {
+		redirect("superuser.php");
+	}
 	require_once("lib/superusernav.php");
 	superusernav();
 	page_header("Muted Users Overview");
