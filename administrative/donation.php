@@ -192,6 +192,9 @@ function get_percent(){
 	if ($have == 0) {
 		$percent = 0;
 		$roundpercent = 0;
+	} elseif ($needed <= 0) {
+		// No goal set: any donation this month counts as reaching it.
+		$roundpercent = 100;
 	} else {
 		$percent = $have / $needed * 100;
 		$roundpercent = ceil($percent);

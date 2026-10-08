@@ -16,7 +16,7 @@ function wintercastle_getmoduleinfo(){
 }
 
 function wintercastle_install(){
-	module_addhook("Village");
+	module_addhook("village");
 	return true;
 }
 

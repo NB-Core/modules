@@ -20,7 +20,7 @@ function hauntedhouse_getmoduleinfo(){
 }
 
 function hauntedhouse_install(){
-	module_addhook("Village");
+	module_addhook("village");
 	return true;
 }
 

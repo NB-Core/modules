@@ -19,6 +19,7 @@ function vending_getmoduleinfo(){
 }
 function vending_install(){
 	module_addeventhook("village","\$count=get_module_pref(\"count\", \"vending\");return (\$count?0:50);");
+	module_addhook("newday");
 	return true;
 }
 function vending_uninstall(){
