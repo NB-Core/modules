@@ -44,9 +44,9 @@ function specialtysystem_medical_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_medical_fightnav(): array {
+function specialtysystem_medical_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_medical");
@@ -78,7 +78,7 @@ function specialtysystem_medical_fightnav(): array {
 		specialtysystem_addfightnav("Souzou Saisei","medical8&cost=20",20);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -190,7 +190,7 @@ function specialtysystem_medical_apply(string $skillname): void {
 			break;
 
 	}
-	specialtysystem_incrementuses("specialtysystem_medical",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_medical",(int)httpget('cost'));
 	return;
 }
 

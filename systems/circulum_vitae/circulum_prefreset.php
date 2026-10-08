@@ -12,7 +12,7 @@ function circulum_prefreset_getmoduleinfo(){
 			"Circulum Vitae - Preferences,title",
 				"Note: Separate via comma and use the filename of the module - like lover or ella or dag,note",
 				"reset"=>"Which module preferences should be deleted when somebody does a CV?,text|",
-                                "inventoryreset"=>"Reset (if installed!) the inventory of a user who walks the fame?,bool|1",
+                "inventoryreset"=>"Reset (if installed!) the inventory of a user who walks the fame?,bool|1",
 			),		
 		"requires"=>array(
 			"circulum"=>"1.0|Circulum Vitae by `2Oliver Brendel",
@@ -43,7 +43,9 @@ function circulum_prefreset_dohook($hookname, $args) {
 			}
 			if (get_module_setting('inventoryreset')) {
 				$sql="DELETE FROM ".db_prefix("inventory")." WHERE userid=".$session['user']['acctid'].";";
-				db_query($sql);			
+				db_query($sql);
+				require_once("modules/inventory/lib/itemhandler.php");
+				inventory_legacy_invalidate_user_read_caches((int) $session['user']['acctid']);
 			}
 			if (is_module_active("prizemount")) {
 				$sql = "DELETE FROM " . db_prefix("module_userprefs") . " WHERE modulename='prizemount' AND setting='oldmount' AND userid='{$session['user']['acctid']}'";

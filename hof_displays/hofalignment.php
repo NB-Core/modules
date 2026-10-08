@@ -9,7 +9,7 @@ function hofalignment_getmoduleinfo(){
 		"download"=>"",
 		"description"=>"Show the most good or evil in the HOF",
 		"requires"=>array(
-		"alignment"=>"1.72|WebPixie<br> `#Lonny Luberts<br>`^and Chris Vorndran",
+		"alignment"=>"1.9|WebPixie<br> `#Lonny Luberts<br>`^and Chris Vorndran",
 		),
 	);
 	return $infos;

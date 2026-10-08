@@ -44,9 +44,9 @@ function specialtysystem_basic_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_basic_fightnav(): array {
+function specialtysystem_basic_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_basic");
@@ -59,7 +59,7 @@ function specialtysystem_basic_fightnav(): array {
 		specialtysystem_addfightnav("Bunshin no Jutsu","basic3&cost=1",1);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -133,7 +133,7 @@ function specialtysystem_basic_apply(string $skillname): void {
 			break;
 		break;
 	}
-	specialtysystem_incrementuses("specialtysystem_basic",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_basic",(int)httpget('cost'));
 	return;
 }
 

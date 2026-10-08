@@ -44,9 +44,9 @@ function specialtysystem_wind_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_wind_fightnav(): array {
+function specialtysystem_wind_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_wind");
@@ -76,7 +76,7 @@ $uses,specialtysystem_getskillpoints("specialtysystem_wind"));
 		specialtysystem_addfightnav("Renkuudan","renkuudan&cost=20",20);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -91,7 +91,7 @@ function specialtysystem_wind_apply(string $skillname): void {
 		case "wind1":
 			apply_buff('wind1',array(
 				"startmsg"=>"`i`2Kaze no Yoroi!`i`n`qYou `gcreate a barrier of wind 
-around yourself.`b",
+around yourself.",
 				"name"=>"`2Kaze no Yoroi",
 				"rounds"=>5,
 				"wearoff"=>"The wind that surrounds you settles.",
@@ -188,7 +188,7 @@ and shoots a large ball of compressed air and chakra at {badguy}!",
 			));
 
 	}
-	specialtysystem_incrementuses("specialtysystem_wind",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_wind",(int)httpget('cost'));
 	return;
 }
 

@@ -52,8 +52,15 @@ function pvpbalance_uninstall(){
 
 
 function pvpbalance_dohook($hookname,$args){
-	global $session;
-	switch ($hookname)
+        global $session;
+        $hookResult = modulehook('pvpbalance-allow-execution', ['hookname' => $hookname, 'args' => $args, 'continue' => true]);
+        if (isset($hookResult['args'])) {
+                $args = $hookResult['args'];
+        }
+        if (isset($hookResult['continue']) && ! $hookResult['continue']) {
+                return $args;
+        }
+        switch ($hookname)
 	{
 		case "pvpmodifytargets":
 			$adjust=get_module_setting("adjustment");

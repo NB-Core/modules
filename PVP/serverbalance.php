@@ -1,5 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
+use Doctrine\DBAL\Exception as DBALException;
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 function serverbalance_getmoduleinfo(){
 $info = array(
 	"name"=>"Serverbalance",
@@ -56,51 +62,120 @@ function serverbalance_dohook($hookname, $args){
 }
 
 function serverbalance_run(){
-	global $session;
-	$op = httpget('op');
-	require_once("./lib/superusernav.php");
-	superusernav();
-	page_header("Serverbalance");
-	addnav("Refresh","runmodule.php?module=serverbalance");
-	addnav("Clear Stats","runmodule.php?module=serverbalance&op=clear");
-	switch ($op) {
-		case "clear":
-			$sql="DELETE FROM ".db_prefix("module_objprefs")." WHERE modulename='serverbalance';";
-			$result=db_query($sql);
-			if ($result) {
-				output("Stats cleared.");
-			} else {
-				output("An error happened.");
-			}
-			break;
-		default:
-			$i=0;
-			$sql="SELECT a.value as time, b.value as wealth,a.objid as dk
-						FROM  ".db_prefix("module_objprefs")."  AS b 
-						LEFT JOIN  ".db_prefix("module_objprefs")." AS a 
-						ON a.objid = b.objid WHERE a.modulename='serverbalance' AND a.objtype='Stats' AND
-						b.modulename='serverbalance' AND b.objtype='Stats' AND
-						a.setting='Time' AND
-						a.setting<>b.setting";
-			$result = db_query($sql);
-			rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
-			rawoutput("<tr class='trhead'><td>". translate_inline("Dk-#")."</td><td>".translate_inline("Dragonage avg")."</td><td>".translate_inline("Gold avg")."</td><td>". translate_inline("#Players")."</td></tr>");
-			while ($row=db_fetch_assoc($result)) {
-				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
-				output_notl($row['dk']);
-				rawoutput("</td><td>");
-				output_notl($row['time']);
-				rawoutput("</td><td>");
-				output_notl($row['wealth']);
-				rawoutput("</td><td>");
-				output_notl(get_module_objpref("All",$row['dk'],"Players"));
-				rawoutput("</td></tr>");
-				$i++;
-				}
-		break;
-	}
-	rawoutput("</table>");
-	page_footer();
+        global $session;
+        $op = httpget('op');
+        require_once("./lib/superusernav.php");
+        superusernav();
+        page_header("Serverbalance");
+        addnav("Refresh","runmodule.php?module=serverbalance");
+        addnav("Clear Stats","runmodule.php?module=serverbalance&op=clear");
+
+        $connection = Database::getDoctrineConnection();
+        $table      = Database::prefix('module_objprefs');
+
+        switch ($op) {
+                case "clear":
+                        try {
+                                $connection->executeStatement(
+                                        "DELETE FROM {$table} WHERE modulename = :module",
+                                        [
+                                                'module' => 'serverbalance',
+                                        ],
+                                        [
+                                                'module' => ParameterType::STRING,
+                                        ]
+                                );
+                                output("Stats cleared.");
+                        } catch (DBALException $e) {
+                                output("An error happened.");
+                        }
+                        break;
+                default:
+                        $i = 0;
+
+                        $playersQuery = $connection->createQueryBuilder();
+                        $playersQuery
+                                ->select('players_pref.objid AS dk', 'players_pref.value AS players')
+                                ->from($table, 'players_pref')
+                                ->where('players_pref.modulename = :module')
+                                ->andWhere('players_pref.objtype = :allType')
+                                ->andWhere('players_pref.setting = :playersSetting')
+                                ->setParameters(
+                                        [
+                                                'module'         => 'serverbalance',
+                                                'allType'        => 'All',
+                                                'playersSetting' => 'Players',
+                                        ],
+                                        [
+                                                'module'         => ParameterType::STRING,
+                                                'allType'        => ParameterType::STRING,
+                                                'playersSetting' => ParameterType::STRING,
+                                        ]
+                                );
+
+                        $playerRows = $playersQuery->executeQuery()->fetchAllAssociative();
+                        $players    = [];
+
+                        foreach ($playerRows as $playerRow) {
+                                $players[(int) $playerRow['dk']] = (int) $playerRow['players'];
+                        }
+
+                        $statsQuery = $connection->createQueryBuilder();
+                        $statsQuery
+                                ->select('time_pref.objid AS dk', 'time_pref.value AS time', 'wealth_pref.value AS wealth')
+                                ->from($table, 'time_pref')
+                                ->innerJoin(
+                                        'time_pref',
+                                        $table,
+                                        'wealth_pref',
+                                        'time_pref.objid = wealth_pref.objid'
+                                )
+                                ->where('time_pref.modulename = :module')
+                                ->andWhere('time_pref.objtype = :statsType')
+                                ->andWhere('time_pref.setting = :timeSetting')
+                                ->andWhere('wealth_pref.modulename = :module')
+                                ->andWhere('wealth_pref.objtype = :statsType')
+                                ->andWhere('wealth_pref.setting = :wealthSetting')
+                                ->orderBy('time_pref.objid')
+                                ->setParameters(
+                                        [
+                                                'module'        => 'serverbalance',
+                                                'statsType'     => 'Stats',
+                                                'timeSetting'   => 'Time',
+                                                'wealthSetting' => 'Wealth',
+                                        ],
+                                        [
+                                                'module'        => ParameterType::STRING,
+                                                'statsType'     => ParameterType::STRING,
+                                                'timeSetting'   => ParameterType::STRING,
+                                                'wealthSetting' => ParameterType::STRING,
+                                        ]
+                                );
+
+                        $rows = $statsQuery->executeQuery()->fetchAllAssociative();
+
+                        rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
+                        rawoutput("<tr class='trhead'><td>". translate_inline("Dk-#")."</td><td>".translate_inline("Dragonage avg")."</td><td>".translate_inline("Gold avg")."</td><td>". translate_inline("#Players")."</td></tr>");
+
+                        foreach ($rows as $row) {
+                                $dk           = (int) $row['dk'];
+                                $playerNumber = $players[$dk] ?? 0;
+
+                                rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
+                                output_notl((string) $dk);
+                                rawoutput("</td><td>");
+                                output_notl($row['time']);
+                                rawoutput("</td><td>");
+                                output_notl($row['wealth']);
+                                rawoutput("</td><td>");
+                                output_notl((string) $playerNumber);
+                                rawoutput("</td></tr>");
+                                $i++;
+                        }
+                break;
+        }
+        rawoutput("</table>");
+        page_footer();
 
 }
 ?>

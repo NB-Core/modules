@@ -433,7 +433,8 @@ class TranslationWizard {
                 if (array_key_exists($check,$legal_start_dirs)) continue;
             }
             while ($entry = $d->read()) {
-                if (substr($entry,strrpos($entry,"."))==".php"){
+                // PHP 8 safety: pathinfo handles filenames without a dot.
+                if (pathinfo($entry, PATHINFO_EXTENSION) === 'php') {
                     array_push($files, "$entry");
                 }
             }
@@ -476,7 +477,8 @@ class TranslationWizard {
         $back=array();
         while($entry = $d->read()) {
             if ($entry[0] == '.') continue;
-            if (substr($entry,strrpos($entry, '.')) == ".php") continue;
+            // PHP 8 safety: pathinfo handles filenames without a dot.
+            if (pathinfo($entry, PATHINFO_EXTENSION) === 'php') continue;
             $ndir = $base . "/" . $entry;
             $test = preg_replace("!^\./!", "//", $ndir);
             if (is_dir($ndir)) {
@@ -487,4 +489,3 @@ class TranslationWizard {
         return $back;
     }
 }
-

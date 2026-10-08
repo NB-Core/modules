@@ -6,6 +6,8 @@ use Lotgd\MySQL\Database;
 
 // Itemhandler by Christian Rutsch (c) 2005
 
+require_once __DIR__ . '/inventory_legacy_adapter.php';
+
 mydefine("HOOK_NEWDAY", 1);
 mydefine("HOOK_FOREST", 2);
 mydefine("HOOK_VILLAGE", 4);
@@ -15,7 +17,15 @@ mydefine("HOOK_TRAIN", 32);
 mydefine("HOOK_INVENTORY", 64);
 //mydefine("HOOK_DRAGONKILL", 64);
 
+/**
+ * Build a sanitized buff array from an itembuffs row for apply_buff().
+ *
+ * Input: integer buff id from the module.
+ * Output: associative array of buff properties filtered with existing inclusion
+ * rules; name falls back to buffshortname, then buffname, then a neutral label.
+ */
 function get_buff($buffid) {
+	$buffid = (int) $buffid;
 	$sql = "SELECT * FROM ".db_prefix("itembuffs")." WHERE buffid = $buffid";
 	$result = db_query_cached($sql, "inventory-buff-$buffid", 525600);
 	$buff = db_fetch_assoc($result);
@@ -23,43 +33,48 @@ function get_buff($buffid) {
 	// Here we'll sanitize the buff a little, so there are no values in it
 	// which will actually cause output but which don't have an effect
 	$newbuff = array();
-	if ($buff['atkmod'] != "0" && $buff['atkmod'] != "1" && $buff['atkmod'] != "") $new_buff['atkmod'] = $buff['atkmod'];
-	if ($buff['defmod'] != "0" && $buff['defmod'] != "1" && $buff['defmod'] != "") $new_buff['defmod'] = $buff['defmod'];
-	if ($buff['dmgmod'] != "0" && $buff['dmgmod'] != "1" && $buff['dmgmod'] != "") $new_buff['dmgmod'] = $buff['dmgmod'];
-	if ($buff['badguyatkmod'] != "0" && $buff['badguyatkmod'] != "1" && $buff['badguyatkmod'] != "") $new_buff['badguyatkmod'] = $buff['badguyatkmod'];
-	if ($buff['badguydefmod'] != "0" && $buff['badguydefmod'] != "1" && $buff['badguydefmod'] != "") $new_buff['badguydefmod'] = $buff['badguydefmod'];
-	if ($buff['badguydmgmod'] != "0" && $buff['badguydmgmod'] != "1" && $buff['badguydmgmod'] != "") $new_buff['badguydmgmod'] = $buff['badguydmgmod'];
-	if ($buff['invulnerable'] == "1") $new_buff['invulnerable'] = 1;
-	if ($buff['dmgshield'] != "0" && $buff['dmgshield'] != "") $new_buff['dmgshield'] = $buff['dmgshield'];
-	if ($buff['regen'] != "0" && $buff['regen'] != "") $new_buff['regen'] = $buff['regen'];
-	if ($buff['lifetap'] != "0" && $buff['lifetap'] != "") $new_buff['lifetap'] = $buff['lifetap'];
+	if ($buff['atkmod'] != "0" && $buff['atkmod'] != "1" && $buff['atkmod'] != "") $newbuff['atkmod'] = $buff['atkmod'];
+	if ($buff['defmod'] != "0" && $buff['defmod'] != "1" && $buff['defmod'] != "") $newbuff['defmod'] = $buff['defmod'];
+	if ($buff['dmgmod'] != "0" && $buff['dmgmod'] != "1" && $buff['dmgmod'] != "") $newbuff['dmgmod'] = $buff['dmgmod'];
+	if ($buff['badguyatkmod'] != "0" && $buff['badguyatkmod'] != "1" && $buff['badguyatkmod'] != "") $newbuff['badguyatkmod'] = $buff['badguyatkmod'];
+	if ($buff['badguydefmod'] != "0" && $buff['badguydefmod'] != "1" && $buff['badguydefmod'] != "") $newbuff['badguydefmod'] = $buff['badguydefmod'];
+	if ($buff['badguydmgmod'] != "0" && $buff['badguydmgmod'] != "1" && $buff['badguydmgmod'] != "") $newbuff['badguydmgmod'] = $buff['badguydmgmod'];
+	if ($buff['invulnerable'] == "1") $newbuff['invulnerable'] = 1;
+	if ($buff['dmgshield'] != "0" && $buff['dmgshield'] != "") $newbuff['dmgshield'] = $buff['dmgshield'];
+	if ($buff['regen'] != "0" && $buff['regen'] != "") $newbuff['regen'] = $buff['regen'];
+	if ($buff['lifetap'] != "0" && $buff['lifetap'] != "") $newbuff['lifetap'] = $buff['lifetap'];
 	if ($buff['minioncount'] != "0" && $buff['minioncount'] != "") {
-		$new_buff['minioncount'] = $buff['minioncount'];
-		$new_buff['maxbadguydamage'] = $buff['maxbadguydamage'];
-		$new_buff['minbadguydamage'] = $buff['minbadguydamage'];
-		$new_buff['maxgoodguydamage'] = $buff['maxgoodguydamage'];
-		$new_buff['mingoodguydamage'] = $buff['mingoodguydamage'];
+		$newbuff['minioncount'] = $buff['minioncount'];
+		$newbuff['maxbadguydamage'] = $buff['maxbadguydamage'];
+		$newbuff['minbadguydamage'] = $buff['minbadguydamage'];
+		$newbuff['maxgoodguydamage'] = $buff['maxgoodguydamage'];
+		$newbuff['mingoodguydamage'] = $buff['mingoodguydamage'];
 	}
-	$new_buff['rounds'] = $buff['rounds'];
-	$new_buff['startmsg'] = $buff['startmsg'];
-	$new_buff['roundmsg'] = $buff['roundmsg'];
-	$new_buff['wearoff'] = $buff['wearoff'];
-	$new_buff['effectfailmsg'] = $buff['effectfailmsg'];
-	$new_buff['effectnodmgmsg'] = $buff['effectnodmgmsg'];
-	$new_buff['effectmsg'] = $buff['effectmsg'];
-	$new_buff['allowinpvp'] = $buff['allowinpvp'];
-	$new_buff['allowintrain'] = $buff['allowintrain'];
-	$new_buff['survivenewday'] = $buff['survivenewday'];
-	$new_buff['startmsg'] = $buff['startmsg'];
-	$new_buff['wearoff'] = $buff['wearoff'];
+	$newbuff['rounds'] = $buff['rounds'];
+	$newbuff['startmsg'] = $buff['startmsg'];
+	$newbuff['roundmsg'] = $buff['roundmsg'];
+	$newbuff['wearoff'] = $buff['wearoff'];
+	$newbuff['effectfailmsg'] = $buff['effectfailmsg'];
+	$newbuff['effectnodmgmsg'] = $buff['effectnodmgmsg'];
+	$newbuff['effectmsg'] = $buff['effectmsg'];
+	$newbuff['allowinpvp'] = $buff['allowinpvp'];
+	$newbuff['allowintrain'] = $buff['allowintrain'];
+	$newbuff['survivenewday'] = $buff['survivenewday'];
 
-	if ($buff['buffshortname'] == "") $new_buff['name'] = $item['name'];
-	else $new_buff['name'] = $buff['buffshortname'];
+	// Avoid undefined-variable access: use stable buff name fields, then neutral fallback.
+	if ($buff['buffshortname'] != "") {
+		$newbuff['name'] = $buff['buffshortname'];
+	} elseif ($buff['buffname'] != "") {
+		$newbuff['name'] = $buff['buffname'];
+	} else {
+		// This label can be visible to players, so keep it localized.
+		$newbuff['name'] = translate_inline("Unnamed Buff");
+	}
 
-	foreach ($new_buff as $property=>$value)
-		$new_buff[$property] = preg_replace("/\\n/", "", $value);
+	foreach ($newbuff as $property=>$value)
+		$newbuff[$property] = preg_replace("/\\n/", "", $value);
 
-	return $new_buff;
+	return $newbuff;
 }
 
 function display_item_fightnav($result, $args) {
@@ -92,32 +107,10 @@ function display_item_nav($hookname, $return = false) {
                 $hookname = $hookname_override;
         }
         $constant = constant("HOOK_" . strtoupper($hookname));
-        $itemTable = Database::prefix("item");
-        $inventoryTable = Database::prefix("inventory");
         $acctid = (int) $session['user']['acctid'];
-        $conn = Database::getDoctrineConnection();
-        $sql = "SELECT {$itemTable}.*, inv.quantity
-                FROM {$itemTable}
-                INNER JOIN (
-                        SELECT itemid,
-                                SUM(IF({$inventoryTable}.charges > 1, {$inventoryTable}.charges, 1)) AS quantity
-                        FROM {$inventoryTable}
-                        WHERE {$inventoryTable}.userid = :userid
-                        GROUP BY {$inventoryTable}.itemid
-                ) AS inv ON {$itemTable}.itemid = inv.itemid
-                WHERE ({$itemTable}.activationhook & :hook)";
-        $result = $conn->executeQuery(
-                $sql,
-                [
-                        'userid' => $acctid,
-                        'hook' => (int) $constant,
-                ],
-                [
-                        'userid' => ParameterType::INTEGER,
-                        'hook' => ParameterType::INTEGER,
-                ]
-        );
-        $items = $result->fetchAllAssociative();
+        // Compatibility contract: keep navigation text/order identical while
+        // routing high-frequency hook reads through repository abstractions.
+        $items = inventory_legacy_get_read_repository()->getActivatableItemsForHook($acctid, (int) $constant);
 
         if ($items) {
                 addnav("Items");
@@ -163,48 +156,15 @@ function run_newday_buffs($result) {
 }
 
 function get_item_by_name($itemname) {
-        $conn = Database::getDoctrineConnection();
-        $table = Database::prefix("item");
-        $result = $conn->executeQuery(
-                "SELECT * FROM {$table} WHERE name = :name LIMIT 1",
-                [
-                        'name' => $itemname,
-                ],
-                [
-                        'name' => ParameterType::STRING,
-                ]
-        );
-        $item = $result->fetchAssociative();
-        if (!$item)
-                return false;
-        else
-                return $item;
+        return inventory_legacy_get_item_by_name((string) $itemname);
 }
 
 function get_item_by_id($itemid) {
-        $conn = Database::getDoctrineConnection();
-        $table = Database::prefix("item");
-        $result = $conn->executeQuery(
-                "SELECT * FROM {$table} WHERE itemid = :itemid LIMIT 1",
-                [
-                        'itemid' => (int) $itemid,
-                ],
-                [
-                        'itemid' => ParameterType::INTEGER,
-                ]
-        );
-        $item = $result->fetchAssociative();
-        if (!$item)
-                return false;
-        else
-                return $item;
+        return inventory_legacy_get_item_by_id((int) $itemid);
 }
 
 function get_item($item){
-	if(!is_numeric($item))
-		return get_item_by_name($item);
-	else
-		return get_item_by_id($item);
+	return inventory_legacy_get_item($item);
 }
 
 function get_random_item($class = false) {
@@ -248,28 +208,10 @@ function add_item_by_id($itemid, $qty=1, $user=0, $specialvalue="", $sellvaluego
         if ($qty < 1) return false;
         if ($user === 0) $user = $session['user']['acctid'];
         $conn = Database::getDoctrineConnection();
-        $inventory = Database::prefix("inventory");
         $item = Database::prefix("item");
-        $sql = "SELECT COUNT(inv.itemid) AS totalcount, it.weight AS totalweight
-                FROM {$inventory} AS inv
-                INNER JOIN {$item} AS it ON it.itemid = inv.itemid
-                WHERE inv.userid = :userid
-                GROUP BY inv.itemid, it.weight";
-        $result = $conn->executeQuery(
-                $sql,
-                [
-                        'userid' => (int) $user,
-                ],
-                [
-                        'userid' => ParameterType::INTEGER,
-                ]
-        );
-        $totalcount = 0;
-        $totalweight = 0;
-        while($row=$result->fetchAssociative()){
-                $totalcount += $row['totalcount'];
-                $totalweight += $row['totalweight'] * $row['totalcount'];
-        }
+        $capacityStats = inventory_legacy_get_read_repository()->getCapacityStatsForUser((int) $user);
+        $totalcount = (int) $capacityStats['totalcount'];
+        $totalweight = (int) $capacityStats['totalweight'];
         $maxcount = get_module_setting("limit", "inventory");
         $maxweight = get_module_setting("weight", "inventory");
         if ($maxcount != 0 && $totalcount >= $maxcount) {
@@ -298,109 +240,43 @@ function add_item_by_id($itemid, $qty=1, $user=0, $specialvalue="", $sellvaluego
                 if ($sellvaluegems === false) $sellvaluegems = round($item_raw['gems'] * (get_module_setting("sellgems", "inventory")/100));
                 if ($charges === false) $charges = $item_raw['charges'];
                 $charges = (int) $charges; //needs to be integer for the insert
-                if (isset($item_raw['uniqueforserver']) && $item_raw['uniqueforserver']) {
-                        $sql = "SELECT 1 FROM {$inventory} WHERE itemid = :itemid LIMIT 1";
-                        $result = $conn->executeQuery(
-                                $sql,
-                                [
-                                        'itemid' => (int) $itemid,
-                                ],
-                                [
-                                        'itemid' => ParameterType::INTEGER,
-                                ]
-                        );
-                        if ($result->fetchOne()) {
+                if ((($item_raw['uniqueforserver'] ?? 0) || ($item_raw['uniqueforplayer'] ?? 0)) && (int)$qty > 1) {
+                        debug("UNIQUE item request rejected because quantity > 1 would violate uniqueness semantics.");
+                        return false;
+                }
+                $added = inventory_legacy_get_write_repository()->addItemByIdUsingKnownUniqueness(
+                        (int) $user,
+                        (int) $itemid,
+                        (int) $qty,
+                        (string) $specialvalue,
+                        (int) $sellvaluegold,
+                        (int) $sellvaluegems,
+                        (int) $charges,
+                        !empty($item_raw['uniqueforserver']),
+                        !empty($item_raw['uniqueforplayer'])
+                );
+                if (!$added) {
+                        if (isset($item_raw['uniqueforserver']) && $item_raw['uniqueforserver']) {
                                 debug("UNIQUE item has not been added because already someone else owns this!");
-                                return false;
                         }
-                }
-                if (isset($item_raw['uniqueforplayer']) && $item_raw['uniqueforplayer']) {
-                        $sql = "SELECT 1 FROM {$inventory} WHERE itemid = :itemid AND userid = :userid LIMIT 1";
-                        $result = $conn->executeQuery(
-                                $sql,
-                                [
-                                        'itemid' => (int) $itemid,
-                                        'userid' => (int) $user,
-                                ],
-                                [
-                                        'itemid' => ParameterType::INTEGER,
-                                        'userid' => ParameterType::INTEGER,
-                                ]
-                        );
-                        if ($result->fetchOne()) {
+                        if (isset($item_raw['uniqueforplayer']) && $item_raw['uniqueforplayer']) {
                                 debug("UNIQUEFORPLAYER item has not been added because this player already owns this item!");
-                                return false;
                         }
-                }
-                $sql = "INSERT INTO {$inventory} (userid, itemid, sellvaluegold, sellvaluegems, specialvalue, charges, equipped)
-                        VALUES (:userid, :itemid, :sellvaluegold, :sellvaluegems, :specialvalue, :charges, 0)";
-                $params = [
-                        'userid' => (int) $user,
-                        'itemid' => (int) $itemid,
-                        'sellvaluegold' => (int) $sellvaluegold,
-                        'sellvaluegems' => (int) $sellvaluegems,
-                        'specialvalue' => $specialvalue,
-                        'charges' => $charges,
-                ];
-                $types = [
-                        'userid' => ParameterType::INTEGER,
-                        'itemid' => ParameterType::INTEGER,
-                        'sellvaluegold' => ParameterType::INTEGER,
-                        'sellvaluegems' => ParameterType::INTEGER,
-                        'specialvalue' => ParameterType::STRING,
-                        'charges' => ParameterType::INTEGER,
-                ];
-                for ($i=0;$i<$qty;$i++) {
-                        $conn->executeStatement($sql, $params, $types);
+                        return false;
                 }
                 debuglog("has gained $qty items (ID: $itemid).");
-                invalidatedatacache("inventory-user-$user");
+                inventory_legacy_invalidate_user_read_caches((int) $user);
                 return true;
         }
 }
 
 function add_item($item, $qty=1, $user=0, $specialvalue="", $sellvaluegold=false, $sellvaluegems=false) {
-	if(!is_int($item))
-		return add_item_by_name($item, $qty, $user, $specialvalue, $sellvaluegold, $sellvaluegems);
-	else
-		return add_item_by_id($item, $qty, $user, $specialvalue, $sellvaluegold, $sellvaluegems);
+	return inventory_legacy_add_item($item, $qty, $user, $specialvalue, $sellvaluegold, $sellvaluegems);
 }
 
 
 function get_inventory($user=0, $showhide=false, $class=0) {
-        global $session;
-
-        if ($user === 0) $user = $session['user']['acctid'];
-        $showhide = (int)$showhide;
-        $conn = Database::getDoctrineConnection();
-        $inventory = Database::prefix("inventory");
-        $item = Database::prefix("item");
-        $sql = "SELECT {$item}.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM {$item} INNER JOIN (
-                        SELECT itemid, COUNT({$inventory}.itemid) AS quantity, SUM({$inventory}.charges) AS charges, {$inventory}.sellvaluegold AS sellvaluegold, {$inventory}.sellvaluegems AS sellvaluegems
-                        FROM {$inventory}
-                        WHERE {$inventory}.userid = :userid
-                        GROUP BY {$inventory}.itemid, {$inventory}.sellvaluegold, {$inventory}.sellvaluegems ) AS inv
-                ON {$item}.itemid = inv.itemid
-                WHERE {$item}.hide = :showhide";
-        $params = [
-                'userid' => (int) $user,
-                'showhide' => $showhide,
-        ];
-        $types = [
-                'userid' => ParameterType::INTEGER,
-                'showhide' => ParameterType::INTEGER,
-        ];
-        if ($class !== 0) {
-                $sql .= " AND {$item}.class = :class";
-                $params['class'] = $class;
-                $types['class'] = ParameterType::STRING;
-        }
-        $sql .= "
-                ORDER BY
-                {$item}.class ASC,
-                {$item}.name ASC";
-        $result = $conn->executeQuery($sql, $params, $types);
-        return $result->fetchAllAssociative();
+        return inventory_legacy_get_inventory($user, $showhide, $class);
 }
 
 function get_inventory_item($itemid, $user = 0) {
@@ -411,31 +287,7 @@ function get_inventory_item($itemid, $user = 0) {
         }
         $itemid = (int)$itemid;
         if ($user === 0) $user = $session['user']['acctid'];
-        $conn = Database::getDoctrineConnection();
-        $inventory = Database::prefix("inventory");
-        $item = Database::prefix("item");
-        $sql = "SELECT {$item}.*, inv.quantity, inv.charges, inv.sellvaluegold, inv.sellvaluegems FROM {$item} INNER JOIN (
-                        SELECT itemid, COUNT({$inventory}.itemid) AS quantity, SUM({$inventory}.charges) AS charges, {$inventory}.sellvaluegold AS sellvaluegold, {$inventory}.sellvaluegems AS sellvaluegems
-                        FROM {$inventory}
-                        WHERE {$inventory}.userid = :userid
-                        GROUP BY {$inventory}.itemid, {$inventory}.sellvaluegold, {$inventory}.sellvaluegems ) AS inv
-                ON {$item}.itemid = inv.itemid
-                WHERE {$item}.itemid = :itemid
-                ORDER BY
-                {$item}.class ASC,
-                {$item}.name ASC";
-        $result = $conn->executeQuery(
-                $sql,
-                [
-                        'userid' => (int) $user,
-                        'itemid' => $itemid,
-                ],
-                [
-                        'userid' => ParameterType::INTEGER,
-                        'itemid' => ParameterType::INTEGER,
-                ]
-        );
-        return $result->fetchAssociative();
+        return inventory_legacy_get_read_repository()->getInventoryItemForUser((int) $user, $itemid);
 }
 
 function uncharge_item($itemid, $user=0) {
@@ -448,18 +300,7 @@ function uncharge_item($itemid, $user=0) {
         if ($user === 0) $user = $session['user']['acctid'];
         $conn = Database::getDoctrineConnection();
         $inventory = Database::prefix("inventory");
-        $sql = "UPDATE {$inventory} SET charges = charges - 1 WHERE itemid = :itemid AND userid = :userid AND charges >= 1 LIMIT 1";
-        $affected = $conn->executeStatement(
-                $sql,
-                [
-                        'itemid' => $itemid,
-                        'userid' => (int) $user,
-                ],
-                [
-                        'itemid' => ParameterType::INTEGER,
-                        'userid' => ParameterType::INTEGER,
-                ]
-        );
+        $affected = inventory_legacy_get_write_repository()->changeCharges((int) $user, $itemid, -1);
         if ($affected == 0)
                 debug("ERROR: Tried to uncharge item although no charges present!");
         else
@@ -477,7 +318,7 @@ function uncharge_item($itemid, $user=0) {
                 ]
         );
         if ($count) debuglog("uncharged and deleted $count items (ID: $itemid)", $user);
-        invalidatedatacache("inventory-user-$user");
+        inventory_legacy_invalidate_user_read_caches((int) $user);
 }
 
 function recharge_item($itemid, $user=0) {
@@ -488,25 +329,12 @@ function recharge_item($itemid, $user=0) {
         }
         $itemid = (int)$itemid;
         if ($user === 0) $user = $session['user']['acctid'];
-        $conn = Database::getDoctrineConnection();
-        $inventory = Database::prefix("inventory");
-        $sql = "UPDATE {$inventory} SET charges = charges + 1 WHERE itemid = :itemid AND userid = :userid LIMIT 1";
-        $affected = $conn->executeStatement(
-                $sql,
-                [
-                        'itemid' => $itemid,
-                        'userid' => (int) $user,
-                ],
-                [
-                        'itemid' => ParameterType::INTEGER,
-                        'userid' => ParameterType::INTEGER,
-                ]
-        );
+        $affected = inventory_legacy_get_write_repository()->changeCharges((int) $user, $itemid, 1);
         if ($affected == 0)
                 debug("ERROR: Tried to recharge non-present item!");
         else
                 debuglog("recharged $affected items (ID: $itemid)", $user);
-        invalidatedatacache("inventory-user-$user");
+        inventory_legacy_invalidate_user_read_caches((int) $user);
 }
 
 
@@ -597,21 +425,7 @@ function show_inventory($user = 0) {
 function check_qty_by_id($itemid, $user = 0) {
         global $session;
         if ($user === 0) $user = $session['user']['acctid'];
-        $conn = Database::getDoctrineConnection();
-        $inventory = Database::prefix("inventory");
-        $result = $conn->executeQuery(
-                "SELECT COUNT(itemid) AS qty FROM {$inventory} WHERE userid = :userid AND itemid = :itemid",
-                [
-                        'userid' => (int) $user,
-                        'itemid' => (int) $itemid,
-                ],
-                [
-                        'userid' => ParameterType::INTEGER,
-                        'itemid' => ParameterType::INTEGER,
-                ]
-        );
-        $row = $result->fetchAssociative();
-        return $row ? (int) $row['qty'] : 0;
+        return inventory_legacy_check_qty_by_id((int) $itemid, (int) $user);
 }
 
 function check_qty_by_name($itemname, $user = 0) {
@@ -620,10 +434,7 @@ function check_qty_by_name($itemname, $user = 0) {
 }
 
 function check_qty($item, $user=0) {
-	if(!is_int($item))
-		return check_qty_by_name($item, $user);
-	else
-		return check_qty_by_id($item, $user);
+	return inventory_legacy_check_qty($item, $user);
 }
 
 function remove_item_by_id($item, $qty=1, $user=0) {
@@ -631,30 +442,15 @@ function remove_item_by_id($item, $qty=1, $user=0) {
 
         if ($user === 0) $user = $session['user']['acctid'];
 
-        $conn = Database::getDoctrineConnection();
-        $inventory = Database::prefix("inventory");
-
-        $sql = "DELETE FROM {$inventory} WHERE userid = :userid AND itemid = :itemid LIMIT 1";
-        $params = [
-                'userid' => (int) $user,
-                'itemid' => (int) $item,
-        ];
-        $types = [
-                'userid' => ParameterType::INTEGER,
-                'itemid' => ParameterType::INTEGER,
-        ];
-        $removed = 0;
-        for ($i=0;$i<$qty;$i++) {
-                $affected = $conn->executeStatement($sql, $params, $types);
-                if ($affected === 0) {
-                        break;
-                }
-                $removed += $affected;
-        }
+        $removed = inventory_legacy_get_write_repository()->removeItemById(
+                (int) $user,
+                (int) $item,
+                (int) $qty
+        );
         if ($removed > 0) {
-                debuglog("removed item $item from inventory", $user);
+                debuglog("removed $removed item(s) with ID $item from inventory", $user);
         }
-        invalidatedatacache("inventory-user-$user");
+        inventory_legacy_invalidate_user_read_caches((int) $user);
         invalidatedatacache("inventory-item-$item-$user");
         return $removed;
 }
@@ -665,10 +461,7 @@ function remove_item_by_name($itemname, $qty=1, $user=0) {
 }
 
 function remove_item($item, $qty=1, $user=0) {
-	if (!is_int($item))
-		return remove_item_by_name($item, $qty, $user);
-	else
-		return remove_item_by_id($item, $qty, $user);
+	return inventory_legacy_remove_item($item, $qty, $user);
 }
 
 function shopnav($return, $class, $sell=false, $user=0, $sellall=false, $showdescription=true) {
@@ -750,12 +543,61 @@ function shopnav($return, $class, $sell=false, $user=0, $sellall=false, $showdes
 // true			If the the item got inserted.
 // false			If the the item got updated.
 
+/**
+ * Insert or update an item row.
+ *
+ * NOTE:
+ * This module runs against environments that may enforce strict SQL modes
+ * (e.g. rejecting empty strings for integer columns). To keep backward
+ * compatibility with legacy form submissions, numeric fields are normalized
+ * before persistence.
+ *
+ * @param array $injection Item field values from editor/forms.
+ * @param array|false $exclude Optional list of keys to skip during update.
+ *
+ * @return bool True when inserted, false when updated.
+ */
 function inject_item($injection, $exclude=false) {
 	// Borrowed basic idea from lotgd code. lib/http.php -> function: postparse();
 	$sql = ""; $keys = ""; $vals = ""; $i = 0;
 
+	// Normalize known numeric columns so strict SQL mode does not fail on
+	// legacy empty-string input values. Do not populate missing fields here;
+	// leave omitted columns to the database/default application logic.
+	$numericDefaults = [
+		'gold' => 0,
+		'gems' => 0,
+		'weight' => 0,
+		'charges' => 0,
+		'dragonkills' => 0,
+		'level' => 1,
+		'findchance' => 0,
+		'loosechance' => 0,
+		'dkloosechance' => 0,
+		'buffid' => 0,
+		'activationhook' => 0,
+		'droppable' => 1,
+		'hide' => 0,
+		'sellable' => 1,
+		'buyable' => 1,
+		'uniqueforserver' => 0,
+		'uniqueforplayer' => 0,
+		'equippable' => 0,
+	];
+	foreach ($numericDefaults as $field => $default) {
+		if (array_key_exists($field, $injection) && ($injection[$field] === '' || $injection[$field] === null)) {
+			$injection[$field] = $default;
+		}
+	}
+
 	$item = db_prefix("item");
-	$test = get_item($injection['itemid']);
+	// Keep itemid out of inserts when it is empty/zero-like.
+	if (isset($injection['itemid']) && (int) $injection['itemid'] <= 0) {
+		unset($injection['itemid']);
+	}
+	// Avoid undefined array-key notices when creating brand-new items.
+	$itemId = isset($injection['itemid']) ? (int) $injection['itemid'] : 0;
+	$test = $itemId > 0 ? get_item($itemId) : false;
 	debug($test);
 	if (is_array($test)) {
 		$update = array_diff_assoc($injection, $test);
@@ -775,8 +617,13 @@ function inject_item($injection, $exclude=false) {
 		if ($sql) {
 			$sql = "UPDATE $item SET $sql WHERE itemid = {$test['itemid']}";
 			db_query($sql);
-			invalidatedatacache("item-name-".$injection['name']);
-			invalidatedatacache("item-id-".$test['itemid']);
+			$oldName = isset($test['name']) ? (string) $test['name'] : '';
+			$newName = isset($injection['name']) ? (string) $injection['name'] : '';
+			// Rename-safe invalidation: clear caches for both old and new names to
+			// avoid stale name lookups and stale negative-cache markers.
+			inventory_legacy_invalidate_item_read_caches((int) $test['itemid'], [$oldName, $newName]);
+			// Inventory snapshots carry the item's columns, so refresh every holder too.
+			inventory_legacy_invalidate_item_holders((int) $test['itemid']);
 			debug("Updated Item '".$injection['name']."'. SQL = '$sql'");
 		} else {
 			debug("Nothing to update for '".$injection['name']."'");
@@ -791,6 +638,10 @@ function inject_item($injection, $exclude=false) {
 		}
 		$sql = "INSERT INTO $item ($keys) VALUES ($vals)";
 		db_query($sql);
+		$insertedId = function_exists('db_insert_id') ? (int) db_insert_id() : null;
+		// Insert-safe invalidation: clear caches by new name and inserted id (if
+		// available) so stale negative-cache markers are removed immediately.
+		inventory_legacy_invalidate_item_read_caches($insertedId, (string) $injection['name']);
 		debug("Inserted Item '".$injection['name']."'");
 		return true;
 	}

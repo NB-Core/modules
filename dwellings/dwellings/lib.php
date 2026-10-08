@@ -31,32 +31,50 @@ function dwellings_wipekeysforowner($acctid = false) {
 	db_query($sql);
 }
 
-function dwellings_teststring($z) {
-/* THANKS TO EDORIAN FOR THE BRAINSTORM */
-  $farbflag=0;
-/* bullshit if you put in only certain colors... */
-  $colorlist = array_keys(\Lotgd\Output::getInstance()->getColors());
-  if ($z=="") return 0; // check for empty stuff before entering a loop
-  for ($x=0;$z[$x];$x++) {
-        if ($farbflag) { $farbflag=0; continue; }
+/**
+ * Determine whether a string contains visible content beyond color codes.
+ *
+ * @param string $z The string to inspect.
+ *
+ * @return int 1 when visible content is present, otherwise 0.
+ */
+function dwellings_teststring($z)
+{
+    /* Thanks to Edorian for the brainstorm. */
+    $farbflag = 0;
+    $colorlist = array_keys(\Lotgd\Output::getInstance()->getColors());
+    if ($z == "") {
+        return 0;
+    }
+    $length = strlen($z);
 
-	if ($z[$x]=='`')
-	{
-	  if (in_array($z[$x+1],$colorlist))  {
-		$farbflag=1;
-		continue;
-	  }
-	  else
-	  {
-		return 0;
-	  }
+    // Use the known string length so the loop never reads beyond its last byte.
+    for ($x = 0; $x < $length; $x++) {
+        if ($farbflag) {
+            $farbflag = 0;
+            continue;
+        }
 
-	}
-	if ($z[$x]!=' ') return 1;
-	if (!isset($z[$x+1])) return 1;
-  }
+        if ($z[$x] == '`') {
+            if (isset($z[$x + 1]) && in_array($z[$x + 1], $colorlist)) {
+                $farbflag = 1;
+                continue;
+            }
 
-  return 0;
+            return 0;
+        }
+
+        if ($z[$x] != ' ') {
+            return 1;
+        }
+
+        // Preserve the legacy treatment of a final space as submitted content.
+        if (!isset($z[$x + 1])) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 function getlogin($id){
 	$sql = "SELECT login FROM ".db_prefix("accounts")." WHERE acctid=$id";

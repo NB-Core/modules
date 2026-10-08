@@ -48,6 +48,7 @@ function cityamwayr_getmoduleinfo(){
 			"travelto"=>"Where can you travel to,location|".getsetting("villagename", LOCATION_FIELDS),
 			//"cost"=>"How much does it cost for city access?,int|0",
 			"mindk"=>"How many Dragon Kills does a player have to have for access?,int|0",
+			"mindk_exempt"=>"Account IDs that may travel here regardless of Dragon Kills (comma separated),text|",
 			"worldmod"=>"Use the world module for travel instead of the Cities module?,bool|0",
 
 		),
@@ -81,6 +82,18 @@ function cityamwayr_uninstall(){
 	if ($session['user']['location'] == $gname)
 		$session['user']['location'] = $vname;
 	return true;
+}
+
+/**
+ * Whether the current player is listed in the given setting (comma separated
+ * account IDs; an empty setting lists nobody; entries that are not plain numbers
+ * are ignored).
+ */
+function cityamwayr_account_listed(string $setting): bool
+{
+	global $session;
+	$ids = array_map('intval', preg_grep('/^\d+$/', array_map('trim', explode(',', (string) get_module_setting($setting, 'cityamwayr')))));
+	return in_array((int) $session['user']['acctid'], $ids, true);
 }
 
 function cityamwayr_dohook($hookname,$args){
@@ -125,7 +138,7 @@ function cityamwayr_dohook($hookname,$args){
 		$capital = getsetting("villagename", LOCATION_FIELDS);
 		$hotkey = substr($city, 0, 1);
 		tlschema("module-cities");
-		if ($session['user']['dragonkills'] < get_module_setting("mindk") && $session['user']['acctid']!=9340) //gyu hack
+		if ($session['user']['dragonkills'] < get_module_setting("mindk") && !cityamwayr_account_listed('mindk_exempt'))
 			break;
 		if ($session['user']['location']!=$city){
 			addnav("More Dangerous Travel");

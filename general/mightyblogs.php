@@ -103,13 +103,9 @@ function mightyblogs_run(){
         $id = (int) httpget("id");
         $author = httpget("author");
         $day = httpget("day");
-        $daydate = null;
-        if ($day !== '') {
-                $daydate = DateTime::createFromFormat('Y-m-d', $day);
-                if (!$daydate || $daydate->format('Y-m-d') !== $day) {
-                        unset($day);
-                        $daydate = null;
-                }
+        $daydate = mightyblogs_parse_date_from_format('Y-m-d', $day);
+        if (!$daydate) {
+                $day = '';
         }
         $month = httpget("month");
         $conn = Database::getDoctrineConnection();
@@ -594,26 +590,45 @@ function mightyblogs_spell($input,$prefix="<span style='border: 1px dotted #FF00
 	return spell($input,$words,$prefix,$postfix);
 }
 
+/**
+ * Parse user-provided dates safely while rejecting malformed input.
+ *
+ * DateTime::createFromFormat throws a ValueError when the input contains null bytes,
+ * so we guard against that before parsing and then enforce an exact format match.
+ *
+ * @param string $format Expected date format.
+ * @param mixed  $value  Raw value from request/module context.
+ *
+ * @return DateTime|null Parsed DateTime on success, null on invalid input.
+ */
+function mightyblogs_parse_date_from_format($format, $value)
+{
+        if (!is_string($value) || strpos($value, "\0") !== false || $value === '') {
+                return null;
+        }
+
+        $parsedDate = DateTime::createFromFormat($format, $value);
+        if (!$parsedDate || $parsedDate->format($format) !== $value) {
+                return null;
+        }
+
+        return $parsedDate;
+}
+
 function mightyblogs_calendar($month,$day,$author){
         $conn = Database::getDoctrineConnection();
         $blogTable = Database::prefix('mod_mightyblogs');
         $accountsTable = Database::prefix('accounts');
         $charset = getsetting('charset', 'ISO-8859-1');
 
-        $monthDate = DateTime::createFromFormat('Y-m', $month);
-        if (!$monthDate || $monthDate->format('Y-m') !== $month) {
+        $monthDate = mightyblogs_parse_date_from_format('Y-m', $month);
+        if (!$monthDate) {
                 $monthDate = new DateTime('first day of this month');
         } else {
                 $monthDate->setDate((int)$monthDate->format('Y'), (int)$monthDate->format('m'), 1);
         }
 
-        $selectedDate = null;
-        if ($day !== '') {
-                $selectedDate = DateTime::createFromFormat('Y-m-d', $day);
-                if (!$selectedDate || $selectedDate->format('Y-m-d') !== $day) {
-                        $selectedDate = null;
-                }
-        }
+        $selectedDate = mightyblogs_parse_date_from_format('Y-m-d', $day);
 
         $displayStart = clone $monthDate;
         $dayOfWeek = (int) $displayStart->format('w');

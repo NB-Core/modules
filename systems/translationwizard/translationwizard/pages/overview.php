@@ -18,12 +18,12 @@ output_notl("`n`n");
 			{
 			$i++;
                         tw_table_row([
-                            htmlentities($row['language'], ENT_COMPAT, $coding),
-                            htmlentities($row['uri'], ENT_COMPAT, $coding),
-                            htmlentities($row['counter'], ENT_COMPAT, $coding)
+                            htmlentities((string)($row['language'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['uri'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['counter'] ?? ''), ENT_COMPAT, $coding)
                         ], $i%2==1);
-			}
-		}
+                        }
+                }
                 tw_table_close();
 output_notl("`n`n");
 $sql= "SELECT count(  tid  )  AS counter, language FROM ".db_prefix("translations")." GROUP BY language HAVING counter >1;";
@@ -38,11 +38,11 @@ tw_table_open([
 			{
 			$i++;
                         tw_table_row([
-                            htmlentities($row['language'], ENT_COMPAT, $coding),
-                            htmlentities($row['counter'], ENT_COMPAT, $coding)
+                            htmlentities((string)($row['language'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['counter'] ?? ''), ENT_COMPAT, $coding)
                         ], $i%2==1);
-			}
-		}
+                        }
+                }
                 tw_table_close();
 output_notl("`n`n");
 output("`bYour untranslated table has the following structure:`b");
@@ -60,12 +60,12 @@ tw_table_open([
 			{
 			$i++;
                     tw_table_row([
-                        htmlentities($row['language'], ENT_COMPAT, $coding),
-                        htmlentities($row['namespace'], ENT_COMPAT, $coding),
-                        htmlentities($row['counter'], ENT_COMPAT, $coding)
+                        htmlentities((string)($row['language'] ?? ''), ENT_COMPAT, $coding),
+                        htmlentities((string)($row['namespace'] ?? ''), ENT_COMPAT, $coding),
+                        htmlentities((string)($row['counter'] ?? ''), ENT_COMPAT, $coding)
                     ], $i%2==1);
-			}
-		}
+                        }
+                }
             tw_table_close();
 output_notl("`n`n");
 $sql= "SELECT count(  intext  )  AS counter, language FROM ".db_prefix("untranslated")." GROUP BY language;";
@@ -80,11 +80,11 @@ tw_table_open([
 			{
 			$i++;
                         tw_table_row([
-                            htmlentities($row['language'], ENT_COMPAT, $coding),
-                            htmlentities($row['counter'], ENT_COMPAT, $coding)
+                            htmlentities((string)($row['language'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['counter'] ?? ''), ENT_COMPAT, $coding)
                         ], $i%2==1);
-			}
-		}
+                        }
+                }
                 tw_table_close();
 output_notl("`n`n");
 output("`bYour pulled translations table has the following structure:`b");
@@ -102,12 +102,12 @@ tw_table_open([
 			{
 			$i++;
                         tw_table_row([
-                            htmlentities($row['language'], ENT_COMPAT, $coding),
-                            htmlentities($row['uri'], ENT_COMPAT, $coding),
-                            htmlentities($row['counter'], ENT_COMPAT, $coding)
+                            htmlentities((string)($row['language'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['uri'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['counter'] ?? ''), ENT_COMPAT, $coding)
                         ], $i%2==1);
-			}
-		}
+                        }
+                }
                 tw_table_close();
 output_notl("`n`n");
 $sql= "SELECT count(  intext  )  AS counter, language FROM ".db_prefix("temp_translations")." GROUP BY language;";
@@ -122,10 +122,10 @@ tw_table_open([
 			{
 			$i++;
                         tw_table_row([
-                            htmlentities($row['language'], ENT_COMPAT, $coding),
-                            htmlentities($row['counter'], ENT_COMPAT, $coding)
+                            htmlentities((string)($row['language'] ?? ''), ENT_COMPAT, $coding),
+                            htmlentities((string)($row['counter'] ?? ''), ENT_COMPAT, $coding)
                         ], $i%2==1);
-			}
-		}
+                        }
+                }
                 tw_table_close();
 

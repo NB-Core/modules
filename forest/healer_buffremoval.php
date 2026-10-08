@@ -43,6 +43,41 @@ function healer_getbadbuffs() {
 	return $bufflist;
 }
 
+/**
+ * Return a safe internal destination for the healer's return navigation.
+ *
+ * The value must survive the intermediate cure request, or the core healer may
+ * fall back to the Forest after removing a buff.
+ *
+ * @return string A validated relative PHP target, or an empty string.
+ */
+function healer_buffremoval_get_return_destination()
+{
+    global $session;
+
+    $return = httpget('return');
+    if (is_string($return) && preg_match(
+        '/^[A-Za-z0-9_-]+\.php(?:\?[A-Za-z0-9_-]+=[A-Za-z0-9_.~-]*(?:&[A-Za-z0-9_-]+=[A-Za-z0-9_.~-]*)*)?$/D',
+        $return
+    )) {
+        return $return;
+    }
+
+    $centralVillage = getsetting("villagename", LOCATION_FIELDS);
+    $hokageVillage = sanitize(get_module_setting('villagename', 'hokagevillage'));
+    $sessionLocation = isset($session['user']['location']) ? $session['user']['location'] : '';
+    // Both Forest-restricted villages need a safe fallback even though their
+    // normal hospital links include return=village.php.
+    if (
+        $sessionLocation === $centralVillage
+        || ($sessionLocation === $hokageVillage && !get_module_setting('showforest', 'hokagevillage'))
+    ) {
+        return 'village.php';
+    }
+
+    return '';
+}
+
 function healer_buffremoval_dohook($hookname,$args){
 	global $session;
 	static $healer_buffremoval_did_i_run_yet = 0;
@@ -50,6 +85,7 @@ function healer_buffremoval_dohook($hookname,$args){
 	switch($hookname){
 		case "footer-healer":
 			$action = (int)httpget('removebuff');
+			$returnDestination = healer_buffremoval_get_return_destination();
 			$goldcost = get_module_setting('price')*$session['user']['level'];
 			$badbuffs=healer_getbadbuffs();
 			require_once("lib/buffs.php");
@@ -79,7 +115,11 @@ function healer_buffremoval_dohook($hookname,$args){
 						if ($session['user']['gold']<$goldcost) {
 							addnav(array("Remove %s - %s gold",$buffrealname,$goldcost),"");
 						} else {
-							addnav(array("Remove %s - %s gold",$buffrealname,$goldcost),"healer.php?removebuff=$i");
+							$cureLink = "healer.php?removebuff=$i";
+							if ($returnDestination !== '') {
+								$cureLink .= '&return=' . rawurlencode($returnDestination);
+							}
+							addnav(array("Remove %s - %s gold",$buffrealname,$goldcost),$cureLink);
 						}
 					}
 					$i++;

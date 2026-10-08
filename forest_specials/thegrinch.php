@@ -1,10 +1,12 @@
 <?php
+
+use Lotgd\Battle;
+
 require_once("common.php");
-require_once("lib/fightnav.php");
+require_once("lib/forest.php");
 require_once("lib/http.php");
 require_once("lib/taunt.php");
 require_once("lib/events.php");
-require_once("lib/battle-skills.php");
 
 function thegrinch_getmoduleinfo(){
 	$info = array(
@@ -56,7 +58,7 @@ function thegrinch_dohook($hookname,$args){
 		case "forest":
 			$op = httpget('op');
 			//if ($op=="") {
-			addnav("`2W`@inter `2C`@hallenge");
+			addnav("`2W`@inter `2C`@hallenge`0");
 			addnav(array("%s",$grinch),"runmodule.php?module=thegrinch&op=");
 			//			}
 			break;
@@ -487,6 +489,10 @@ function thegrinch_run(){
 
 	if ($battle){
 
+		if (is_module_active('specialtysystem')) {
+			require_once("modules/specialtysystem/datafunctions.php");
+			specialtysystem_initialize_data();
+		}
 		require_once("battle.php");
 
 		if ($victory){
@@ -519,43 +525,19 @@ function thegrinch_run(){
 
 		}elseif($defeat){
 			thegrinch_log(date("Y-m-d H:i:s"),$session['user'],0,$badguy);
-			require_once("lib/forestoutcomes.php");
-			//copy forestdefeat
-			$names = array();
-			$killer = false;
-			foreach ($newenemies as $badguy) {
-				$names[] = $badguy['creaturename'];
-				if (isset($badguy['killedplayer']) && $badguy['killedplayer'] == true) $killer = $badguy['creaturename'];
-				if (isset($badguy['creaturewin']) && $badguy['creaturewin'] > "") {
-					$msg = translate_inline($badguy['creaturewin'],"battle");
-					output_notl("`b`&%s`0`b`n",$msg);
-				}
-			}
-			if (count($names) > 1) $lastname = array_pop($names);
-			$enemystring = join(", ", $names);
-			$and = translate_inline("and");
-			if (isset($lastname) && $lastname > "") $enemystring = "$enemystring $and $lastname";
-			$taunt = select_taunt_array();
-			//leave it for now, it's tricky 
-			/*if (is_array($where)) {
-			  $where=sprintf_translate($where);
-			  } else {
-			  $where=translate_inline($where);
-			  }*/
-			$where = "Grinchy-Place"; // not used before
-			$deathmessage=select_deathmessage_array(true,array("{where}"),array($where));
-			if ($deathmessage['taunt']==1) {
-				addnews("%s`n%s",$deathmessage['deathmessage'],$taunt);
-			} else {
-				addnews("%s",$deathmessage['deathmessage']);
-			}
-			//copy end forestdefeat
 			increment_module_pref('seen',1);
 			output("%s`2 leaves your battered body on the forest floor, having other things to accomplish now...`n",get_module_setting('grinch'));
+			addnews(
+				"`2%s`2 lost against %s`2 in the forest.",
+				$session['user']['name'],
+				get_module_setting('grinch')
+			);
 			$session['user']['hitpoints']=1;
 			$session['user']['alive']=true;
+			$session['user']['badguy'] = '';
+			$session['user']['specialinc'] = '';
 		}else{
-			fightnav(true,true,'runmodule.php?module=thegrinch&');
+			Battle::fightnav(true, true, 'runmodule.php?module=thegrinch&');
 		}
 	}	
 

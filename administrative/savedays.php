@@ -3,6 +3,9 @@
 // translator ready
 // mail ready
 
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 function savedays_getmoduleinfo(){
 	$info = array(
 		"name"=>"Save Days",
@@ -38,30 +41,54 @@ function savedays_dohook($hookname,$args){
 
 	switch($hookname){
 	case "newday-runonce":
-		$update="UPDATE ".db_prefix('module_userprefs')."
-				SET value = value + 1 
-				WHERE modulename = 'savedays' 
-				AND setting = 'daysmissed';";
-		db_query($update); 
-		$select="SELECT acctid
-				FROM ".db_prefix('accounts')."
-				WHERE acctid not in (SELECT userid
-									FROM module_userprefs
-									WHERE modulename = 'savedays' 
-									AND setting = 'daysmissed')";
-		$result=db_query($select);
-		$end=db_num_rows($result);
-		if($end>0){
-			$insert="INSERT 
-					INTO ".db_prefix('module_userprefs')." (modulename, setting, userid, value)
-					VALUES ";			
-			while ($row=db_fetch_assoc($result)) {
-				$userid=$row['acctid'];
-				$insert.="('savedays','daysmissed',$userid,1),";
-			}
-			$insert = substr($insert,0,strlen($insert)-1);
-			db_query($insert);
-		}
+		$connection = Database::getDoctrineConnection();
+		$moduleUserPrefsTable = Database::prefix('module_userprefs');
+		$accountsTable = Database::prefix('accounts');
+
+		$connection->executeStatement(
+			"UPDATE {$moduleUserPrefsTable}
+				SET value = value + 1
+				WHERE modulename = :module
+				AND setting = :setting",
+			[
+				'module' => 'savedays',
+				'setting' => 'daysmissed',
+			],
+			[
+				'module' => ParameterType::STRING,
+				'setting' => ParameterType::STRING,
+			]
+		);
+
+		// Give every account without a counter one in a single statement; one
+		// insert per account made the first new day after enabling the module
+		// run thousands of queries on large servers.
+		$connection->executeStatement(
+			"INSERT INTO {$moduleUserPrefsTable} (modulename, setting, userid, value)
+				SELECT :module, :setting, a.acctid, :value
+				FROM {$accountsTable} a
+				WHERE NOT EXISTS (
+					SELECT 1
+					FROM {$moduleUserPrefsTable} mup
+					WHERE mup.userid = a.acctid
+					AND mup.modulename = :module_check
+					AND mup.setting = :setting_check
+				)",
+			[
+				'module' => 'savedays',
+				'setting' => 'daysmissed',
+				'value' => '1',
+				'module_check' => 'savedays',
+				'setting_check' => 'daysmissed',
+			],
+			[
+				'module' => ParameterType::STRING,
+				'setting' => ParameterType::STRING,
+				'value' => ParameterType::STRING,
+				'module_check' => ParameterType::STRING,
+				'setting_check' => ParameterType::STRING,
+			]
+		);
 		break;
 	case "newday":
 		if(!get_module_pref("user_reject")){

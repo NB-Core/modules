@@ -62,7 +62,7 @@ function lodgenonexpiration_dohook($hookname,$args){
 		break;
 		case "motd-link":
 			if ($bought==1) {
-				$args['link']="<h3 style='margin:0; color:#FFC700' title='Your char will never expire!'>Eternal Ninja</h3>".$args['link'];
+                $args['link']="<em style='margin:0; color:#FFC700; font-size:1.2em; padding-right:10px;' title='Your char will never expire!'>Eternal Ninja</em>".$args['link'];
 			}
 			break;
 	}

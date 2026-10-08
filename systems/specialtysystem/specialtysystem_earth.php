@@ -44,9 +44,9 @@ function specialtysystem_earth_uninstall(): bool {
 /**
  * Build fight navigation entries.
  *
- * @return array
+ * @return array|false False when no jutsu is available this round.
  */
-function specialtysystem_earth_fightnav(): array {
+function specialtysystem_earth_fightnav(): array|false {
 	global $session;
 	require_once("modules/specialtysystem/functions.php");
 	$uses=specialtysystem_availableuses("specialtysystem_earth");
@@ -75,7 +75,7 @@ function specialtysystem_earth_fightnav(): array {
 		specialtysystem_addfightnav("Doryuudan","earth7&cost=18",18);
 	}
 	tlschema();
-	return specialtysystem_getfightnav();
+	return specialtysystem_getfightnav() ?? false;
 }
 
 /**
@@ -182,7 +182,7 @@ function specialtysystem_earth_apply(string $skillname): void {
 			break;
 
 	}
-	specialtysystem_incrementuses("specialtysystem_earth",httpget('cost'));
+	specialtysystem_incrementuses("specialtysystem_earth",(int)httpget('cost'));
 	return;
 }
 

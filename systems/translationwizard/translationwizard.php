@@ -39,6 +39,7 @@ function translationwizard_getmoduleinfo(): array{
 			"Access Restrictions,title",
 				"Restrictions are: search+edit the translations table + truncate untranslated,note",
 				"restricted"=>"Has the wizard restrictions for some users?,bool|0",
+				"blockedaccounts"=>"Account IDs that never get the wizard link (comma separated),text|",
 			"Auto Scan + Cleanup,title",
 				"This is only for skilled users! Its not finding everything yet,note",
 				"and your untranslated gets filled quickly if you begin to use this at start,note",
@@ -104,6 +105,18 @@ function translationwizard_uninstall(): bool {
         return $result;
 }
 
+/**
+ * Whether the current player is listed in the given setting (comma separated
+ * account IDs; an empty setting lists nobody; entries that are not plain numbers
+ * are ignored).
+ */
+function translationwizard_account_listed(string $setting): bool
+{
+	global $session;
+	$ids = array_map('intval', preg_grep('/^\d+$/', array_map('trim', explode(',', (string) get_module_setting($setting, 'translationwizard')))));
+	return in_array((int) $session['user']['acctid'], $ids, true);
+}
+
 
 /**
  * Hook dispatcher for the Translation Wizard.
@@ -119,6 +132,7 @@ function translationwizard_dohook(string $hookname, array $args): array{
         switch ($hookname) {
         case "superuser":
                 if ($session['user']['superuser'] & SU_IS_TRANSLATOR) {
+                        if (translationwizard_account_listed('blockedaccounts')) break;
                         addnav("Actions");
                         addnav("Translation Wizard","runmodule.php?module=translationwizard&op=list");
                         if (get_module_setting("blocktrans")) blocknav("untranslated.php");

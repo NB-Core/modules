@@ -6,7 +6,7 @@ These modules extend nearly every aspect of the game ranging from administrative
 
 # Old Dragonprime modules (for legacy display, old versions and may not work, unmaintained)
 
-The moduels are location in **_old_dragonprime_snapshot**.
+The modules are located in **_old_dragonprime_snapshot/**.
 
 You will find there mostly undocumented modules that were taken from dragonprime as a safety before it went down, some time before.
 This is history.
@@ -15,13 +15,15 @@ This is history.
 
 Directories group modules by purpose:
 
-- **pvp/** – player versus player extensions and events
+- **PVP/** – player versus player extensions and events
 - **administrative/** – tools for admins and moderation
 - **commentary/** – enhancements for chat and roleplay areas
+- **dwellings/** – the dwellings (housing) core, its dwelling types and add-ons
 - **forest/** – general forest related tweaks
 - **forest_specials/** – additional forest encounters and bosses
-- **general/** – cross-area features and utilities
-- **inventory/** - inventory and items
+- **general/** – cross-area features and utilities, shared libraries
+- **hof_displays/** – additional Hall of Fame pages
+- **items/** – inventory and items
 - **lodge/** – lodge upgrades
 - **mail/** – player mail quality-of-life tools
 - **mounts/** – mount related features
@@ -44,7 +46,8 @@ Below is a short description for every module. Some modules rely on others; depe
 - **newdaylog** – log information on player newday.
 - **personalpetitions** – personal petition categories for staff.
 - **petitionfixnavs** – adjusts petition navigation links.
-- **recaptcha** – add Google reCAPTCHA to forms.
+- **recaptcha** – adds Google reCAPTCHA v3 to the login, account creation and petition forms. Enter your own site key and secret key in the module settings.
+- **savedays** – grants extra turns for days a player missed (up to a configurable maximum); players can opt out.
 - **servercostlog** – log server expenses.
 - **suspendannounce** – announce server suspensions.
 - **welcomemail** – send welcome e‑mail to new users.
@@ -58,7 +61,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **dwcityhouses** - City House type for dwellings core
 - **dwellings** - Dwellings core module
 - **cityprefs** - Installs a `cityprefs` table, syncs known cities, and adds a superuser editor for managing city-specific module settings (`dwellings/cityprefs.php`).
-- **dwshack** - Shack type for dwellings core
+- **dwshacks** - Shack type for dwellings core
 - **dwellings_antiplunder** - Counter measures against plundering
 - **dwellings_plunder** - Plundering dwellings for gold
 - **dwellings_pvp** - PVP against dwelling sleepers
@@ -66,30 +69,39 @@ Below is a short description for every module. Some modules rely on others; depe
 
 ### Forest
 - **forestmod_new** – quick fights for newer DP versions.
-- **healer_buffremoval** – healer can remove negative buffs.
+- **healer_buffremoval** – healer can remove negative buffs. After a cure the player is sent back to where they came from (e.g. the village) instead of always the forest.
 
 ### Forest specials
 - **akatsuki** – Akatsuki encounter.
 - **chipmunks** – mischievous chipmunks that steal gold.
 - **chipmunk_boss** – chipmunk boss (requires `chipmunks`).
-- **elosassfall** – Elessa’s waterfall special.
+- **elessasfall** – Elessa’s waterfall special.
 - **erosennin** – meet Ero‑Sennin.
 - **evil_punishers** – evil version of the punishers (requires `alignment`).
 - **ladyerwin** – Lady Erwin encounter.
 - **mrblack** – Mr. Black encounter (requires `ladyerwin`).
 - **ninjamerchant** – wandering ninja merchant.
+- **ninjamerchantstore** – store of the wandering ninja merchant (also available as village shop, see below).
 - **punishers** – the punishers encounter (requires `alignment`).
 - **thegrinch** – Grinch mini‑boss.
-- **vampirelord** – introduces the Vampire’s Lair event (`forest_specials/vampirelord.php`) where players can sacrifice permanent HP for buffs, gold, or gems.
-- **vampirelord_bride** – bride of the vampire lord (requires `vampirelord`).
+- **vampirelord** – introduces the Vampire’s Lair event (`forest_specials/vampirelord.php`) where players can sacrifice permanent HP for buffs, gold, or gems. Event images are shown through the optional `addimages` module if it is active.
+- **vampirelord_bride** – bride of the vampire lord (requires `vampirelord`; images via the optional `addimages` module).
 - **wedgieman** – the fearsome Wedgie Man.
 - **zombie** – zombie outbreak event.
 
 ### General
+- **datemanager** – library module for date-limited (seasonal) modules: checks whether today lies in an `MM-DD` start/end window (also across the turn of the year, with optional leniency days) and provides countdown helpers. Required by `halloween`, `pumpkin` and `xmasdiscount`.
 - **mightyblogs** – public blogging system that lets authorised users post long-form updates accessible from the village, cemetery, and index. Older releases had serious issues; upgrade servers to at least version 1.1.
 
-### inventory
-- **inventory** - the entire updated item system by XChrisX for run with +nb core
+### Hall of Fame displays
+- **hofalignment** – Hall of Fame page for the most good or evil characters (requires `alignment`).
+- **hofbattlearena** – Battle Arena rankings in the Hall of Fame (requires `battlearena`, not part of this repository yet).
+- **hofclandk** – dragon kills per clan in the Hall of Fame.
+- **hofclanpk** – player kills per clan in the Hall of Fame (requires `pktrack`, not part of this repository yet).
+- **hofdemeanor** – Hall of Fame page for the most lawful or chaotic characters (requires `alignment`).
+
+### Items
+- **inventory** - the entire updated item system by XChrisX for run with +nb core. Item and inventory data access runs through a Doctrine based service layer (`inventory/lib/Domain`, `Repository`, `Service`); the classic `itemhandler.php` functions remain available for other modules.
 - **findloot** – hooks `battle-victory` to roll for loot items via the inventory system (`items/findloot.php`).
 
 ### Lodge
@@ -111,13 +123,13 @@ Below is a short description for every module. Some modules rely on others; depe
 - **xmasdiscount** – discounted mount prices around Christmas.
 
 ### PVP
-- **adminpvp** – grants PvP immunity to game staff.
-- **halloween** – seasonal Halloween PvP event.
-- **pumpkin** – Halloween pumpkin feature (requires `inventory`).
-- **pvpavatars** – shows player avatars during PvP (requires `avatar`).
-- **pvpbalance** – balance PvP targets based on dragon kills.
+- **adminpvp** – grants PvP immunity to game staff (account IDs are set in the module settings). Other modules can switch the immunity off via the `adminpvp-allow-execution` hook.
+- **halloween** – seasonal Halloween PvP event: more PvP fights, no PvP restrictions from `adminpvp`/`pvpbalance` while it runs, and a countdown in the village description (requires `datemanager`).
+- **pumpkin** – Halloween pumpkin hunt with falling-pumpkin animation (requires `inventory` and `datemanager`). Copy the `pumpkin/` folder (script and images) along with the module.
+- **pvpavatars** – shows player avatars during PvP (requires `avatar`, not part of this repository yet).
+- **pvpbalance** – balance PvP targets based on dragon kills. Other modules can switch it off via the `pvpbalance-allow-execution` hook.
 - **pvpquotes** – random quotes when entering PvP fights.
-- **serverbalance** – helper for tracking server load.
+- **serverbalance** – collects balancing statistics on every dragon kill (average age and gold per dragon kill count) and shows them in the superuser grotto.
 
 ### Systems
 - **alignment** – track and display player alignment and demeanor values that change via PvP, mounts, and creature settings.
@@ -129,7 +141,6 @@ Below is a short description for every module. Some modules rely on others; depe
 - **circulum_uchiha** – Uchiha clan bonus (requires `circulum`).
 - **marriage** – marriage system for players.
 - **racesystem** – alternative race handling. Races are defined in `racesystem/races.php`; drop in another file (e.g. the one from [bleach_modules](https://github.com/NB-Core/bleach_modules)) to change the setting.
-- **savedays** – track and save player day counters.
 - **specialtysystem** – core specialty framework. The setting `resourcename` names the resource spent on skills (default "Chakra"); specialties may restrict themselves to races via `race_requirements`.
 - **specialtysystem_basic** – basic ninja skills (requires `specialtysystem`).
 - **specialtysystem_earth** – earth specialties (requires `specialtysystem`).
@@ -141,13 +152,13 @@ Below is a short description for every module. Some modules rely on others; depe
 - **specialtysystem_sand** – registers sand elemental jutsu combat options for the specialty system (requires `specialtysystem`).
 - **specialtysystem_water** – registers water elemental jutsu combat options for the specialty system (requires `specialtysystem`).
 - **specialtysystem_wind** – registers wind elemental jutsu combat options for the specialty system (requires `specialtysystem`).
-- **translationwizard** – translation management wizard for text output.
+- **translationwizard** – translation management wizard for text output (scan modules for untranslated texts, edit, search and replace translations).
 
 ### Village modules
 - **beggarslane** – explore Beggars Lane in the village.
 - **cityamwayr** – adds the Amwayr city with configurable travel routes, minimum dragon kill access requirement, and city-specific PvP handling.
 - **halleyscorner** – Halley’s Corner travel option.
-- **invitationzones** – fighting zones accessible by invitation (requires `fightingzone`).
+- **invitationzones** – fighting zones accessible by invitation (requires `fightingzone`, not part of this repository yet).
 - **madmax** – multiplayer word game (requires `playergames`).
 - **ninjamerchantstore** – ninja merchant village shop.
 - **playergames** – framework for small player games.
@@ -155,7 +166,9 @@ Below is a short description for every module. Some modules rely on others; depe
 
 ## Additional notes
 
-Some modules require others to be installed first (as listed above). All modules assume a working NB-Core/lotgd installation. Enable or disable modules from the game’s Module Manager.
+Some modules require others to be installed first (as listed above). A few of those dependencies (`avatar`, `battlearena`, `pktrack`, `fightingzone`) are not published here yet. All modules assume a working NB-Core/lotgd installation. Enable or disable modules from the game’s Module Manager.
+
+When a module comes with a folder of the same name (e.g. `pumpkin.php` and `pumpkin/`), copy both into your game's `modules/` directory.
 
 ## Additional modules
 

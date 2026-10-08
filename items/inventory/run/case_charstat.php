@@ -32,14 +32,16 @@ use Lotgd\MySQL\Database;
                         break;
                 case "equip":
                         $thing = get_item((int)$id);
-                        $sql = "SELECT {$inventory}.itemid FROM {$inventory} INNER JOIN {$item} ON {$inventory}.itemid = {$item}.itemid WHERE {$item}.equipwhere = :equipwhere AND {$inventory}.equipped = 1";
+                        $sql = "SELECT {$inventory}.itemid FROM {$inventory} INNER JOIN {$item} ON {$inventory}.itemid = {$item}.itemid WHERE {$item}.equipwhere = :equipwhere AND {$inventory}.equipped = 1 AND {$inventory}.userid = :userid";
                         $result = $conn->executeQuery(
                                 $sql,
                                 [
                                         'equipwhere' => $thing['equipwhere'],
+                                        'userid' => (int) $session['user']['acctid'],
                                 ],
                                 [
                                         'equipwhere' => ParameterType::STRING,
+                                        'userid' => ParameterType::INTEGER,
                                 ]
                         );
                         $wh = [];
@@ -48,14 +50,16 @@ use Lotgd\MySQL\Database;
                         }
                         if ($wh) {
                                 modulehook("unequip-item", array("ids"=>$wh));
-                                $sql = "UPDATE {$inventory} SET equipped = 0 WHERE itemid IN (:itemids)";
+                                $sql = "UPDATE {$inventory} SET equipped = 0 WHERE itemid IN (:itemids) AND userid = :userid";
                                 $conn->executeStatement(
                                         $sql,
                                         [
                                                 'itemids' => $wh,
+                                                'userid' => (int) $session['user']['acctid'],
                                         ],
                                         [
                                                 'itemids' => ArrayParameterType::INTEGER,
+                                                'userid' => ParameterType::INTEGER,
                                         ]
                                 );
                         }
@@ -72,6 +76,7 @@ use Lotgd\MySQL\Database;
                                         'userid' => ParameterType::INTEGER,
                                 ]
                         );
+                        inventory_legacy_invalidate_user_read_caches((int) $session['user']['acctid']);
                         break;
                 case "unequip":
                         modulehook("unequip-item", array("ids"=>array((int) $id)));
@@ -87,6 +92,7 @@ use Lotgd\MySQL\Database;
                                         'userid' => ParameterType::INTEGER,
                                 ]
                         );
+                        inventory_legacy_invalidate_user_read_caches((int) $session['user']['acctid']);
                         break;
                 case "activate":
                         $id = httpget('id');

@@ -117,8 +117,9 @@ function namechange_run(){
 			} 
 			$ntitle = preg_replace("/[`][cHw]/", "", $ntitle);
 			$ntitle = sanitize_html($ntitle);
-			if (strlen($ntitle)>get_module_setting('length') || strlen($ntitle)<$minlen) {
-				output("`nYour title may only be %s characters, but at least %s characters long.`n`n",$strlen($ntitle),$minlen);
+			$nameLength = strlen($ntitle);
+			if ($nameLength > get_module_setting('length') || $nameLength < $minlen) {
+				output("`nYour title may only be %s characters, but at least %s characters long.`n`n", get_module_setting('length'), $minlen);
 				rawoutput("<form action='runmodule.php?module=namechange&op=namepreview' method='POST'>");
 				rawoutput("<input id='input' name='newname' width='$namelength' maxlength='$namelength' value=\"$ntitle\">");
 				rawoutput("<input type='submit' class='button' value='Preview'>");

@@ -143,16 +143,66 @@ function mountrarity_dohook($hookname, $args){
 			break;
 		case "newday":
             if (get_module_pref("user_showmountlist")) {
+            // Load DataTables assets so the availability list supports sorting/searching/pagination.
+            \Lotgd\Output::requireVendorAsset('jquery', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+            \Lotgd\Output::requireVendorAsset('datatables', 'css', \Lotgd\Output::VENDOR_BUCKET_PRE);
+            \Lotgd\Output::requireVendorAsset('datatables', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+
+            // Apply a themed wrapper so the table looks clean in both light and dark browser color schemes.
+            \Lotgd\Output::addHeadMarkup("<style>
+            .mount-rarity-wrapper {
+                margin: 0.75rem auto;
+                max-width: 72rem;
+            }
+            .mount-rarity-table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+            .mount-rarity-table thead th {
+                padding: 0.6rem 0.7rem;
+                border-bottom: 2px solid ButtonBorder;
+                text-align: left;
+                font-weight: 700;
+            }
+            .mount-rarity-table tbody td {
+                padding: 0.5rem 0.7rem;
+                border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+            }
+            .mount-rarity-table .is-numeric {
+                text-align: right;
+                font-variant-numeric: tabular-nums;
+            }
+            .mount-rarity-table .is-availability {
+                white-space: nowrap;
+            }
+            .mount-rarity-table .mount-days {
+                opacity: 0.85;
+            }
+            .mount-rarity-wrapper .dataTables_length select,
+            .mount-rarity-wrapper .dataTables_filter input {
+                color: CanvasText;
+                background-color: Canvas;
+                border-color: ButtonBorder;
+                color-scheme: light dark;
+            }
+            .mount-rarity-wrapper .dt-info,
+            .mount-rarity-wrapper .dt-paging-button {
+                color: CanvasText !important;
+            }
+            </style>");
+
             output("`n`c`bAvailable Mounts for Today:`b`n");
             $sql="SELECT mountid, mountname, mountcostgems, mountcostgold, mountlocation FROM ".db_prefix("mounts")." WHERE mountactive=1 ORDER BY mountname ASC";
             $result=db_query($sql);
             $counter = 0;
-            rawoutput("<table>");
+            rawoutput("<div class='mount-rarity-wrapper'>");
+            rawoutput("<table id='mount-rarity-table' class='mount-rarity-table'>");
             $gold = translate_inline("Gold");
             $gems = translate_inline("Gems");
             $name = translate_inline("Name");
             $location = translate_inline("Location");
-            rawoutput("<tr class='trhead'><td>$name</td><td>$gold</td><td>$gems</td><td>$location</td></tr>");
+            rawoutput("<thead><tr class='trhead'><th>$name</th><th class='is-numeric'>$gold</th><th class='is-numeric'>$gems</th><th>$location</th></tr></thead><tbody>");
             while($row=db_fetch_assoc($result)) {
             $id=$row['mountid'];
             $out=get_module_objpref("mounts",$id,"unavailable");
@@ -164,11 +214,28 @@ function mountrarity_dohook($hookname, $args){
             $class = ($counter % 2 == 0) ? "trlight" : "trdark";
             $costGold = number_format($row['mountcostgold'], 0, '.', ',');
             $costGems = number_format($row['mountcostgems'], 0, '.', ',');
-            rawoutput("<tr class='$class'><td>".$row['mountname']."</td><td>".$costGold."</td><td>".$costGems."</td><td>".$row['mountlocation']." (".$days.")</td></tr>");
+            $mountName = htmlspecialchars($row['mountname'], ENT_QUOTES, getsetting('charset', 'UTF-8'));
+            $mountLocation = htmlspecialchars($row['mountlocation'], ENT_QUOTES, getsetting('charset', 'UTF-8'));
+            $daysDisplay = htmlspecialchars($days, ENT_QUOTES, getsetting('charset', 'UTF-8'));
+            rawoutput("<tr class='$class'><td>".$mountName."</td><td class='is-numeric' data-order='".$row['mountcostgold']."'>".$costGold."</td><td class='is-numeric' data-order='".$row['mountcostgems']."'>".$costGems."</td><td class='is-availability'>".$mountLocation." <span class='mount-days'>(".$daysDisplay.")</span></td></tr>");
             $counter++;
             }
             }
-            rawoutput("</table>");
+            rawoutput("</tbody></table></div>");
+            // Keep all mount rows visible and hide DataTables page-length controls for a simple full list view.
+            rawoutput("<script>\n"
+                . "jQuery(function ($) {\n"
+                . "  if (!$.fn.DataTable) { return; }\n"
+                . "  $('#mount-rarity-table').DataTable({\n"
+                . "    order: [[0, 'asc']],\n"
+                . "    paging: false,\n"
+                . "    lengthChange: false,\n"
+                . "    info: false,\n"
+                . "    autoWidth: false,\n"
+                . "    columnDefs: [{ targets: [1, 2], className: 'is-numeric' }]\n"
+                . "  });\n"
+                . "});\n"
+                . "</script>");
             output_notl("`c");
             }
             break;

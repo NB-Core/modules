@@ -9,7 +9,7 @@ function dwellings_plunder_getmoduleinfo(){
 	$info = array(
 		"name"=>"Dwellings Plunder The Dwelling",
 		"author"=>"`2Oliver Brendel",
-		"version"=>"1.0",
+		"version"=>"1.02",
 		"category"=>"Dwellings",
 		"download"=>"http://lotgd-downloads.com",
 		"requires"=>array(
