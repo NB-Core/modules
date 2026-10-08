@@ -63,31 +63,30 @@ function clanoptions_dohook($hookname, $args){
 		case "footer-clan":
 			$title = translate_inline("`\$Auto Acceptance");
 			$message = translate_inline("`@The Clan you have just joined automatically accepts Applicants. You are now a member.");
-			if ($session['user']['clanid']!=0&&get_module_objpref("clans", $session['user']['clanid'], "minDKs")>0) {
-				if ($session['user']['clanrank']!=CLAN_LEADER||$session['user']['clanrank']!=CLAN_OFFICER&&get_module_objpref("clans", $clan, "officersUse")==1) {
-					$dks = get_module_objpref("clans", $session['user']['clanid'], "minDKs");
-					if ($session['user']['dragonkills']<$dks&&$dks!=0) {
-						$sql = "SELECT * FROM " . db_prefix("clans") . " WHERE clanid=".$session['user']['clanid'];
-						$result = db_query($sql);
-						$row = db_fetch_assoc($result);
-						$n = full_sanitize($row['clanname']);
-						$title = translate_inline("`\$Kicked Out");
-						$message = array(translate_inline("`@The Clan you were a member of (%s), has a minimum `&Dragonkill`@ limit of `^%s`@, however you don't pass it."),$n,$dks);
-						systemmail($session['user']['acctid'],$title,$message);
-						$session['user']['clanrank'] = CLAN_APPLICANT;
-						$session['user']['clanid'] = 0;
-						$session['user']['clanjoindate'] = DATETIME_DATEMIN;
-						$apply_short = "`@Clan App: `&%s`0";
-						$subj = serialize(array($apply_short, $session['user']['name']));
-						$conn = Database::getDoctrineConnection();
-						$mailTable = Database::prefix("mail");
-						$conn->executeStatement(
-							"DELETE FROM {$mailTable} WHERE msgfrom=0 AND seen=0 AND subject = :subject",
-							['subject' => $subj],
-							['subject' => ParameterType::STRING]
-						);
-					}
-				}
+			$dks = $session['user']['clanid']!=0 ? (int)get_module_objpref("clans", $session['user']['clanid'], "minDKs") : 0;
+			// Leaders, and officers when they may manage the options, are never removed by the minimum.
+			$dkexempt = $session['user']['clanrank']>=CLAN_LEADER
+				|| ($session['user']['clanrank']==CLAN_OFFICER && get_module_objpref("clans", $clan, "officersUse")==1);
+			if ($dks>0 && !$dkexempt && $session['user']['dragonkills']<$dks) {
+				$sql = "SELECT * FROM " . db_prefix("clans") . " WHERE clanid=".$session['user']['clanid'];
+				$result = db_query($sql);
+				$row = db_fetch_assoc($result);
+				$n = full_sanitize($row['clanname']);
+				$title = translate_inline("`\$Kicked Out");
+				$message = array(translate_inline("`@The Clan you were a member of (%s), has a minimum `&Dragonkill`@ limit of `^%s`@, however you don't pass it."),$n,$dks);
+				systemmail($session['user']['acctid'],$title,$message);
+				$session['user']['clanrank'] = CLAN_APPLICANT;
+				$session['user']['clanid'] = 0;
+				$session['user']['clanjoindate'] = DATETIME_DATEMIN;
+				$apply_short = "`@Clan App: `&%s`0";
+				$subj = serialize(array($apply_short, $session['user']['name']));
+				$conn = Database::getDoctrineConnection();
+				$mailTable = Database::prefix("mail");
+				$conn->executeStatement(
+					"DELETE FROM {$mailTable} WHERE msgfrom=0 AND seen=0 AND subject = :subject",
+					['subject' => $subj],
+					['subject' => ParameterType::STRING]
+				);
 			} elseif ($session['user']['clanrank'] == CLAN_APPLICANT&&
 						get_module_objpref("clans", $session['user']['clanid'],"autoAc")==1&&
 						$session['user']['clanid']!=0){

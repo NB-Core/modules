@@ -156,8 +156,8 @@ function easteregg_display($map) {
 	for ($a=1;$a<=$y;$a++) {
 		rawoutput("<tr align='center'>");
 		for ($b=1;$b<=$x;$b++) {
-			rawoutput("<td align='center'><a href='forest.php?op=find&item=".(($a-1)*6+$b)."'>".$parts[$map[($a-1)*6+$b-1]]."</a></td>");
-			addnav("","forest.php?op=find&item=".(($a-1)*6+$b));
+			rawoutput("<td align='center'><a href='forest.php?op=find&item=".(($a-1)*$x+$b)."'>".$parts[$map[($a-1)*$x+$b-1]]."</a></td>");
+			addnav("","forest.php?op=find&item=".(($a-1)*$x+$b));
 		}	
 		rawoutput("</tr>");
 	}
