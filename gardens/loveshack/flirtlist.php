@@ -11,8 +11,7 @@ function loveshack_flist($items) {
 		$n=0;
 		$stage=((get_module_setting('cost')>0&&get_module_pref('buyring')==1) || get_module_setting('cost')==0);
 		//debug("Stage:".$stage);
-		reset($list);
-		while (list($name,$points)=each ($list)) {
+		foreach ($list as $name => $points) {
 			$sql = "SELECT name,acctid FROM ".db_prefix("accounts")." WHERE acctid='".substr($name,1)."' AND locked=0";
 			$res = db_query($sql);
 			if (db_num_rows($res)!=0) {
@@ -24,7 +23,8 @@ function loveshack_flist($items) {
 				$links .= " - [".loveshack_flink($row['acctid'],"Buy some Roses","roses")."]";
 				$links .= " - [".loveshack_flink($row['acctid'],"Kiss","kiss")."]";
 				foreach ($items['shortcut'] as $key=>$val){
-					list($itemname,$navname)= each($val);
+					$itemname = array_key_first($val);
+					$navname = $val[$itemname];
 					//debug($val);
 					//debug("Name:".$itemname." nav:".$navname);
 					$links .= " - [".loveshack_flink($row['acctid'],$navname,$itemname)."]";
