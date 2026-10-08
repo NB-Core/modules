@@ -37,7 +37,6 @@ function flawlessboost_dohook($hookname,$args){
 				$args['creatureattack']*=$boost;
 				$args['creaturedefense']*=$boost;
 				debug("Buffed up due to flawless streak: ".$boost);
-				output_notl($creature['firstroundmessage']);
 				
 			} else $session['done_flawless']=0;
 			

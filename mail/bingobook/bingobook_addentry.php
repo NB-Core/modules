@@ -18,7 +18,8 @@ function bingobook_addentry() {
                 rawoutput("<input type='submit' class='button' name='go' value='$submit'>");
                 rawoutput("</form>");
         } else {
-                bingobook_insert($bingoid,$session['user']['acctid'],$comment);
+                // httppost() adds slashes; the comment is bound as a parameter.
+                bingobook_insert($bingoid,$session['user']['acctid'],stripslashes((string)$comment));
                 output("`qYou put that user in your bingo book... ");
                 if (file_exists("modules/bingobook/devil.gif")) rawoutput("<img src='modules/bingobook/devil.gif'>");
         }

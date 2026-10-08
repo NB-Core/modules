@@ -43,12 +43,16 @@ function statue_dohook($hookname, $args) {
 	switch($hookname){
 	case "village-desc":
 		if ($session['user']['location']!=$capital) break;
-		if ($hero == 0) {
-			output("`n`@The people wandering past periodically stop to admire a statue of the ancient hero, `&MightyE`@.`0`n");
-		} else {
+		$row = false;
+		if ($hero != 0) {
 			$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid='$hero'";
 			$result = db_query_cached($sql, "lasthero");
-			$row = db_fetch_assoc($result);
+			// The hero's account may have been deleted since.
+			if (db_num_rows($result)>0) $row = db_fetch_assoc($result);
+		}
+		if (!$row) {
+			output("`n`@The people wandering past periodically stop to admire a statue of the ancient hero, `&MightyE`@.`0`n");
+		} else {
 			output("`n`@The inhabitants of %s are busy erecting a statue for their newest hero, `&%s`@, on the only statue pedestal around.  The remains of the statue that had stood there before lie in such ruins around the pedestal that it is no longer recognizable.`0`n",$session['user']['location'],$row['name']);
 		}
 		break;
