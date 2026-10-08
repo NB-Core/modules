@@ -39,6 +39,8 @@ function rabidwerewolf_runevent($type,$link){
 			output("You notice that the beast is one of your kin, a `\$Werewolf`2!  It smells you for a moment, before leaving with the animal carcass in its mouth.`n`n");
 			output("You are ready to go on your way as well when you notice something shining in the pool of blood where the animal was previously.  You find a `%gem`2!`0");
 			$session['user']['gems']++;
+			// The event is over; without this, returning to the forest replays it and pays another gem.
+			$session['user']['specialinc'] = "";
 			break;
 			}
 		output("You now notice that the beast is a large, `\$Rabid Werewolf`2!  Knowing that it would outrun you if you'd try to escape, you have no choice but to fight.`n`n");

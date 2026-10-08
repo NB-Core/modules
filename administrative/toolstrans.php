@@ -35,6 +35,7 @@ function toolstrans_dohook($hookname,$args){
 
 function toolstrans_run(){
 	global $session;
+	check_su_access(SU_MEGAUSER);
 	$op=httpget('op');
 	require_once("lib/superusernav.php");
 	superusernav();

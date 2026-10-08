@@ -72,11 +72,12 @@ function dagaladdin_dohook($hookname,$args){
 
 //module_addhook("village");
 	case "village":
-		if ($session['user']['location']==getsetting("villagename", LOCATION_FIELDS))
-		tlschema($args['schemas']['gatenav']);
-		addnav($args['gatenav']);
-		tlschema();
-		if (get_module_pref("aladdinstatus")==1 && $session['user']['turns'] >= 1) addnav("Search the ruins!","runmodule.php?module=dagaladdin&op=search");
+		if ($session['user']['location']==getsetting("villagename", LOCATION_FIELDS)) {
+			tlschema($args['schemas']['gatenav']);
+			addnav($args['gatenav']);
+			tlschema();
+			if (get_module_pref("aladdinstatus")==1 && $session['user']['turns'] >= 1) addnav("Search the ruins!","runmodule.php?module=dagaladdin&op=search");
+		}
     break;
     case "dragonkilltext":
 		set_module_pref("aladdinstatus",0);

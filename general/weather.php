@@ -135,6 +135,7 @@ function weather_dohook($hookname,$args){
 		
 	case "shades": 
   		global $session;
+			if (!get_module_setting("enableshades")) break;
   			$clouds = translate_inline(get_module_setting("shadeswx"));
 			$wxtext = get_module_setting("shadeswxreport");
 			output($wxtext, $clouds);

@@ -127,7 +127,7 @@ function stpatsday_runevent($type)
 							break;
 						case "gems":
 							$mingems = get_module_setting("mingems");
-							$maxgems = get_module_setting("mingems");
+							$maxgems = get_module_setting("maxgems");
 							$pay = e_rand($mingems,$maxgems);
 							$session['user']['gems'] += $pay;
 							debuglog(" got $pay gems from St Patrick's Day Leprechaun`0");
