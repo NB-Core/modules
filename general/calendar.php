@@ -12,10 +12,10 @@ function calendar_getmoduleinfo(){
 		"download"=>"core_module",
 		"settings"=>array(
 			"Calendar Settings,title",
-			"monthsperyear"=>"How many months per year,range,1,15,1|13",
+			"monthsperyear"=>"How many months per year,range,1,12,1|12",
 			"dayspermonth"=>"How many days per month,range,20,50,1|30",
-			"daysperweek"=>"How many days in a week?,range,1,10,1|8",
-			"curMonth"=>"What month are we in?,range,1,15,1|",
+			"daysperweek"=>"How many days in a week?,range,1,7,1|7",
+			"curMonth"=>"What month are we in?,range,1,12,1|",
 			"curMonthName"=>"What is the name of current month?,viewonly",
 			"curDay"=>"What is the current day of the month?,range,1,50,1|",
 			"curWkday"=>"What day of the week is it?|",
@@ -42,6 +42,7 @@ function calendar_month($month)
 	case 11: return "Shimotsuki";
 	case 12: return "Shiwasu";
 	}
+	return (string)$month;
 }
 
 function calendar_weekday($weekday)
@@ -51,10 +52,11 @@ function calendar_weekday($weekday)
 	case 2: return "Getsuyōbi";
 	case 3: return "Kayōbi";
 	case 4: return "Suiyōbi";
-	case 5: return "Nokuyōbi";
+	case 5: return "Mokuyōbi";
 	case 6: return "Kin'yōbi";
 	case 7: return "Doyōbi";
 	}
+	return (string)$weekday;
 }
 
 function calendar_install(){

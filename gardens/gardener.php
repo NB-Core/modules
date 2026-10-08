@@ -20,7 +20,7 @@ function gardener_getmoduleinfo(){
 		"settings"=>array(
             "Gardener - Settings,title",
 			"customtext"=>"Custom message for server,textarea|",
-			"gardens"=>"Does the gazebo appear in the gardens? (setting yes nullifies city selector below),bool|0",
+			"gardens"=>"Does the gazebo appear in the gardens? (setting yes nullifies city selector below),bool|1",
 			"gardenerloc"=>"In which city does the gazebo appear,location|".getsetting("villagename", LOCATION_FIELDS)
 		),
 		"prefs"=>array(
@@ -34,7 +34,7 @@ function gardener_getmoduleinfo(){
 function gardener_install(){
 	module_addhook("gardens");
 	module_addhook("changesetting");
-	//module_addhook("village");
+	module_addhook("village");
 	module_addhook("newday");
 	module_addhook("footer-newbieisland");
     return true;
@@ -56,12 +56,12 @@ function gardener_dohook($hookname,$args){
 		}
 		break;
 	case "gardens":
-		//if ($gardens) {
+		if ($gardens) {
 			addnav("Wooden Shrine");
 			addnav("Gazebo","runmodule.php?module=gardener&loc=1");
 			$customtext=get_module_setting("customtext");
 			output_notl("`n`%%s`0", $customtext);
-		//}
+		}
 		break;
 	case "footer-newbieisland":
 		output("`^This is the CENTRAL server. Please make sure you read the FAQs and check the Message of the Day (MoTD) each time you log in.");

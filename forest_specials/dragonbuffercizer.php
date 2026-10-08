@@ -138,22 +138,26 @@ function dragonbuffercizer_dohook($hookname,$args){
 			$numdks*get_module_setting("dkdefrate");
 
 		//Adding up the differently weighted components
-		$statrandom=get_module_pref("statrandom");
-		$args['creatureattack']=round(
-			($args['creatureattack']*$standardweight+
-			 $dopplegangeratk*$doppleweight+
-			 $dkmodelatk*$dkmodelweight)/
-			($standardweight+$doppleweight+$dkmodelweight),0);
-		$args['creaturedefense']=round(
-			($args['creaturedefense']*$standardweight+
-			 $dopplegangerdef*$doppleweight+
-			 $dkmodeldef*$dkmodelweight)/
-			($standardweight+$doppleweight+$dkmodelweight),0);
-		$args['creaturehealth']=round(
-			($args['creaturehealth']*$standardweight+
-			 $dopplegangerhealth*$doppleweight+
-			 $dkmodelhealth*$dkmodelweight)/
-			($standardweight+$doppleweight+$dkmodelweight),0);
+		$statrandom=get_module_setting("statrandom");
+		// With no positive total weight, keep the standard dragon stats.
+		$totalweight=$standardweight+$doppleweight+$dkmodelweight;
+		if ($totalweight>0) {
+			$args['creatureattack']=round(
+				($args['creatureattack']*$standardweight+
+				 $dopplegangeratk*$doppleweight+
+				 $dkmodelatk*$dkmodelweight)/
+				$totalweight,0);
+			$args['creaturedefense']=round(
+				($args['creaturedefense']*$standardweight+
+				 $dopplegangerdef*$doppleweight+
+				 $dkmodeldef*$dkmodelweight)/
+				$totalweight,0);
+			$args['creaturehealth']=round(
+				($args['creaturehealth']*$standardweight+
+				 $dopplegangerhealth*$doppleweight+
+				 $dkmodelhealth*$dkmodelweight)/
+				$totalweight,0);
+		}
 		if($statrandom){
 			$randompercent=get_module_setting("randompercent");
 			$args['creatureattack']=e_rand(
