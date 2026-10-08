@@ -28,7 +28,7 @@ function crimsonleaf_install(){
 	module_addhook("superuser");
 	//insert it into the table
 	if (!is_module_active('crimsonleaf')) {
-		$sql="INSERT INTO item (class, name, description, gold, gems, weight, droppable, level, dragonkills, buffid, charges, link, hide, customvalue, execvalue, exectext, noeffecttext, activationhook, findchance, loosechance, dkloosechance, sellable, buyable, uniqueforserver, uniqueforplayer, equippable, equipwhere) VALUES
+		$sql="INSERT INTO ".db_prefix("item")." (class, name, description, gold, gems, weight, droppable, level, dragonkills, buffid, charges, link, hide, customvalue, execvalue, exectext, noeffecttext, activationhook, findchance, loosechance, dkloosechance, sellable, buyable, uniqueforserver, uniqueforplayer, equippable, equipwhere) VALUES
 ('Quest Items', '`qCrimson `2Leaf `gClover', 'Hmm, this is the famous leaf clover! Try to keep it as long as possible... it might be important someday... do not try to lose in pvp when being attacked...', 5, 0, 1, 0, 1, 0, 0, 0, '', 0, '', '', '', '', '0', 10, 0, 0, 0, 0, 1, 1, 0, '');";
 		db_query($sql);
 	}

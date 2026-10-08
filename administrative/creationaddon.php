@@ -81,7 +81,6 @@ function creationaddon_install(){
 	module_addhook("village");
 	module_addhook("shades");
 	module_addhook("everyfooter");
-	module_addhook("superuser");
 
 	return true;
 }
@@ -215,8 +214,8 @@ function creationaddon_dohook($hookname,$args){
 				if(get_module_setting("requireyear")){
 					output("Year");
 					rawoutput("<select name='year'>");
-					for ($i=0;$i<75;$i++){
-						$x=1935+$i;
+					$thisyear=(int)date("Y");
+					for ($x=$thisyear-100;$x<=$thisyear;$x++){
 						rawoutput("<option value='$x'>$x</option>");
 					}
 					rawoutput("</select>");
@@ -325,16 +324,6 @@ function creationaddon_dohook($hookname,$args){
 				if(get_module_setting("requireyear")) set_module_pref('year',$year,'creationaddon',$id);
 			}
 
-			break;
-
-		case "superuser":
-			// lets do something here
-			if (($session['user']['superuser'] & SU_EDIT_USERS)) {
-				addnav("Module Configurations");
-				// Stick the admin=true on so that when we call runmodule it'll
-				// work to let us edit bad names even when the module is deactivated.
-				addnav("Bad Names","runmodule.php?module=creationaddon&op=list&admin=true");
-			}
 			break;
 
 	}

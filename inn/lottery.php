@@ -54,7 +54,8 @@ function lottery_dohook($hookname,$args){
 		if ($roundnum > $pround){
 			if (get_module_pref("pick")===$numbers){
 				$prize = get_module_setting("prize");
-				if ($prize>"" && $pround < $roundnum){
+				// Only a ticket from the round that was just drawn wins; older tickets expired.
+				if ($prize>"" && $pround == $roundnum-1){
 					rawoutput("<font size='+1'>");
 					output("`\$You won today's lottery!`0`n");
 					rawoutput("</font>");
@@ -74,7 +75,9 @@ function lottery_dohook($hookname,$args){
 		}
 		sort($numbers);
 		set_module_setting("todaysnumbers",join("",$numbers));
-		$sql = "SELECT count(userid) AS c FROM " . db_prefix("module_userprefs") . " WHERE modulename='lottery' AND setting='pick' AND value='".join("",$numbers)."'";
+		// Count only tickets bought in the round being drawn, not old ones of players who have not logged in since.
+		$sql = "SELECT count(p.userid) AS c FROM " . db_prefix("module_userprefs") . " AS p INNER JOIN " . db_prefix("module_userprefs") . " AS r ON r.userid=p.userid AND r.modulename='lottery' AND r.setting='roundnum'"
+			. " WHERE p.modulename='lottery' AND p.setting='pick' AND p.value='".join("",$numbers)."' AND r.value='".(int)get_module_setting("roundnum")."'";
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result);
 		if ($row['c']>0){

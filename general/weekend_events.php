@@ -111,7 +111,7 @@ function weekend_events_dohook($hookname,$args){
 									"ignorelimit"=>true,
 									"abilities"=>array(
 										"fight"=>1,
-										"heal"=>max(5,floor($session['user']['maxhitpoints']/get_module_setting('maxhp_pc'))),
+										"heal"=>max(5,floor($session['user']['maxhitpoints']*get_module_setting('maxhp_pc')/100)),
 										"defend"=>1,
 										),							
 									), true);			
