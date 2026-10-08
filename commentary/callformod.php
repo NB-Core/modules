@@ -80,7 +80,14 @@ function callformod_run(){
 			break;
                 case "submit":
                         require_once("lib/systemmail.php");
-                        $moderator=httppost('moderator');
+                        // The form names a moderator; only accept one who is still an online moderator.
+                        $moderator=(int)httppost('moderator');
+                        if ($moderator!=-1) {
+                                $mods=getmods();
+                                if (!in_array($moderator, array_map('intval', array_column($mods, 'acctid')), true)) {
+                                        $moderator=(count($mods)>=1)?(int)$mods[0]['acctid']:-1;
+                                }
+                        }
                         $conn = Database::getDoctrineConnection();
                         $accountsTable = Database::prefix('accounts');
                         $commentaryTable = Database::prefix('commentary');

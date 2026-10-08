@@ -90,11 +90,11 @@ function bankmod_run(){
 		if ($amount>$session['user']['gems']){
 			output_notl($notenough,number_format($session['user']['gems'],0,$point,$sep),number_format($amount,0,$point,$sep));
 		}else{
+			$gemsinbank = (int)get_module_pref("gemsinbank");
 			if (($gemsinbank + $amount)>get_module_setting("maxgems")){
 				output($overlimit,get_module_setting("maxgems"));
 			}else{
 				debuglog("deposited " . $amount . " gems in the bank");
-				$gemsinbank = get_module_pref("gemsinbank");
 				$gemsinbank+=$amount;
 				set_module_pref("gemsinbank",$gemsinbank);
 				$session['user']['gems']-=$amount;

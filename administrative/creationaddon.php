@@ -69,7 +69,7 @@ function creationaddon_install(){
 		$sqls = array("CREATE TABLE " . db_prefix("badnames") . " (
 			bad_id TINYINT NOT NULL AUTO_INCREMENT ,
 			       badname VARCHAR( 50 ) NOT NULL ,
-			       PRIMARY KEY ( bad_id )) TYPE=MyISAM"
+			       PRIMARY KEY ( bad_id ))"
 			     );
 		foreach($sqls as $sql) {
 			db_query($sql);

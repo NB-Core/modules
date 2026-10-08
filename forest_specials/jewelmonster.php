@@ -65,7 +65,7 @@ function jewelmonster_runevent($type,$link){
 			$count = get_module_pref("totalheld","jeweler");
 
 		if ($session['user']['dragonkills'] <= get_module_setting("dk"))
-			$count+=get_module_setting("grace");
+			$count+=get_module_setting("grac");
 
 		$hpl = get_module_setting("hploss")*$count;
 		if ($count == $session['user']['dragonkills'] || $count == 10){

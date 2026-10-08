@@ -272,7 +272,7 @@ function penguin_run(){
 				if (get_module_setting("earn-gold")) output("`^Gold: `@%s`n",$gold);
 				if (get_module_setting("earn-gems")) output("`^Gems: `@%s`n",$gems);
 			}elseif($defeat){
-				$exp = round($session['user']['experience']*get_module_setting("exp-loss"));
+				$exp = round($session['user']['experience']*get_module_setting("exp-lose"));
 				$session['user']['alive']=false;
 				$session['user']['gold']=0;
 				$session['user']['hitpoints']=0;

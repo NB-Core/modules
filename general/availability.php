@@ -101,7 +101,7 @@ function availability_dohook($hookname,$args){
 			} else {
 				$price = $args['value'];
 			}
-			if (get_module_setting("allowpurchase") == false) {
+			if (get_module_setting("purchasesame") == false) {
 				if ($damage == $session['user']['weapondmg']) {
 					$args['unavailable'] = true;
 					$args['alternatetext'] = translate_inline("You already have a weapon of this strength.");
@@ -158,7 +158,7 @@ function availability_dohook($hookname,$args){
 				$price = $args['value'];
 			}
 
-			if (get_module_setting("allowpurchase") == false) {
+			if (get_module_setting("purchasesame") == false) {
 				if ($damage == $session['user']['armordef']) {
 					$args['unavailable'] = true;
 					$args['alternatetext'] = translate_inline("You already have an armor of this strength.");
