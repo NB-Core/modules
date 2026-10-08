@@ -62,7 +62,7 @@ debug($sql);
 						systemmail($row['acctid'],$subject,$body);
 					}
 					
-					$sql="UPDATE accounts SET donation=donation+$dp WHERE acctid IN (".implode(",",$acct).");";
+					$sql="UPDATE ".db_prefix("accounts")." SET donation=donation+$dp WHERE acctid IN (".implode(",",$acct).");";
 					debug($sql);
 					if ($acct!=array()) {
 						$result=db_query($sql);

@@ -43,7 +43,7 @@ Below is a short description for every module. Some modules rely on others; depe
 ### Administrative
 - **adfuncbio** – adds a Fix Navs link (clears a player's stuck navigation) to bios for staff with petition rights and/or the `ha` preference, per a setting; its Kill Player link only sets an unused flag.
 - **advertisingtracker** – record advertising clicks displayed in game.
-- **alldp** – megauser grotto tool that gives a chosen number of donation points, with a system mail, to every non-staff account (only works without a database table prefix).
+- **alldp** – megauser grotto tool that gives a chosen number of donation points, with a system mail, to every non-staff account.
 - **bioalt** – adds links to a player's bio that list possible alt accounts sharing their IP range or unique ID, with hits, last login and referrer; only accounts with the `viewallowed` preference see them.
 - **biocomment** – shows a comment thread on every player's bio where accounts with the `canaddcomments` preference can read and leave staff notes about that player.
 - **blocker** – import e‑mail block lists.
@@ -75,9 +75,9 @@ Below is a short description for every module. Some modules rely on others; depe
 - **servercostlog** – log server expenses.
 - **serversuspend** – while active, shows everyone except module managers and megausers a maintenance page with an optional explanation text (activate it only during maintenance).
 - **showmuted** – grotto overview for moderators of all temp-muted players, their remaining days and who muted them, with a staff discussion chat (requires `mutemod`).
-- **staffdp** – megauser grotto tool that gives a chosen number of donation points, with a system mail, to every staff account that has a `stafflist` description (only works without a database table prefix).
+- **staffdp** – megauser grotto tool that gives a chosen number of donation points, with a system mail, to every staff account that has a `stafflist` description.
 - **stafflist** – public Staff List linked from villages and the About page, sorted by rank with descriptions and online status, plus separate translator and inactive lists (requires `userstatus`; give staff a rank above 0 and a description in their prefs).
-- **statistics** – counts daily weapon, armor, drink and kitchen purchases and lets megausers browse the totals by year, month and day in the grotto (only works without a database table prefix).
+- **statistics** – counts daily weapon, armor, drink and kitchen purchases and lets megausers browse the totals by year, month and day in the grotto.
 - **suspendannounce** – announce server suspensions.
 - **toolstrans** – megauser grotto overview of how many translation rows each current translator has written, per language or in total.
 - **unclean** – logs comments that trip the bad-word filter: recent ones appear in the bad-word editor, and moderators see each player's filter-trip count and last filtered comment in the bio.

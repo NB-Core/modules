@@ -98,8 +98,8 @@ function erosennin_runevent($type,$link) {
 	case "peeking":
 		$stage=httpget('s');
 		$success=(e_rand(0,50)<=($session['user']['dexterity']+$session['user']['wisdom']+$session['user']['intelligence'])?1:0);
-		if ($success=1) {
-			$sucess=e_rand(0,20);
+		if ($success==1) {
+			$success=e_rand(0,20);
 			//if you would automatically succeed, make a small failure possible
 		}
 		require_once("modules/addimages/addimages_func.php");

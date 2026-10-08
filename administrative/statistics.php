@@ -77,7 +77,7 @@ function statistics_dohook(string $hookname, array $args): array
                 }
                 $date = date('Ymd');
                 $sql  = sprintf(
-                    "INSERT INTO statistics (type, value, date, count) VALUES ('weapon', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
+                    "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('weapon', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
                     SafeEscape::escape((string) $id),
                     SafeEscape::escape($date)
                 );
@@ -95,7 +95,7 @@ function statistics_dohook(string $hookname, array $args): array
                 }
                 $date = date('Ymd');
                 $sql  = sprintf(
-                    "INSERT INTO statistics (type, value, date, count) VALUES ('armor', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
+                    "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('armor', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
                     SafeEscape::escape((string) $id),
                     SafeEscape::escape($date)
                 );
@@ -111,7 +111,7 @@ function statistics_dohook(string $hookname, array $args): array
                 if ($id !== false && ctype_digit($id)) {
                     $date = date('Ymd');
                     $sql  = sprintf(
-                        "INSERT INTO statistics (type, value, date, count) VALUES ('drinks', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
+                        "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('drinks', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
                         SafeEscape::escape($id),
                         SafeEscape::escape($date)
                     );
@@ -126,7 +126,7 @@ function statistics_dohook(string $hookname, array $args): array
             if ($op !== '' && $op !== 'food') {
                 $date = date('Ymd');
                 $sql  = sprintf(
-                    "INSERT INTO statistics (type, value, date, count) VALUES ('kitchen', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
+                    "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('kitchen', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
                     SafeEscape::escape($op),
                     SafeEscape::escape($date)
                 );
@@ -151,6 +151,8 @@ function statistics_dohook(string $hookname, array $args): array
 function statistics_run(): void
 {
     global $session;
+    // The Grotto link is only offered to megausers; enforce the same here.
+    check_su_access(SU_MEGAUSER);
     page_header('Statistics');
 
     rawoutput('<style>
@@ -198,7 +200,7 @@ function statistics_run(): void
     };
 
     $years = [];
-    $sql    = 'SELECT DISTINCT SUBSTRING(date,1,4) AS year FROM statistics ORDER BY year DESC';
+    $sql    = 'SELECT DISTINCT SUBSTRING(date,1,4) AS year FROM ' . db_prefix('statistics') . ' ORDER BY year DESC';
     $result = db_query($sql);
     while ($row = db_fetch_assoc($result)) {
         $years[] = (int) $row['year'];
@@ -221,7 +223,7 @@ function statistics_run(): void
 
     $months = [];
     if ($selectedYear !== null) {
-        $sql    = "SELECT DISTINCT SUBSTRING(date,5,2) AS month FROM statistics WHERE SUBSTRING(date,1,4)='{$yearEscaped}' ORDER BY month DESC";
+        $sql    = "SELECT DISTINCT SUBSTRING(date,5,2) AS month FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' ORDER BY month DESC";
         $result = db_query($sql);
         while ($row = db_fetch_assoc($result)) {
             $months[] = (int) $row['month'];
@@ -257,7 +259,7 @@ function statistics_run(): void
 
     $days = [];
     if ($selectedYear !== null && $selectedMonth !== null) {
-        $sql    = "SELECT DISTINCT SUBSTRING(date,7,2) AS day FROM statistics WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}' ORDER BY day DESC";
+        $sql    = "SELECT DISTINCT SUBSTRING(date,7,2) AS day FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}' ORDER BY day DESC";
         $result = db_query($sql);
         while ($row = db_fetch_assoc($result)) {
             $days[] = (int) $row['day'];
@@ -323,7 +325,7 @@ function statistics_run(): void
 
         $date        = sprintf('%04d%02d%02d', $selectedYear, $selectedMonth, $selectedDay);
         $dateEscaped = SafeEscape::escape($date);
-        $sql         = "SELECT * FROM statistics WHERE date='{$dateEscaped}'";
+        $sql         = "SELECT * FROM " . db_prefix('statistics') . " WHERE date='{$dateEscaped}'";
         if ($typeEscaped !== null && $valueEscaped !== null) {
             $sql .= " AND type='{$typeEscaped}' AND value='{$valueEscaped}'";
         }
@@ -365,7 +367,7 @@ function statistics_run(): void
         rawoutput('</table></div>');
     } elseif ($selectedYear !== null && $selectedMonth !== null) {
         if ($typeEscaped !== null && $valueEscaped !== null) {
-            $sql = "SELECT SUBSTRING(date,7,2) AS day, SUM(CAST(count AS UNSIGNED)) AS total FROM statistics WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}'";
+            $sql = "SELECT SUBSTRING(date,7,2) AS day, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}'";
             $sql .= " AND type='{$typeEscaped}' AND value='{$valueEscaped}'";
             $sql .= ' GROUP BY day ORDER BY day';
             $result = db_query($sql);
@@ -406,7 +408,7 @@ function statistics_run(): void
             rawoutput('</td></tr>');
             rawoutput('</table></div>');
         } else {
-            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM statistics WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}' GROUP BY type,value ORDER BY type ASC, value+0 ASC";
+            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}' GROUP BY type,value ORDER BY type ASC, value+0 ASC";
             $result = db_query($sql);
             rawoutput('<div class="stats-table"><table style="margin-bottom:1em;">');
             rawoutput("<tr class='trhead'><td>Type</td><td>Value</td><td>Count</td></tr>");
@@ -461,7 +463,7 @@ function statistics_run(): void
         }
     } elseif ($selectedYear !== null) {
         if ($typeEscaped !== null && $valueEscaped !== null) {
-            $sql    = "SELECT SUBSTRING(date,5,2) AS month, SUM(CAST(count AS UNSIGNED)) AS total FROM statistics WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND type='{$typeEscaped}' AND value='{$valueEscaped}' GROUP BY month ORDER BY month ASC";
+            $sql    = "SELECT SUBSTRING(date,5,2) AS month, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND type='{$typeEscaped}' AND value='{$valueEscaped}' GROUP BY month ORDER BY month ASC";
             $result = db_query($sql);
 
             $months = [];
@@ -513,7 +515,7 @@ function statistics_run(): void
             rawoutput('</tr>');
             rawoutput('</table></div>');
         } else {
-            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM statistics WHERE SUBSTRING(date,1,4)='{$yearEscaped}' GROUP BY type, value ORDER BY type ASC, value+0 ASC";
+            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' GROUP BY type, value ORDER BY type ASC, value+0 ASC";
             $result = db_query($sql);
 
             rawoutput('<div class="stats-table"><table style="margin-bottom:1em;">');
@@ -563,7 +565,7 @@ function statistics_run(): void
             rawoutput('</table></div>');
         }
     } else {
-        $sql    = 'SELECT * FROM statistics ORDER BY type ASC, value+0 ASC';
+        $sql    = 'SELECT * FROM ' . db_prefix('statistics') . ' ORDER BY type ASC, value+0 ASC';
         $result = db_query($sql);
         while ($row = db_fetch_assoc($result)) {
             $type  = $row['type'];

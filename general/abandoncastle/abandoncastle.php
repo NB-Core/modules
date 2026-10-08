@@ -46,6 +46,10 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
 
         $mapService = MapService::fromString(get_module_pref('mapdata'));
 
+        // The entrance only offers these links to eligible players; enforce that here too.
+        if ($op === 'enter' && ((get_module_pref('enteredtoday') && !get_module_pref('super')) || $session['user']['dragonkills'] < get_module_setting('dkenter'))) {
+                $op = '';
+        }
         if ($op === 'enter') {
                 output("`2You enter the Abandoned Castle, as you do the door slams behind you.");
                 output("Try as you may the door won't budge!  Looks like you are going to have to find ");

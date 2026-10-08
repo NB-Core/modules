@@ -71,6 +71,8 @@ function linkchecker_dohook($hookname,$args){
 function linkchecker_run()
 {
 	global $session;
+	// The link is only offered to module managers; enforce the same here.
+	check_su_access(SU_MANAGE_MODULES);
 	page_header("Linkchecker");	
 	require_once("lib/superusernav.php");
 	require_once("lib/dbwrapper.php");
