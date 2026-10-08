@@ -212,12 +212,13 @@ function inventory_legacy_get_inventory_rows($user, $showhide, $class)
 }
 
 /**
- * Build all user-scope inventory read cache keys used by the new repository.
+ * Build the user-scope cache keys that still need explicit invalidation.
  *
  * Invalidation contract:
- * - Writes MUST invalidate both legacy cache keys and the normalized repository
- *   keys so read paths never return stale post-write data.
- * - Snapshot keys are tracked in a user-specific index and invalidated in bulk.
+ * - The repository's per-user keys (snapshots, quantity map) carry a cache
+ *   generation; inventory_legacy_invalidate_user_read_caches() starts a new
+ *   one, which retires all of them at once.
+ * - The legacy per-user key does not, so it is invalidated by name.
  *
  * @param int $userId
  *
@@ -226,27 +227,8 @@ function inventory_legacy_get_inventory_rows($user, $showhide, $class)
 function inventory_legacy_get_user_cache_keys_for_invalidation($userId)
 {
     $userId = (int) $userId;
-    $keys = [
-        "inventory-user-{$userId}",
-        "inventory:user:{$userId}:qtymap",
-    ];
 
-    $snapshotIndexKey = "inventory:user:{$userId}:snapshot:index";
-    $keys[] = $snapshotIndexKey;
-
-    // If datacache is unavailable, callers still invalidate deterministic keys.
-    if (function_exists('datacache')) {
-        $snapshotKeys = datacache($snapshotIndexKey, InventoryReadRepository::getCacheTtlSeconds());
-        if (is_array($snapshotKeys)) {
-            foreach ($snapshotKeys as $snapshotKey) {
-                if (is_string($snapshotKey) && $snapshotKey !== '') {
-                    $keys[] = $snapshotKey;
-                }
-            }
-        }
-    }
-
-    return array_values(array_unique($keys));
+    return ["inventory-user-{$userId}"];
 }
 
 /**
@@ -265,6 +247,7 @@ function inventory_legacy_invalidate_user_read_caches($userId)
     // Always clear request-local static caches first to prevent stale reads
     // later in the same request after a successful write operation.
     InventoryReadRepository::invalidateUserLocalCaches((int) $userId);
+    InventoryReadRepository::bumpUserCacheGeneration((int) $userId);
 
     if (!function_exists('invalidatedatacache')) {
         return;

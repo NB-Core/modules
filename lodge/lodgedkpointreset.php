@@ -107,17 +107,27 @@ function lodgedkpointreset_run() {
 			addnav("No", "lodge.php");
 			break;
                 case "confirm":
+                        addnav("L?Return to the Lodge","lodge.php");
+                        // Find the reset implementation before charging: 2.x cores autoload
+                        // \Lotgd\ServerFunctions, older ones define ServerFunctions in
+                        // lib/serverfunctions.class.php, which nothing loads for us.
+                        if (!class_exists('\\Lotgd\\ServerFunctions') && !class_exists('ServerFunctions', false) && file_exists("lib/serverfunctions.class.php")) {
+                                require_once("lib/serverfunctions.class.php");
+                        }
+                        if (class_exists('\\Lotgd\\ServerFunctions')) {
+                                $resetClass = '\\Lotgd\\ServerFunctions';
+                        } elseif (class_exists('ServerFunctions', false)) {
+                                $resetClass = 'ServerFunctions';
+                        } elseif (class_exists('LotgdServerFunctions', false)) {
+                                $resetClass = 'LotgdServerFunctions';
+                        } else {
+                                output("`7\"`&Sorry, I cannot reset your points on this server.`7\" says J.C. Peterson. Nothing was charged.");
+                                break;
+                        }
                         increment_module_pref("resets",1);
                         $session['user']['donationspent'] += $cost;
                         debuglog(sprintf("Reset of dk points for %s donation points done!",(int)$cost));
-                        addnav("L?Return to the Lodge","lodge.php");
-                        if (class_exists('\\Lotgd\\ServerFunctions')) {
-                                \Lotgd\ServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
-                        } elseif (class_exists('ServerFunctions')) {
-                                \ServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
-                        } elseif (class_exists('LotgdServerFunctions')) {
-                                LotgdServerFunctions::resetAllDragonkillPoints(array($session['user']['acctid']));
-                        }
+                        $resetClass::resetAllDragonkillPoints(array($session['user']['acctid']));
                         output("`7\"`&Alright, you're all done ... have a lot of fun!`7\" says J.C. Peterson.");
                         output("`n`n`7`bNote: The changes on your stats will show on the next page you hit.`b");
                         break;

@@ -27,6 +27,12 @@ class InventoryReadRepository
     private const CACHE_TTL_SECONDS = 300;
 
     /**
+     * How long a stored cache generation stays valid. It only has to outlive
+     * the per-user keys that carry it, so it is much longer than their TTL.
+     */
+    private const GENERATION_TTL_SECONDS = 86400;
+
+    /**
      * Marker key used for cross-request negative-cache payloads.
      *
      * We cannot store literal `false` in datacache for item misses because
@@ -40,6 +46,13 @@ class InventoryReadRepository
      * @var array<string, array<int, array<string, mixed>>>
      */
     private static $snapshotCache = [];
+
+    /**
+     * Request-local copy of each user's cache generation.
+     *
+     * @var array<int, string>
+     */
+    private static $generationCache = [];
 
     /**
      * Request-local cache for quantity maps keyed by user id.
@@ -149,7 +162,6 @@ class InventoryReadRepository
         self::$snapshotCache[$cacheKey] = $rows;
 
         $this->cacheStore($cacheKey, $rows);
-        $this->cacheRememberSnapshotKey($userId, $cacheKey);
 
         return $rows;
     }
@@ -174,7 +186,7 @@ class InventoryReadRepository
      *
      * Caching:
      * - First level: request-local static cache keyed by user id.
-     * - Second level: shared datacache key inventory:user:{userId}:qtymap.
+     * - Second level: shared datacache key inventory:user:{userId}:gen:{generation}:qtymap.
      *
      * @param int $userId Account id.
      *
@@ -466,7 +478,7 @@ class InventoryReadRepository
             }
         }
 
-        $prefix = sprintf('inventory:user:%d:snapshot:', $userId);
+        $prefix = sprintf('inventory:user:%d:', $userId);
         foreach (array_keys(self::$snapshotCache) as $snapshotKey) {
             if (strpos($snapshotKey, $prefix) === 0) {
                 unset(self::$snapshotCache[$snapshotKey]);
@@ -489,14 +501,57 @@ class InventoryReadRepository
         }
     }
 
+    /**
+     * Current cache generation of one user's inventory reads.
+     *
+     * Every shared per-user key carries it, so invalidating a user only means
+     * storing a new generation: keys written under an older one are never read
+     * again and expire on their own. This replaces an index of snapshot keys
+     * whose read-modify-write updates concurrent requests could overwrite.
+     */
+    public static function getUserCacheGeneration(int $userId): string
+    {
+        if (isset(self::$generationCache[$userId])) {
+            return self::$generationCache[$userId];
+        }
+
+        $generation = '0';
+        if (function_exists('datacache')) {
+            $stored = datacache(self::buildGenerationCacheKey($userId), self::GENERATION_TTL_SECONDS);
+            if (is_string($stored) && $stored !== '') {
+                $generation = $stored;
+            }
+        }
+        self::$generationCache[$userId] = $generation;
+
+        return $generation;
+    }
+
+    /**
+     * Start a new cache generation for one user after their inventory changed.
+     */
+    public static function bumpUserCacheGeneration(int $userId): void
+    {
+        $generation = bin2hex(random_bytes(8));
+        self::$generationCache[$userId] = $generation;
+        if (function_exists('updatedatacache')) {
+            updatedatacache(self::buildGenerationCacheKey($userId), $generation);
+        }
+    }
+
+    private static function buildGenerationCacheKey(int $userId): string
+    {
+        return sprintf('inventory:user:%d:generation', $userId);
+    }
+
     private function buildSnapshotCacheKey(int $userId, int $showhide, int|string $class): string
     {
-        return sprintf('inventory:user:%d:snapshot:%d:%s', $userId, $showhide, (string) $class);
+        return sprintf('inventory:user:%d:gen:%s:snapshot:%d:%s', $userId, self::getUserCacheGeneration($userId), $showhide, (string) $class);
     }
 
     private function buildQuantityMapCacheKey(int $userId): string
     {
-        return sprintf('inventory:user:%d:qtymap', $userId);
+        return sprintf('inventory:user:%d:gen:%s:qtymap', $userId, self::getUserCacheGeneration($userId));
     }
 
     private function buildItemByIdCacheKey(int $itemId): string
@@ -507,11 +562,6 @@ class InventoryReadRepository
     private function buildItemByNameCacheKey(string $name): string
     {
         return sprintf('inventory:item:name:%s', $name);
-    }
-
-    private function buildSnapshotIndexCacheKey(int $userId): string
-    {
-        return sprintf('inventory:user:%d:snapshot:index', $userId);
     }
 
     /**
@@ -552,24 +602,6 @@ class InventoryReadRepository
         }
 
         updatedatacache($key, $value);
-    }
-
-    private function cacheRememberSnapshotKey(int $userId, string $snapshotKey): void
-    {
-        if (!function_exists('datacache') || !function_exists('updatedatacache')) {
-            return;
-        }
-
-        $indexKey = $this->buildSnapshotIndexCacheKey($userId);
-        $trackedKeys = datacache($indexKey, self::CACHE_TTL_SECONDS);
-        if (!is_array($trackedKeys)) {
-            $trackedKeys = [];
-        }
-
-        if (!in_array($snapshotKey, $trackedKeys, true)) {
-            $trackedKeys[] = $snapshotKey;
-            updatedatacache($indexKey, $trackedKeys);
-        }
     }
 
     /**
