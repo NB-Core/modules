@@ -41,7 +41,7 @@ function availability_getmoduleinfo(){
 				"armor14"=>"How many level 14 armors are currently available?,int|60",
 				"armor15"=>"How many level 15 armors are currently available?,int|50",
 			"Availability - Other settings,title",
-				"purchasesame"=>"Are players allowed to purchase equipment they already own?,bool|1",
+				"purchasesame"=>"Are players allowed to purchase equipment they already own?,bool|0",
 		),
 		"prefs"=>array(
 			"prices"=>"Last valid prices,viewonly|",
