@@ -116,11 +116,9 @@ Below is a short description for every module. Some modules rely on others; depe
 
 ### Forest
 - **banknin** – a forest link where Berta the bank ninja deposits all gold on hand into the bank for a fee (5% by default), with a configurable number of uses per day.
-- **eliteforest** – Naruto-themed Elite Forest Arena (level 15 or 40 dragon kills) with a few daily fights against `elite`/`other` creatures or the Kyuubi (linked only where a village calls the custom `eliteforest` hook; needs an `eliteforestlog` table).
 - **flawlessboost** – each flawless win in a row makes the next forest enemies 15% stronger in attack and defense (compounding) until the player takes damage again.
 - **flawlesspause** – after 3 to 5 flawless forest wins in a row, the next fight gives no bonus turn for a flawless victory and the streak resets.
-- **forest_ops** – a daily "Special Missions" forest link that starts an event for the day's mission type, e.g. `goldmine`, `distress` or `rabidwerewolf` (install the events it calls; `keykeeper`, `tsunade`, `riddles` and `fuujinraijin` are not in this repository).
-- **forest_scaling** – meant to weaken forest enemies for players with more than 999 dragon kills, but it only registers `battle-victory`, so its `buffbadguy` code never runs and it currently has no effect.
+- **forest_scaling** – weakens forest enemies for players with more than 999 dragon kills.
 - **forestmod_new** – quick fights for newer DP versions.
 - **healer_buffremoval** – healer can remove negative buffs. After a cure the player is sent back to where they came from (e.g. the village) instead of always the forest.
 - **outhouse** – the Gnomish Outhouse in the forest, once a day: a paid private or free public toilet; washing your hands may refund gold or give a gem, skipping it can cost gold and a news mention.
@@ -134,7 +132,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **chipmunk_boss** – chipmunk boss (requires `chipmunks`).
 - **crazyaudrey** – Crazy Audrey's basket game, where matching animals win forest fights and no match costs one; some days she sits in the village, where petting her kittens (configurable) for a few gold gives a short defense buff.
 - **distress** – rare forest event: answering a cry for help at one of three castles can reward gems, gold, experience, charm or a forest fight, or cost turns, charm, all gold or your life.
-- **dragonbuffercizer** – tunes the green dragon fight with an optional fire-breathing damage buff (worded as Orochimaru's snake arms) and stats weighted between core values, a player doppelganger and a dragon-kill formula (default settings change nothing).
+- **dragonbuffercizer** – tunes the green dragon fight with an optional fire-breathing damage buff (worded as Orochimaru's snake arms) and stats weighted between core values, a player doppelganger and a dragon-kill formula (by default only the core values, varied by up to 5%).
 - **druid** – a druid offers a broth with random effects: forest fights, gems, charm, experience or a max hitpoint, or lost hitpoints, charm, max hitpoints or a turn; refusing has smaller random effects.
 - **elessasfall** – Elessa’s waterfall special.
 - **erosennin** – meet Ero‑Sennin.
@@ -387,7 +385,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **grave** – travel event: a roadside grave where praying costs a forest fight and earns favor with the death overlord (requires `cities`).
 - **haberdasher** – Deimos' Haberdashery in the capital, a pure gold sink where players buy and upgrade luxury hats whose size shows in their bio and on a customer ranking list.
 - **halleyscorner** – Halley’s Corner travel option.
-- **heartbreak** – Valentine village event with a singing girl: tipping or beating her brings buffs, debuffs, robbery, alignment changes or even death (poems are optional text files in `modules/heartbreak/`; without them a short built-in verse is used).
+- **heartbreak** – Valentine village event with a singing girl: tipping or beating her brings buffs, debuffs, robbery, alignment changes or even death (she sings one of the poems in `modules/heartbreak/`; without the folder a short built-in verse is used).
 - **heidi** – Heidi's Place, where players trade a PvP fight for forest fights, donate gold for a defense buff and optionally re-pick dragon points for gems; random anonymous gold gifts arrive at new day.
 - **hepzibah** – Halloween village event with a creepy old woman who hands out a free-pizza voucher for the Marquee (the voucher needs `marquee`; otherwise flavor text only).
 - **hitch** – lets players stuck in another town without travels and with few turns hitchhike to the capital, risking robbery or death and owing errands the next morning (needs `cities`).
