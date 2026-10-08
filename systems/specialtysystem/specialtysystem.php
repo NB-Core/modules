@@ -162,12 +162,6 @@ function specialtysystem_check_races(string $serialized, string $race): array
 }
 
 /**
- * Render fight navigation entries from registered specialties.
- *
- * The navigation uses a cached copy of the specialties stored in the
- * "cache" userpref to avoid expensive database calls.
- */
-/**
  * Whether the fight menu currently offers this skill at this cost.
  *
  * Skill links carry the add-on, the skill and its cost in the query string.
@@ -209,6 +203,12 @@ function specialtysystem_skill_offered(string $module, string $skillname, string
     return $offered;
 }
 
+/**
+ * Render fight navigation entries from registered specialties.
+ *
+ * The navigation uses a cached copy of the specialties stored in the
+ * "cache" userpref to avoid expensive database calls.
+ */
 function specialtysystem_showfightnav(string $script, bool $force = false): void
 {
     global $session;

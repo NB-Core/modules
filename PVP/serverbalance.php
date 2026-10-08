@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
 
@@ -74,19 +75,18 @@ function serverbalance_run(){
 
         switch ($op) {
                 case "clear":
-                        $deleted = $connection->executeStatement(
-                                "DELETE FROM {$table} WHERE modulename = :module",
-                                [
-                                        'module' => 'serverbalance',
-                                ],
-                                [
-                                        'module' => ParameterType::STRING,
-                                ]
-                        );
-
-                        if ($deleted >= 0) {
+                        try {
+                                $connection->executeStatement(
+                                        "DELETE FROM {$table} WHERE modulename = :module",
+                                        [
+                                                'module' => 'serverbalance',
+                                        ],
+                                        [
+                                                'module' => ParameterType::STRING,
+                                        ]
+                                );
                                 output("Stats cleared.");
-                        } else {
+                        } catch (DBALException $e) {
                                 output("An error happened.");
                         }
                         break;
