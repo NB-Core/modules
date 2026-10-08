@@ -60,35 +60,35 @@ function savedays_dohook($hookname,$args){
 			]
 		);
 
-		$result = $connection
-			->createQueryBuilder()
-			->select('a.acctid')
-			->from($accountsTable, 'a')
-			->where(
-				"NOT EXISTS (
+		// Give every account without a counter one in a single statement; one
+		// insert per account made the first new day after enabling the module
+		// run thousands of queries on large servers.
+		$connection->executeStatement(
+			"INSERT INTO {$moduleUserPrefsTable} (modulename, setting, userid, value)
+				SELECT :module, :setting, a.acctid, :value
+				FROM {$accountsTable} a
+				WHERE NOT EXISTS (
 					SELECT 1
 					FROM {$moduleUserPrefsTable} mup
 					WHERE mup.userid = a.acctid
-					AND mup.modulename = :module
-					AND mup.setting = :setting
-				)"
-			)
-			->setParameter('module', 'savedays', ParameterType::STRING)
-			->setParameter('setting', 'daysmissed', ParameterType::STRING)
-			->executeQuery();
-
-		$statement = $connection->prepare(
-			"INSERT INTO {$moduleUserPrefsTable} (modulename, setting, userid, value)
-				VALUES (:module, :setting, :userid, :value)"
+					AND mup.modulename = :module_check
+					AND mup.setting = :setting_check
+				)",
+			[
+				'module' => 'savedays',
+				'setting' => 'daysmissed',
+				'value' => '1',
+				'module_check' => 'savedays',
+				'setting_check' => 'daysmissed',
+			],
+			[
+				'module' => ParameterType::STRING,
+				'setting' => ParameterType::STRING,
+				'value' => ParameterType::STRING,
+				'module_check' => ParameterType::STRING,
+				'setting_check' => ParameterType::STRING,
+			]
 		);
-		$statement->bindValue('module', 'savedays', ParameterType::STRING);
-		$statement->bindValue('setting', 'daysmissed', ParameterType::STRING);
-		$statement->bindValue('value', 1, ParameterType::INTEGER);
-
-		while (($row = $result->fetchAssociative()) !== false) {
-			$statement->bindValue('userid', (int) $row['acctid'], ParameterType::INTEGER);
-			$statement->executeStatement();
-		}
 		break;
 	case "newday":
 		if(!get_module_pref("user_reject")){

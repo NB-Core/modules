@@ -171,18 +171,12 @@ function recaptcha_dohook(string $hookname, array $args): array
         case "check-create":
         case "addpetition":
         case "pre-login":
-            // Server-generated auto-login forms (forgotten password, email
-            // validation) embed the stored hash with a "!md52!" prefix and
-            // never pass through home.php where the reCAPTCHA widget is
-            // rendered.  Skip verification for this trusted server flow;
-            // login.php itself rejects !md52! without force=1, so a bot
-            // cannot abuse this bypass without already holding the DB hash.
-            if ($hookname === 'pre-login') {
-                $postedPassword = (string) httppost('password');
-                if (substr($postedPassword, 0, 6) === '!md52!') {
-                    break;
-                }
-            }
+            // Every login needs a token. Older cores posted the stored hash
+            // with a "!md52!" prefix from their auto-login forms, and an
+            // exemption for that prefix let anyone skip the captcha by sending
+            // md5(md5(guess)) in that form. NB-Core 2.x no longer uses the
+            // prefix (its one-click login is a server-side ValidationLogin
+            // grant), so there is nothing left to exempt.
             // Verify the classic v3 token with Google's siteverify endpoint.
             if ($expectedAction === null || $sitekey === '' || $siteSecret === '' || !$hasMinScore) {
                 // Missing backend credentials mean we cannot verify server-side.
