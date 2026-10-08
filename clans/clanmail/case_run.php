@@ -97,10 +97,11 @@ switch($op) {
 		output("`c`b`^Clan Mail`c`b");
 		output_notl("`n`n");
 		output("`7If you want to send a message to all your clanmembers, this is the right place. The message will be delivered by the mail nin immediately at little cost. You will receive a copy of the mail.`n`n");
-		$sql="SELECT count(acctid) as membercount FROM ".db_prefix('accounts')." WHERE clanid=".$session['user']['clanid']." AND clanrank>".CLAN_APPLICANT." AND acctid!=".$session['user']['clanid'];
-		$result=db_query_cached($sql,"clanmail_count_".$session['user']['clanid'],600);
+		// Same recipients and price as the send branch: every accepted member, the sender's copy included.
+		$sql="SELECT count(acctid) as membercount FROM ".db_prefix('accounts')." WHERE clanid=".$session['user']['clanid']." AND clanrank>".CLAN_APPLICANT;
+		$result=db_query_cached($sql,"clanmail_members_".$session['user']['clanid'],600);
 		$row=db_fetch_assoc($result);
-		$costs=max(10,get_module_setting('mailcostgold')*abs($row['membercount']));
+		$costs=get_module_setting('mailcostgold')*abs($row['membercount']);
 		output("The mail to all your comrades costs `^%s gold`7 due to more work for the mail nin. It is free if you send it one by one via the shinobi mail.",$costs);
 		if ($session['user']['gold']>=$costs) {
 			addnav("Write");

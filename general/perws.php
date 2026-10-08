@@ -113,10 +113,18 @@ function perws_run(){
 				rawoutput("</td><td>");
 				output("`c%s`c`0",translate_inline($row['ban']==1?"`@Yes":"`#No"));
 				rawoutput("</td><td>");
-				rawoutput("<a href='".$row['link']."' target='_blank'>".stripslashes($row['sitename'])."</a>");
+				// Stored by players: escape both, and only link http/https like the bio does.
+				$link=$row['link'];
+				$sitename=htmlspecialchars(stripslashes($row['sitename']),ENT_QUOTES);
+				$scheme=strtolower((string)parse_url($link, PHP_URL_SCHEME));
+				if (filter_var($link, FILTER_VALIDATE_URL)===false || ($scheme!="http" && $scheme!="https")) {
+					rawoutput($sitename." (".htmlspecialchars($link,ENT_QUOTES).") ".translate_inline("(invalid!)"));
+				} else {
+					rawoutput("<a href='".htmlspecialchars($link,ENT_QUOTES)."' target='_blank' rel='noopener noreferrer'>".$sitename."</a>");
+				}
 				rawoutput("</td></tr>");
 				}
-			rawoutput("</table");
+			rawoutput("</table>");
 			addnav("Refresh List","runmodule.php?module=perws&op=list");
 			addnav("Return to the Grotto","superuser.php");
 			break;
