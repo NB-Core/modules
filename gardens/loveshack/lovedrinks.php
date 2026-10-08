@@ -11,7 +11,7 @@ function loveshack_lovedrinks() {
 		}
 		if ($s<2) { // We use 'lessthan' so more drinks can be packaged with this
 			$sql[]="INSERT INTO " . db_prefix("drinks") . " VALUES (0, 'Heart Mist', 1, 25, 5, 0, 0, 0, 20, 0, 5, 15, 0.0, 0, 0, 'The keep grabs for a rather garish looking bottle on the shelf behind him... as he pours it into a large yellow mug, the porcelain seems to dissolve.. ooh er.. he puts a tomato within the sweet smelling gunk... \"Here, have a Heart Mist..\" says the keep.. and as you try it, you see symbols of love!', '`\$Heart Mist', 18, '`%Misty hearts fly around you..', '`#The sky falls...', '1.1', '.9', '1.5', '0', '', '', '')";
-			$ladd[]="Heart Misy";
+			$ladd[]="Heart Mist";
 		}
 		foreach ($sql as $val) {
 			db_query($val);

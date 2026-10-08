@@ -18,7 +18,7 @@ if ($xwcost && $keep == 0){
 	}else{
 	$wstr = sprintf($basestr.".", translate_inline("weapon"), $wcost);
 }
-if ($xwcost && $keep == 0){
+if ($xacost && $keep == 0){
 	$astr = sprintf($basestr.$extrastr, translate_inline("armor"), $acost, $xacost);
 }else{
 	$astr = sprintf($basestr.".", translate_inline("armor"), $acost);

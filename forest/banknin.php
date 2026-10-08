@@ -73,26 +73,6 @@ function banknin_dohook($hookname,$args){
 }
 
 function banknin_run(){
-	global $session;
-	$op = httpget("op");
-	$uses = get_module_setting("uses");
-	$used = get_module_pref("used");
-	$name = get_module_pref("name");
-	$fee_percent = get_module_setting("fee");
-	
-	$deposit = max($session['user']['gold'],0);
-	$fee = floor($depost * $fee_percent / 100);
-	
-	page_header("Bank Nin");
-	addnav("Navigation");
-	if ($op=="deposit"){
-		addnav("L?Return to the Forest","forest.php");
-		output("`7You approach someone who slightly resembles an old, dirty rock.`n`n");
-		output("\"`&If you wish, I can give you a discount on healing for %s days with only %s points.\"`7, they say.", $days,$cost);
-		addnav("Confirm Healing Discount");
-		addnav("Yes", "runmodule.php?module=banknin&op=discountconfirm");
-		addnav("No", "lodge.php");
-	}
-	page_footer();
+	// Not linked anywhere: the deposit happens in the forest hook.
 }
 ?>	

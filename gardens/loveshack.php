@@ -83,9 +83,7 @@ function loveshack_run(){
 	$op = httpget('op');
 	modulehook("header-loveshack",array());
 	output("`c`xThe `\$Love`xshack`0`c`n`n");
-	if ($op==''|| $op=='chapel' || $op=='oldchurch')
-		require("./modules/loveshack/general.php");
-		else
-		require("./modules/loveshack/$op.php");
+	// Only known pages may be included; every link uses op=loveshack.
+	require("./modules/loveshack/loveshack.php");
 }
 ?>

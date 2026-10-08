@@ -56,7 +56,6 @@ function halloween_xp_dohook($hookname,$args){
 		}
 		break;
 	case "newday":
-		case "newday":
 	$buffname = get_module_setting('buffname');
 				$buffturns = -1;
 				$buffcolor = get_module_setting('buffcolor');
