@@ -68,6 +68,10 @@ function treasure_field_run(){
 	$perday=get_module_setting("perday");
 	$tries=get_module_pref("tries");
 	$op=httpget('op');
+	// The same conditions as the dig link: digs left today and the gold to pay.
+	if ($op=="dig" && ($tries>=$perday || $session['user']['gold']<$cost)) {
+		$op="";
+	}
 	if ($op==""){
 		addnav("Navigation");
 		villagenav();

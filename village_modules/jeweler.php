@@ -118,6 +118,18 @@ function jeweler_run(){
 	$sellpercent = get_module_setting("sellpercent");
 	$op = httpget("op");
 	$type = httpget("type");
+	// Only these five pieces exist; anything else goes back to the shop list.
+	if ($op != "" && !in_array($type, array("choker","amulet","necklace","bracelet","ring"), true)) {
+		$op = "";
+	}
+	// The same conditions as the links: buy without owning the piece and with enough gems, sell only what is owned.
+	$held = $op != "" && get_module_pref($type."held");
+	if ($op == "buy" && ($held || $session['user']['gems'] < get_module_setting($type))) {
+		$op = "";
+	}
+	if (($op == "sell" || $op == "confirm") && !$held) {
+		$op = "";
+	}
 
 	page_header("Oliver, the Jeweler");
 	output("`&`c`bOliver's Jewelry`b`c`n");

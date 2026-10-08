@@ -263,6 +263,10 @@ function temple_run(){
 	page_header("Temple of Shadow and Light");
 	modulehook("header-temple",array());
 	$op = httpget('op');
+	// The same check as the links: enough points for the chosen boon, otherwise back to the choice.
+	if (($op=="spec" && $points<$speccost) || (($op=="atk" || $op=="def") && $points<$statcost)) {
+		$op="agree";
+	}
 	output("`c`b`&Temple of Shadow and Light`0`b`c`n");
 	if ($op=="enter"){
 		output("A vast temple folds out in front of you.");

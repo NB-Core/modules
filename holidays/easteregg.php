@@ -70,7 +70,12 @@ function easteregg_runevent($type){
 			$maxtries=(int)get_module_setting('tries');
 			output("`@After a short while of searching....`n`n");
 			addnav("Navigation");
-			if (httpget('item')==get_module_pref("egg")) {
+			// The search ends with the last try or with the egg found; nothing more to find after that.
+			if ($tries >= $maxtries || (int)get_module_pref("egg") <= 0) {
+				output("`@There is nothing left to find here.`n`n");
+				addnav("Leave",$from."op=leave");
+			} elseif (httpget('item')==get_module_pref("egg")) {
+				set_module_pref("egg",0);
 				output("`qYou find the fancy painted `vE`laster `vE`lgg`q!`n`n");
 				output("`@The strange `4B`%unny`@ gasps as you show it to him... and he sighs as he says, \"`4Ahh... I never thought you'd search `bTHERE`b... well, here is your reward...NOTHING! HaHaHa... April's Fool... that must be `byou`b... HaHaHa...`@\"... and then he hops away.... gnarf... no honest people in the world!`n`n");
 				$res = e_rand(0,2);

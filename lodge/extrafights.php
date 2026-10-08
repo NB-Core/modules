@@ -153,18 +153,25 @@ function extrafights_run(){
 		$current = get_module_pref("currentbuys");
 		$current = unserialize($current);
 		if (!is_array($current)) $current = array();
-		$session['user']['donationspent']  += $cost;
-		$arr = array("bought"=>date("F dS"), "left"=>$length);
-		array_push($current, $arr);
-		$current = serialize($current);
-		set_module_pref("currentbuys", $current);
-		output("`7J. C. Petersen nods and hopes you enjoy your extra fights.");
+		// The same checks as the buy page: enough points and a free slot.
+		$pointsavailable=$session['user']['donation'] - $session['user']['donationspent'];
+		if ($pointsavailable < $cost || count($current) >= $max) {
+			output("`7J. C. Petersen shakes his head. \"`&I'm sorry, but I cannot sell you more forest fights right now.`7\"");
+		} else {
+			$session['user']['donationspent']  += $cost;
+			$arr = array("bought"=>date("F dS"), "left"=>$length);
+			array_push($current, $arr);
+			$current = serialize($current);
+			set_module_pref("currentbuys", $current);
+			output("`7J. C. Petersen nods and hopes you enjoy your extra fights.");
+		}
 	} elseif ($op=="extend" && get_module_setting("extend")) {
 		$index = (int)httpget("num");
 		$current = get_module_pref("currentbuys");
 		$current = unserialize($current);
 		if (!is_array($current)) $current = array();
-		if (isset($current[$index])) {
+		$pointsavailable=$session['user']['donation'] - $session['user']['donationspent'];
+		if (isset($current[$index]) && $pointsavailable > $cost) {
 			$cur = $current[$index]['left'];
 			$session['user']['donationspent']  += $cost;
 			output("`7J. C. Petersen nods, \"`&I have extended your time from %s %s to %s days for the purchase made on `^%s`7.  I hope you enjoy your extra fights.`7\"", $cur, translate_inline($cur==1?"day":"days"), $cur+$length, $current[$index]['bought']);

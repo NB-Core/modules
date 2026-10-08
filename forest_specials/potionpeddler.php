@@ -45,6 +45,14 @@ function potionpeddler_runevent($type,$link) {
 	$session['user']['specialinc'] = "module:potionpeddler";
 	$op = httpget('op');
 	$perm=potionpeddler_calc();
+	// The same conditions as the "Take this potion" links: enough gems, and the glowing and
+	// rainbow potions only while they are on offer. Otherwise he just shows his coat again.
+	$prices = array("getgreen"=>1, "getred"=>3, "getblack"=>5, "getglowing"=>10, "getrainbow"=>3);
+	if (isset($prices[$op]) && ($session['user']['gems'] < $prices[$op]
+			|| ($op=="getglowing" && !get_module_setting('available_glowing'))
+			|| ($op=="getrainbow" && ($perm<=30 || !get_module_setting('available_rainbow'))))) {
+		$op = "investigate";
+	}
 	output_notl("`n");
 	switch ($op) {
 		case "":

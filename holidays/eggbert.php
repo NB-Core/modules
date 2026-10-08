@@ -79,10 +79,18 @@ function eggbert_run(){
 
 	require_once("modules/inventory/lib/itemhandler.php");
 	$items = get_inventory_item($itemid);
+	// The same conditions as the links: Easter weeks, the configured town, an egg in hand, no sale this year.
+	$diff = datedifference_events("04-27",false);
+	$open = $diff>0 && $diff<28 && $session['user']['location'] == get_module_setting("location");
+	$cansell = $open && $itemid > 0 && isset($items['quantity']) && $items['quantity'] > 0 && $visited != date('Y');
 
 	switch ($op){
 	
 		case "reallysell":
+			if (!$cansell || !in_array(httpget('desired'), array("dp","gems"), true)) {
+				output("`l%s`l shakes his head. \"`QYou have no egg for me.`l\"",$name);
+				break;
+			}
 			output("`lYou hand over the egg.`n`n");
 			switch(httpget('desired')) {
 				case "dp":
@@ -100,6 +108,10 @@ function eggbert_run(){
 			remove_item_by_id($itemid);
 			break;
 		case "sell":
+			if (!$cansell) {
+				output("`l%s`l shakes his head. \"`QYou have no egg for me.`l\"",$name);
+				break;
+			}
 			output("`lHe wizzles closer, \"`QAh, you want to sell this one? Nice, very nice. I can offer you the following compensations. But I only take 1 egg per customer, so choose wisely!`l\"");
 			addnav(array("Sell the egg for %s donationpoints.",$dp),"runmodule.php?module=eggbert&op=reallysell&desired=dp");
 			addnav(array("Sell the egg for %s gems.",$gems),"runmodule.php?module=eggbert&op=reallysell&desired=gems");
@@ -110,7 +122,7 @@ function eggbert_run(){
 				output("As you look around, a chubby round ... Chicken-Guy?... walks over to you, and extends a hand.");
 				output("\"`QMy name is %s`Q, may I be of any service to you`l?\"",$name);
 				output("You notice this shop has quite a collection of eggs... most coloured brightly.");
-				if (isset($items['quantity']) && $items['quantity']>0) {
+				if ($open && isset($items['quantity']) && $items['quantity']>0) {
 					output("`n`n`\$It seems you have something of interest to him.");
 					if ($visited != date('Y')) {
 						addnav("Sell your egg","runmodule.php?module=eggbert&op=sell");
