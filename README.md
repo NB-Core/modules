@@ -17,16 +17,22 @@ Directories group modules by purpose:
 
 - **PVP/** – player versus player extensions and events
 - **administrative/** – tools for admins and moderation
+- **clans/** – clan options, ranks, rooms and clan tools
 - **commentary/** – enhancements for chat and roleplay areas
 - **dwellings/** – the dwellings (housing) core, its dwelling types and add-ons
 - **forest/** – general forest related tweaks
 - **forest_specials/** – additional forest encounters and bosses
+- **gardens/** – garden activities and romance
 - **general/** – cross-area features and utilities, shared libraries
+- **graveyard/** – graveyard and shades additions
 - **hof_displays/** – additional Hall of Fame pages
+- **holidays/** – seasonal and holiday events
+- **inn/** – inn additions (drinks, billboard, games)
 - **items/** – inventory and items
 - **lodge/** – lodge upgrades
 - **mail/** – player mail quality-of-life tools
 - **mounts/** – mount related features
+- **quests/** – the quest series handed out by Dag Durnick in the inn
 - **systems/** – large feature systems (races, specialties etc.)
 - **village_modules/** – village shops and activities
 
@@ -97,7 +103,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **hofalignment** – Hall of Fame page for the most good or evil characters (requires `alignment`).
 - **hofbattlearena** – Battle Arena rankings in the Hall of Fame (requires `battlearena`, not part of this repository yet).
 - **hofclandk** – dragon kills per clan in the Hall of Fame.
-- **hofclanpk** – player kills per clan in the Hall of Fame (requires `pktrack`, not part of this repository yet).
+- **hofclanpk** – player kills per clan in the Hall of Fame (requires `pktrack`).
 - **hofdemeanor** – Hall of Fame page for the most lawful or chaotic characters (requires `alignment`).
 
 ### Items
@@ -158,7 +164,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **beggarslane** – explore Beggars Lane in the village.
 - **cityamwayr** – adds the Amwayr city with configurable travel routes, minimum dragon kill access requirement, and city-specific PvP handling.
 - **halleyscorner** – Halley’s Corner travel option.
-- **invitationzones** – fighting zones accessible by invitation (requires `fightingzone`, not part of this repository yet).
+- **invitationzones** – fighting zones accessible by invitation (requires `fightingzone`).
 - **madmax** – multiplayer word game (requires `playergames`).
 - **ninjamerchantstore** – ninja merchant village shop.
 - **playergames** – framework for small player games.
@@ -166,7 +172,7 @@ Below is a short description for every module. Some modules rely on others; depe
 
 ## Additional notes
 
-Some modules require others to be installed first (as listed above). A few of those dependencies (`avatar`, `battlearena`, `pktrack`, `fightingzone`) are not published here yet. All modules assume a working NB-Core/lotgd installation. Enable or disable modules from the game’s Module Manager.
+Some modules require others to be installed first (as listed above). Two of those dependencies (`avatar`, `battlearena`) are not published here yet. All modules assume a working NB-Core/lotgd installation. Enable or disable modules from the game’s Module Manager.
 
 When a module comes with a folder of the same name (e.g. `pumpkin.php` and `pumpkin/`), copy both into your game's `modules/` directory.
 
