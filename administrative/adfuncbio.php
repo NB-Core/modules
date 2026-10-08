@@ -57,7 +57,7 @@ function adfuncbio_dohook($hookname,$args){
  */
 function adfuncbio_allowed(){
     global $session;
-    return (get_module_setting("runfrom", "adfuncbio") == 0 && $session['user']['superuser'] & SU_EDIT_PETITIONS)
+    return (get_module_setting("runfrom", "adfuncbio") == 0 && $session['user']['superuser'] & SU_EDIT_USERS)
         || (get_module_setting("runfrom", "adfuncbio") == 1 && get_module_pref("ha", "adfuncbio") == 1)
         || (get_module_setting("runfrom", "adfuncbio") == 2 && $session['user']['superuser'] & SU_EDIT_USERS && get_module_pref("ha", "adfuncbio") == 1);
 }

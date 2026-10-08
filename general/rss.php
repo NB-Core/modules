@@ -170,9 +170,16 @@ function rss_run(){
 		break;
 	case "online":
 		$feedtitle = get_module_setting('name_short'). " Who's Online";
-		$sql="SELECT name,alive,location,sex,level,race,now() AS currenttime FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' ORDER BY level DESC";
+		$sql="SELECT acctid,name,alive,location,sex,level,race,now() AS currenttime FROM " . db_prefix("accounts") . " WHERE locked=0 AND loggedin=1 AND laston>'".date("Y-m-d H:i:s",strtotime("-".getsetting("LOGINTIMEOUT",900)." seconds"))."' ORDER BY level DESC";
 		$result = db_query_cached($sql,"mod_rss_online",get_module_setting("cache_timeout"));
+		// Players who chose "Appear Offline" in userstatus stay out of the feed.
+		$hidden = array();
+		if (is_module_active("userstatus")) {
+			require_once("modules/userstatus.php");
+			$hidden = userstatus_getofflineusers();
+		}
 		while ($row = db_fetch_assoc($result)){
+			if (in_array((int)($row['acctid'] ?? 0), $hidden, true)) continue;
 			$pubtime = $row['currenttime'];
 			array_push(
 				$items,

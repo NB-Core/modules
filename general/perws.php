@@ -47,17 +47,18 @@ function perws_dohook($hookname,$args){
 			break;
 		case "biostat":
 			if (get_module_pref("user_link","perws",$target['acctid']) <> "" && !get_module_pref("ban","perws",$target['acctid'])){
-				$set=addslashes(get_module_pref("user_link","perws",$target['acctid']));
-				if (strpos($set,"script")!==false) break;
+				$set=get_module_pref("user_link","perws",$target['acctid']);
+				if (stripos($set,"script")!==false) break;
 				$name=stripslashes(get_module_pref("user_name","perws",$target['acctid']));
 				$name=substr($name,0,$length);
 				if (strpos($name,"script")!==false) break;
-				if (filter_var($set, FILTER_VALIDATE_URL)===false) {
+				$scheme=strtolower((string)parse_url($set, PHP_URL_SCHEME));
+				if (filter_var($set, FILTER_VALIDATE_URL)===false || ($scheme!="http" && $scheme!="https")) {
 					// url invalid
 					$set="#";
 					$name="(invalid!)";
 				}
-				output("`^Personal Website: `@<a href='%s' target='_blank'>",$set,true);
+				output("`^Personal Website: `@<a href='%s' target='_blank' rel='noopener noreferrer'>",htmlspecialchars($set,ENT_QUOTES),true);
 				$name=str_replace("`c","",$name);
 				$name=str_replace("`b","",$name);
 				$name=str_replace("`i","",$name);

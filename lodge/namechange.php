@@ -138,7 +138,7 @@ function namechange_run(){
 			$rawtitle=sanitize($ntitle);
 
 //sanity check if the name is already taken
-			$sql="SELECT playername,login FROM accounts"; //yes, many records, nasty check, but better than just another field in the db. names don't get changed frequently. if they do, you can alter this here easily.
+			$sql="SELECT playername,login FROM ".db_prefix("accounts"); //yes, many records, nasty check, but better than just another field in the db. names don't get changed frequently. if they do, you can alter this here easily.
 			$result = db_query($sql);
 			while ($row=db_fetch_assoc($result)) {
 				$checklogin=sanitize($row['login']);
