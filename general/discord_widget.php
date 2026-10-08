@@ -11,8 +11,8 @@ $info = array(
 	"download"=>"",
 	"settings"=>array(
 		"Discord Widget Settings,title",
-		"serverid,Discord server ID (empty: no widget)|",
-		"theme,Widget theme,enum,dark,Dark,light,Light|dark",
+		"serverid"=>"Discord server ID (empty: no widget)|",
+		"theme"=>"Widget theme,enum,dark,Dark,light,Light|dark",
 	),
 	);
 	return $info;

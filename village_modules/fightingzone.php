@@ -9,7 +9,7 @@ function fightingzone_getmoduleinfo(){
 		"download"=>"",
 		"settings"=>array(
 			"Fighting Zone Settings,title",
-			"rulesurl,Address of the zone rules (empty: no rules link)|",
+			"rulesurl"=>"Address of the zone rules (empty: no rules link)|",
 		),
 	);
 	return $info;

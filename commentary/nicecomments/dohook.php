@@ -71,7 +71,7 @@ function nicecomments_dohook_private($hookname,$args){
 				$allcaps = preg_replace("/[a-z]/","",$allletters);
 				if (strlen($allcaps) >= strlen($allletters)/2){
 					//too many caps.
-					$text = preg_replace("/\b([a-zA-Z0-9])([a-zA-Z0-9]*)\b/e","'\\1'.strtolower('\\2')",$text);
+					$text = preg_replace_callback("/\b([a-zA-Z0-9])([a-zA-Z0-9]*)\b/", function ($m) { return $m[1].strtolower($m[2]); }, $text);
 				}
 			}
 		}

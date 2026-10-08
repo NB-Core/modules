@@ -9,12 +9,12 @@ function donationreceipt_getmoduleinfo(){
         "download"=>"",
         "settings"=>array(
             "Donation Receipt Settings,title",
-            "servername,Game name in the mail (empty: server URL)|",
-            "fantype,Players are fans of ...|LoGD",
-            "adminname,Signature at the end of the mail|The Staff",
-            "adminmail,Sender and reply address (empty: game admin email)|",
-            "sitename,Site address named in the mail (empty: server URL)|",
-            "subject,Mail subject (empty: thanks for your donation to the game name)|",
+            "servername"=>"Game name in the mail (empty: server URL)|",
+            "fantype"=>"Players are fans of ...|LoGD",
+            "adminname"=>"Signature at the end of the mail|The Staff",
+            "adminmail"=>"Sender and reply address (empty: game admin email)|",
+            "sitename"=>"Site address named in the mail (empty: server URL)|",
+            "subject"=>"Mail subject (empty: thanks for your donation to the game name)|",
         ),
     );
     return $info;
