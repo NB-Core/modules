@@ -74,7 +74,7 @@ function vending_runevent($type){
 					// protection against no-turn-spammers
 					$random_chance = e_rand(1,5);
 					if ($session['user']['turns']==0 && $random_chance==5) $random_chance=4;
-					switch (e_rand(1,5)){
+					switch ($random_chance){
 						case 1:
 						$val = round($session['user']['maxhitpoints']/$session['user']['level']);
 							output("`@The can hits the bottom of the Vending Machine, and explodes.");

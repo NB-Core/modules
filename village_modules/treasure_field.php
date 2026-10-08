@@ -142,6 +142,7 @@ function treasure_field_run(){
 				$rand=e_rand(0,5);
 				output("You dig away, and eventually find %s.`n",$junk[$rand]);
 				output("Before you can complain and demand your money back, the two swindlers are long gone.");
+			break;
 			case 7:
 				//lose turn
 				output("You dig, and you dig, and you just keep digging.`n");

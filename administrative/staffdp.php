@@ -35,6 +35,8 @@ function staffdp_dohook($hookname,$args){
 
 function staffdp_run(){
 	global $session;
+	// The Grotto link is only offered to megausers; enforce the same here.
+	check_su_access(SU_MEGAUSER);
 	$op=httpget('op');
 	$subop=httpget('subop');
 	require_once("lib/superusernav.php");

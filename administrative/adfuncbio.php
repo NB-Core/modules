@@ -41,7 +41,7 @@ function adfuncbio_dohook($hookname,$args){
 //    $id = $row['acctid'];
     switch ($hookname){
         case "biostat":
-            if ((get_module_setting("runfrom") == 0 && $session['user']['superuser'] & SU_EDIT_PETITIONS) || (get_module_setting("runfrom") == 1 && get_module_pref("ha") == 1) || (get_module_setting("runfrom") == 2 && $session['user']['superuser'] & SU_EDIT_USERS && get_module_pref("ha") == 1)){
+            if (adfuncbio_allowed()){
                 addnav("Admin Functions");
                 //addnav("Give Newday","runmodule.php?module=adfuncbio&op=opt&act=nd&id=$id");
 		addnav("Fix Navs","runmodule.php?module=adfuncbio&op=opt&act=fn&id=$id");
@@ -52,8 +52,20 @@ function adfuncbio_dohook($hookname,$args){
     }
     return $args;
 }
+/**
+ * Whether the current user may use the bio admin functions (per the "runfrom" setting).
+ */
+function adfuncbio_allowed(){
+    global $session;
+    return (get_module_setting("runfrom", "adfuncbio") == 0 && $session['user']['superuser'] & SU_EDIT_PETITIONS)
+        || (get_module_setting("runfrom", "adfuncbio") == 1 && get_module_pref("ha", "adfuncbio") == 1)
+        || (get_module_setting("runfrom", "adfuncbio") == 2 && $session['user']['superuser'] & SU_EDIT_USERS && get_module_pref("ha", "adfuncbio") == 1);
+}
 function adfuncbio_run(){
     global $session;
+    if (!adfuncbio_allowed()) {
+        redirect("village.php");
+    }
     $op = httpget('op');
     $act = httpget('act');
     $id = httpget('id');

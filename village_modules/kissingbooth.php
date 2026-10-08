@@ -53,7 +53,7 @@ function kissingbooth_dohook($hookname,$args)
 		break;
 	case "changesetting":
 		if (!$gardens && $args['setting'] == "villagename") {
-			if ($args['old'] = get_module_setting("kissingboothloc")) {
+			if ($args['old'] == get_module_setting("kissingboothloc")) {
 				set_module_setting("kissingboothloc", $args['new']);
 			}
 		}

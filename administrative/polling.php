@@ -141,6 +141,8 @@ function polling_run(){
 			addnav("Wipe all Data","runmodule.php?module=polling&op=megayes");
 			break;
 		case "megayes":
+			// The wipe link is only offered to megausers; enforce the same here.
+			check_su_access(SU_MEGAUSER);
 			output("`3All Polling Results Cleared.");
 			output("`nAll Votes Burned.");
 			output("`nPoll Is Inactive.");

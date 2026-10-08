@@ -11,6 +11,7 @@ function easteregg_getmoduleinfo(){
 			"x"=>"How many columns?,int|6",
 			"y"=>"How many rows?,int|4",
 			"tries"=>"How many maxtries?,int|3",
+			"eggitem"=>"Inventory item ID of the rare red egg (0: give a gem instead),int|0",
 		),
 		"prefs"=>array(
 			"easteregg - Prefs,title",
@@ -84,9 +85,17 @@ function easteregg_runevent($type){
 						output("`qHmmm... but this egg looks nice... somebody has made quite an effort to it... he even placed `%A GEM `q on it!`n`n");
 						output("`qYou receive `%one gem`q!",$amount);
 						$session['user']['gems']+=1;
+						break;
 					case 2:
+						$itemid = (int) get_module_setting("eggitem", "easteregg");
+						if ($itemid <= 0) {
+							// No egg item configured: the gem reward instead.
+							output("`qHmmm... but this egg looks nice... somebody has made quite an effort to it... he even placed `%A GEM `q on it!`n`n");
+							output("`qYou receive `%one gem`q!");
+							$session['user']['gems']+=1;
+							break;
+						}
 						output("`qHmmm... but this egg looks nice... somebody has made quite an effort to it... it is `\$RED`q and `)RARE`q ... you should take it to Eggbert if he is in town!`n`n");
-						$itemid = 201;
 						require_once("modules/inventory/lib/itemhandler.php");
 						$items = add_item_by_id($itemid,1);
 				}

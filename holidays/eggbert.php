@@ -75,7 +75,7 @@ function eggbert_run(){
 	$gems=30;
 	
 	$visited = get_module_pref('visited');
-	$itemid = 201;
+	$itemid = (int) get_module_setting("eggitem", "easteregg");
 
 	require_once("modules/inventory/lib/itemhandler.php");
 	$items = get_inventory_item($itemid);

@@ -242,7 +242,7 @@ Below is a short description for every module. Some modules rely on others; depe
 ### Holidays
 - **casperhh** – rock-paper-scissors against Casper in the Haunted House cellar, played just for fun and a news line, with no gold at stake (requires `hauntedhouse`).
 - **clantrees** – clans buy a Christmas tree for their hall and decorate it with turns, gold and gems; a well-decorated tree gives members a daily defense buff, doubled for the best tree (turn on tree buying in the settings).
-- **easteregg** – Easter forest event: find an egg hidden on a grid within three tries to win gold, a gem or a rare red egg for `eggbert` (active within 14 days of a hard-coded April 14; requires `inventory`).
+- **easteregg** – Easter forest event: find an egg hidden on a grid within three tries to win gold, a gem or a rare red egg for `eggbert` (active within 14 days of a hard-coded April 14; requires `inventory`; set the egg's item ID in the settings, otherwise a gem is given instead).
 - **eggbert** – Eggbert's shop, open in one village for the four weeks before April 27, buys one rare red egg from `easteregg` per player and year for 200 donation points or 30 gems (requires `inventory`).
 - **findfoolgold** – April Fools' forest and village event that shows the player a huge find of gold and gems that is never actually paid out (active only on April 1).
 - **halloween_xp** – adds a configurable bonus (10% by default) to forest experience and a cosmetic "Happy Halloween" buff at each new day (active October 29 to November 2; requires `datemanager`).
