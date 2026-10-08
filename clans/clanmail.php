@@ -38,6 +38,10 @@ function clanmail_dohook($hookname,$args){
 
 function clanmail_run(){
 	global $session;
+	// Same condition as the clan hall link.
+	if ($session['user']['clanrank']<CLAN_LEADER || $session['user']['clanid']==0) {
+		redirect("clan.php");
+	}
 	$op=httpget('op');
 	page_header ('Clan Mail');
 	addnav("Navigation");

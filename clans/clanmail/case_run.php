@@ -14,15 +14,21 @@ switch($op) {
 			require_once("lib/systemmail.php");
 			$sql="SELECT acctid FROM ".db_prefix('accounts')." WHERE clanid=".$session['user']['clanid']." AND clanrank>".CLAN_APPLICANT.";";
 			$result=db_query($sql);
-			$i=0;
+			$recipients=array();
 			while ($row=db_fetch_assoc($result)) {
-				$i++;
-				systemmail($row['acctid'],$subject,$body,$session['user']['acctid']);
+				$recipients[]=$row['acctid'];
 			}
-			$cost=$i*get_module_setting('mailcostgold');
-			$session['user']['gold']-=$cost;
-			output("`\$Mail has been sent! Paid `^%s gold`\$ for the delivery.`n`n",$cost);
-			debuglog("paid $cost gold for sending a clan mail");
+			$cost=count($recipients)*get_module_setting('mailcostgold');
+			if ($cost>$session['user']['gold']) {
+				output("`\$You cannot afford the delivery: it costs `^%s gold`\$.`n`n",$cost);
+			} else {
+				foreach ($recipients as $acctid) {
+					systemmail($acctid,$subject,$body,$session['user']['acctid']);
+				}
+				$session['user']['gold']-=$cost;
+				output("`\$Mail has been sent! Paid `^%s gold`\$ for the delivery.`n`n",$cost);
+				debuglog("paid $cost gold for sending a clan mail");
+			}
 		}
 		addnav("Refresh main form","runmodule.php?module=clanmail&op=write");
 

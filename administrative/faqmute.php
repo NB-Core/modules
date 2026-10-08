@@ -47,7 +47,7 @@ function faqmute_dohook($hookname,$args){
 	case "bioinfo":
 		$id = $args['acctid'];
 		$seen=get_module_pref("seenfaq",false,$id);
-		if (httpget("op")=="faqmute"){
+		if (httpget("op")=="faqmute" && ($session['user']['superuser'] & SU_EDIT_COMMENTS)){
 			set_module_pref("seenfaq",false,false,$id);
 			output("`nPlayer's FAQ seen status reset.`n");
 		} elseif (($session['user']['superuser'] & SU_EDIT_COMMENTS) &&

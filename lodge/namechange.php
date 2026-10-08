@@ -19,6 +19,7 @@ function namechange_getmoduleinfo(){
 		"prefs"=>array(
 			"Name Change User Preferences,title",
 			"timespurchased"=>"How many title changes have been bought?,int|0",
+			"pendingname"=>"Previewed name waiting for confirmation,viewonly|",
 		),
 	);
 	return $info;
@@ -75,6 +76,12 @@ function namechange_run(){
 
 	$namelength=get_module_setting('length');
 	page_header("Hunter's Lodge");
+	// The lodge link is only offered above the points threshold; enforce it here too.
+	$threshold = get_module_setting("initialpoints") + (get_module_pref("timespurchased") * get_module_setting("extrapoints"));
+	if ($session['user']['donation'] < $threshold) {
+		output("`7You do not have enough points to change your name.");
+		$op = "";
+	}
 	switch ($op) {
 		case "namechange":
 			output("`3`bChange Name`b`0`n`n");
@@ -146,6 +153,8 @@ function namechange_run(){
 				}
 			}
 
+			// Only this checked name can be confirmed.
+			set_module_pref("pendingname", $ntitle);
 			$nname = get_player_title();
 			output("`7Your new name will look like this: %s`0`n", $ntitle);
 			output("`7Your entire game name will look like: %s %s`0`n`n",
@@ -156,7 +165,13 @@ function namechange_run(){
 			addnav("No", "runmodule.php?module=namechange&op=namechange");
 			break;
 		case "changename":
-			$ntitle=stripslashes(rawurldecode(httpget('newname')));
+			$ntitle=(string)get_module_pref("pendingname");
+			if ($ntitle==="") {
+				output("`7Please preview your new name first.");
+				addnav("Choose a name","runmodule.php?module=namechange&op=namechange");
+				break;
+			}
+			set_module_pref("pendingname", "");
 			$fromname = $session['user']['name'];
 			$session['user']['playername'] = $ntitle;
 			$newname = change_player_name($ntitle);

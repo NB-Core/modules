@@ -50,6 +50,10 @@ function clanadmin_dohook($hookname,$args){
 
 function clanadmin_run(){
 	global $session;
+	// Same condition as the clan hall links.
+	if ($session['user']['clanrank']<CLAN_LEADER || $session['user']['clanid']==0) {
+		redirect("clan.php");
+	}
 	$op=httpget('op');
 	page_header("Clan Administratives");
 	addnav("Navigation");

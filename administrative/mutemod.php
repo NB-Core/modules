@@ -59,7 +59,8 @@ function mutemod_dohook($hookname,$args){
 	case "bioinfo":
 		$char = httpget('char');
 		$id = $args['acctid'];
-		mutemod_domute($id);
+		// Only moderators may change mutes; the links below are theirs too.
+		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) mutemod_domute($id);
 		// Handle the ability for super users to mute/unmute the player.
 		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
 			addnav("Mute Player Options");

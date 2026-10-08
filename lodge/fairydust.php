@@ -78,7 +78,12 @@ function fairydust_run(){
 	$cost = get_module_setting("cost");
 	$buff = get_module_setting("buff");
 	require_once("lib/increment_specialty.php");
-	if ($op == "usebottle") {
+	if ($op == "usebottle" && (int) get_module_pref("fairydustbottles") < 1) {
+		// The forest link is only offered while a bottle is left.
+		page_header("Fairy Dust");
+		output("`%You search your pockets, but you have no fairy dust left.");
+		addnav("Return to the forest","forest.php");
+	} elseif ($op == "usebottle") {
 		page_header("Fairy Dust");
 		output("`%You cautiously unstopper the tiny vial of dust and, holding your breath, tip the contents over your head with your eyes shut.");
 		output("A shimmering rain of dust cascades over you!`n`n`^");

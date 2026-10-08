@@ -42,7 +42,7 @@ function lodgenonexpiration_dohook($hookname,$args){
 				//check
 				debuglog("trying to set superuser from ".$session['user']['superuser']." to ".SU_NEVER_EXPIRE);
 				$session['user']['superuser'] = (int)$session['user']['superuser'] | SU_NEVER_EXPIRE;
-				$sql = "UPDATE accounts SET superuser = ".((int)$session['user']['superuser'])." WHERE acctid=".$session['user']['acctid'];
+				$sql = "UPDATE ".db_prefix("accounts")." SET superuser = ".((int)$session['user']['superuser'])." WHERE acctid=".((int)$session['user']['acctid']);
 				db_query($sql);
 			}
 			break;
@@ -89,9 +89,12 @@ function lodgenonexpiration_run(){
 			addnav("Yes (not enough points)", "");
 		}
 		addnav("No", "lodge.php");
+	}elseif ($op=="confirm" && ($bought || $pointsavailable < $cost)){
+		// The "Yes" link is only offered with enough points; enforce it here too.
+		addnav("L?Return to the Lodge","lodge.php");
+		output("`7The young nin shakes her head. \"`&I'm sorry, I cannot do that for you.`7\"");
 	}elseif ($op=="confirm"){
 		addnav("L?Return to the Lodge","lodge.php");
-		$pointsavailable = $session['user']['donation'] - $session['user']['donationspent'];
 		set_module_pref("bought", 1);
 		$session['user']['donationspent'] += $cost;
 		output("`7The young nin rummages through a pile of papers and hand you a certificate.`n`n");
@@ -100,7 +103,7 @@ function lodgenonexpiration_run(){
 		debuglog("Bought Immortality");
 		$session['user']['superuser'] = $session['user']['superuser'] | SU_NEVER_EXPIRE;
 		//you need to set this here by sql, else it will not be saved (security feature)
-		$sql = "UPDATE accounts SET superuser = ".((int)$session['user']['superuser'])." WHERE acctid=".$session['user']['acctid'];
+		$sql = "UPDATE ".db_prefix("accounts")." SET superuser = ".((int)$session['user']['superuser'])." WHERE acctid=".((int)$session['user']['acctid']);
 		db_query($sql);
 	}
 	page_footer();
