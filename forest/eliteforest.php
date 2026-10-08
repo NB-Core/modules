@@ -18,6 +18,7 @@ function eliteforest_getmoduleinfo(){
 	"settings"=>array(
 		"Elite Forest - Settings, title",
 			"specialchance"=>"Chance for special event in the forest Hook,int|10",
+			"maxseen"=>"How many elite fights per day?,int|3",
 			"categories"=>"What categories can the creatures be from,text|elite,other",
 			"type the categories in single quote marks separated by commas,note",
 		),
@@ -57,7 +58,7 @@ function eliteforest_run(){
 	
 	tlschema("forest");
 
-	$maxseen=3;
+	$maxseen=(int)get_module_setting("maxseen");
 	$enemytype = (int) httpget('enemytype');
 
 	$fight = false;
@@ -98,7 +99,7 @@ function eliteforest_run(){
 	if ($op=="search"){
 		checkday();
 		$seen=get_module_pref('seen');
-		if ($seen>$maxseen) {
+		if ($seen>=$maxseen) {
 			output("`2You think you had enough for today....");
 			addnav("Navigation");
 			villagenav();

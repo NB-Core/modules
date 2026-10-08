@@ -79,6 +79,8 @@ function availability_dohook($hookname,$args){
 			} elseif ($amount<50 && httpget('op') == '') {
 				//make it more expensive
 				//but not for small fries
+				// Small fries pay the base price; remember it so the purchase does not restore an unset (zero) price.
+				$price=$args['value'];
 				if ($session['user']['dragonkills']>2) {
 					if (httpget('op') != 'buy'){
 						$args['weaponname'].=sprintf_translate(" (only %s left!)",$amount);
@@ -135,6 +137,8 @@ function availability_dohook($hookname,$args){
 			} elseif ($amount<50 && httpget('op') == '') {
 				//make it more expensive
 				//but not for small fries
+				// Small fries pay the base price; remember it so the purchase does not restore an unset (zero) price.
+				$price=$args['value'];
 				if ($session['user']['dragonkills']>2) {
 					if (httpget('op') != 'buy'){
 						$args['armorname'].=sprintf_translate(" (only %s left!)",$amount);
