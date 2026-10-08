@@ -181,7 +181,7 @@ function linkchecker_run()
 				}
 				else
 				{
-				if (substr($download,-8)=="download" && (substr($download,0,8)=="modules/")) $download=auto;
+				if (substr($download,-8)=="download" && (substr($download,0,8)=="modules/")) $download="auto";
 				switch ($download)
 					{
 					case "core": case "core_module":

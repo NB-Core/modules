@@ -12,7 +12,8 @@ function bingobook_changecomment() {
         $bingoid = (int) httppost('bingoid');
         $go      = httppost('go');
 
-        if ($go!="Submit") {
+        // The button label is translated, so only check that the form was sent.
+        if ($go=="") {
                 $encodedComment = htmlentities($comment, ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
                 output("`qIf you want, you may add a short text for your own discretion to the entry (changeable later on):`n`n");
                 rawoutput("<form action='runmodule.php?module=bingobook&op=changecomment&ac={$acctId}' method='POST'>");

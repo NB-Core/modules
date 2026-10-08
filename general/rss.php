@@ -205,7 +205,7 @@ function rss_run(){
 		$result = db_query_cached($sql,"mod_rss_motd",get_module_setting("cache_timeout"));
 		$feedtitle = "Message of the Day";
 		while ($row = db_fetch_assoc($result)){
-			$pubdate = $row['currenttime'];
+			$pubtime = $row['currenttime'];
 			array_push(
 				$items,
 				array(
@@ -239,8 +239,8 @@ function rss_run(){
 	echo "<description>".get_module_setting('description')."</description>";
 	echo "<language>en-us</language>";
 	echo "<copyright>Copyright 2002-".date("Y").", Eric Stevens &amp; JT Traub</copyright>";
-	echo "<pubDate>".date("r",strtotime($pubdate))."</pubDate>";
-	echo "<lastBuildDate>".date("r",strtotime($pubdate))."</lastBuildDate>";
+	echo "<pubDate>".date("r",strtotime($pubtime))."</pubDate>";
+	echo "<lastBuildDate>".date("r",strtotime($pubtime))."</lastBuildDate>";
 	echo "<category>LotGD: ".rss_xmlencode($feedtitle)."</category>";
 	echo "<ttl>".get_module_setting("ttl")."</ttl>";
 	echo "<image>";

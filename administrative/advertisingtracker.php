@@ -504,7 +504,7 @@ function advertisingtracker_run(){
 					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $ac.login like '$target' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
 					break;
 				case "string":
-					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $cm.comment like '$search' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
+					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $cm.comment like '$target' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
 					break;
 			}
 
