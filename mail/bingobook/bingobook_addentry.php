@@ -20,7 +20,7 @@ function bingobook_addentry() {
         } else {
                 bingobook_insert($bingoid,$session['user']['acctid'],$comment);
                 output("`qYou put that user in your bingo book... ");
-                rawoutput("<img src='modules/bingobook/devil.gif'>");
+                if (file_exists("modules/bingobook/devil.gif")) rawoutput("<img src='modules/bingobook/devil.gif'>");
         }
 }
 ?>

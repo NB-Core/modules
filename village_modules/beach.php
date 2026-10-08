@@ -77,7 +77,7 @@ function beach_run(){
 	modulehook("beach");
 
 	output("`^`c`bThe Beach Resort`b`c`n");
-	rawoutput("<center><img src='modules/beach/beach.jpg' align='center'></center><br>");
+	if (file_exists("modules/beach/beach.jpg")) rawoutput("<center><img src='modules/beach/beach.jpg' align='center'></center><br>");
 	output("`^White sand which feels pleasantly warm beneath your naked feet. Crystal blue water, reflecting the sunlight. Palm trees that move gently in the slight breeze. This place must be heaven.`n`n");
 	output("Many tourists from all over the land have spread the blankets here for a sunbath or a picknick. Some children play in the shallow waters with an inflated ball, others are busy building sandcastles. All around you is the hustle and bustle of a lively holiday resort.`n`n");
 	modulehook("beach-desc");

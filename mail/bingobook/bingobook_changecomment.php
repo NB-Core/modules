@@ -25,7 +25,7 @@ function bingobook_changecomment() {
         } else {
                 bingobook_change($bingoid,$session['user']['acctid'],stripslashes($comment));
                 output("`gYou have altered the comment for that user in your bingo book... ");
-                rawoutput("<img src='modules/bingobook/devil.gif'>");
+                if (file_exists("modules/bingobook/devil.gif")) rawoutput("<img src='modules/bingobook/devil.gif'>");
         }
 }
 ?>

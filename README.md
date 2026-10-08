@@ -165,7 +165,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **stumble** – the player trips chasing a bunny and loses a share of max hitpoints (25% by default), possibly dying, but finds a configurable number of gems.
 - **tatmonster** – fight against Cerberus, which gets weaker the more tattoos the player has (grace tattoos for low dragon kills); fleeing costs charm, winning gives experience, losing costs gold, experience and maybe charm (requires `petra`).
 - **thegrinch** – Grinch mini‑boss.
-- **thieves** – Lonestrider's band ambushes gem-carrying players (likelier with more gems), who pay a share, try a distraction or fight; losing costs gems and maybe `jeweler` jewelry (copy the `thieves/` image folder).
+- **thieves** – Lonestrider's band ambushes gem-carrying players (likelier with more gems), who pay a share, try a distraction or fight; losing costs gems and maybe `jeweler` jewelry (its picture is not included; an optional `thieves/thieves.jpg` is shown if present).
 - **treasure** – rare cliff climb to a chest that opens with a matching coloured key for charm, a defense buff, elixirs, talismans, gold nuggets or death (requires `inventory`; create the key and reward items).
 - **vampirelord** – introduces the Vampire’s Lair event (`forest_specials/vampirelord.php`) where players can sacrifice permanent HP for buffs, gold, or gems. Event images are shown through the optional `addimages` module if it is active.
 - **vampirelord_bride** – bride of the vampire lord (requires `vampirelord`; images via the optional `addimages` module).
@@ -175,7 +175,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **zombie** – zombie outbreak event.
 
 ### Gardens
-- **gardener** – gazebo in the gardens where the gardener asks one true-or-false question about garden and game rules per day; a correct answer pays level-scaled gold or occasionally a gem (requires `addimages`).
+- **gardener** – gazebo in the gardens where the gardener asks one true-or-false question about garden and game rules per day; a correct answer pays level-scaled gold or occasionally a gem (requires `addimages`; its pictures are not included, optional `gardener*.gif` files in `modules/gardener/` are shown if present).
 - **gardenparty** – yearly garden party (theme, date and length configurable; default June 30 for 24 hours) where players buy a limited amount of cake and drinks, posting an emote in the garden chat and getting a cosmetic forest buff.
 - **gardensroster** – lists the online players currently in the gardens or in the Shades on those pages.
 - **loveshack** – Loveshack in the gardens where players buy drinks or roses for other players, or kiss or slap them for free, each sent as a mail and capped per day, plus a bar chat (bar drinks need `drinks`).
@@ -252,7 +252,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **holiday_naruto** – Naruto-themed "talk like Naruto" days that rewrite game text with character nicknames and "dattebayo" slang (active April 17 to 19; players can opt out in their preferences).
 - **holiday_pirate** – Talk Like a Pirate Day: rewrites game text in pirate speak (active September 19 and 20; players can opt out in their preferences).
 - **holiday_xmas** – Christmas text replacements (North Pole, Snownin, egg nog), a small attack buff at each new day and a countdown in the village description (active December 15 to 25; requires `datemanager`; players can opt out).
-- **lunarnewyear** – Lunar New Year season (dates built in until 2043): a daily red-envelope gold gift and a once-per-season forest fight with the Kirin for gold, gems or items (items need `inventory`; reinstall after changing the day settings).
+- **lunarnewyear** – Lunar New Year season (dates built in until 2043): a daily red-envelope gold gift and a once-per-season forest fight with the Kirin for gold, gems or items (items need `inventory`; reinstall after changing the day settings; the Nian picture is not included).
 - **merry_xmas** – shows a rainbow "Merry Christmas" banner on the home page (active December 1 to 31; requires `datemanager`).
 - **pumpkinhouse** – once-a-day pumpkin carving in the Haunted House gardens for a little gold, with prizes up to five times the fee plus a short buff for the best pumpkin (October 29 to November 2; requires `datemanager` and `hauntedhouse`).
 - **pumpkinking** – Halloween forest event with the Pumpkin King: he scorns gold and gems, fleeing costs forest fights, and candy items earn random Halloween items (October 29 to November 2; requires `datemanager` and `inventory`; set the candy item ID).
@@ -367,7 +367,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **aloysius** – Aloysius' Market, where once a day players gamble forest fights (more fights, better odds) for a chance at one extra PvP fight.
 - **applebob** – Sichae's apple bobbing stand: pay a little gold a few times a day for a small heal, a rare blue-apple defense buff or a poisoned-apple debuff.
 - **azrael** – Halloween trick-or-treat village event with a ghost-costumed child; treating him to a gold piece grants an attack buff, while ignoring him or asking for a trick risks charm, hitpoints, gold and gems.
-- **beach** – Beach Resort location reached from the village gates, with its own chat, a picture, random beach events and a hook for add-ons such as `beach_mermaid` and `beach_sandcastle`.
+- **beach** – Beach Resort location reached from the village gates, with its own chat, an optional picture (`beach/beach.jpg`, not included), random beach events and a hook for add-ons such as `beach_mermaid` and `beach_sandcastle`.
 - **beach_mermaid** – Mermaid's Rock at the beach, where players throw gems into the sea (limited per day) for random rewards such as forest fights, gold, gems, charm, max hitpoints or a defense buff (requires `beach`).
 - **beach_sandcastle** – sandcastle contest at the beach: pay gold to build for a chance at prize money and a displayed winning castle, or trample castles for a gem, a mean title or a beating (requires `beach`).
 - **beggar** – village event where an old beggar asks for alms; giving a coin, a gem or all your gold leads to charm, gem or news outcomes, and shifts alignment when `alignment` is active.
@@ -380,7 +380,7 @@ Below is a short description for every module. Some modules rely on others; depe
 - **drpap** – Dr. Paprika's office, where players with enough dragon kills pay gold and gems for a gender change a limited number of times, with a waiting-room chat.
 - **exodus** – Exodus' pit, where players pay gold (per level) and gems for an extra skill point in their specialty, a few times per dragon kill.
 - **falls_of_truth** – once a day players can face their true self at the Falls of Truth, which randomly shifts their alignment one point towards good or evil (has no effect without `alignment`).
-- **fightingzone** – Naruto-themed roleplay chat arenas linked from every village: a main zone, eleven themed fighting grounds and extra grounds unlocked at 25 and 50 dragon kills, with an optional rules link (requires `addimages`).
+- **fightingzone** – Naruto-themed roleplay chat arenas linked from every village: a main zone, eleven themed fighting grounds and extra grounds unlocked at 25 and 50 dragon kills, with an optional rules link (requires `addimages`; the zone pictures are not included, GIFs you add to `modules/fightingzone/` are shown).
 - **fightingzone_shades** – undead roleplay chat arenas for dead players in the Shades, plus a link to the clan hall for clan members while dead, with an optional rules link.
 - **frosty** – winter village event in which players can spend a turn helping a girl rebuild her snowman for extra forest fights, a gem or gold; ignoring her can cost hitpoints, a turn, charm or gold.
 - **ghosttown** – Esoterra, a Halloween ghost-town city with most shops, the forest and the bank closed and a campsite for PvP, reachable via `caravan` or a travel setting (needs `cities`).
@@ -426,6 +426,8 @@ Below is a short description for every module. Some modules rely on others; depe
 Some modules require others to be installed first (as listed above). Two of those dependencies (`avatar`, `battlearena`) are not published here yet. All modules assume a working NB-Core/lotgd installation. Enable or disable modules from the game’s Module Manager.
 
 When a module comes with a folder of the same name (e.g. `pumpkin.php` and `pumpkin/`), copy both into your game's `modules/` directory.
+
+Some modules can show pictures that are not part of this repository because their image rights are unclear (fightingzone, thieves, gardener, beach, lunarnewyear, bingobook). They work without them; pictures you add under the documented names are shown.
 
 ## Additional modules
 

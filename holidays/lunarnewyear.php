@@ -192,7 +192,7 @@ function lunarnewyear_runevent($type){
 			$op = "fight";
 			httpset('op',$op);
 		case "fight":
-			rawoutput("<center><img 
+			if (file_exists("modules/lunarnewyear/Nian.jpg")) rawoutput("<center><img 
 					src='modules/lunarnewyear/Nian.jpg'></center><br>");
 			include("battle.php");
 			if ($victory){

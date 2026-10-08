@@ -20,6 +20,8 @@ $imageInit = 0;
  */
 function addimage($picLink, $caption = 'Original') {
 	$picLink = "modules/".$picLink;
+	// Module images are optional (some are not distributed); show nothing if one is missing.
+	if (!file_exists($picLink)) return;
 	$restrictSize = get_module_setting("restrict_size","addimages");
 	$maxwidth = get_module_setting("maxwidth","addimages");
 	$maxheight = get_module_setting("maxheight","addimages");

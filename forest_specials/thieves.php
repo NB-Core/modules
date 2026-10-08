@@ -167,7 +167,7 @@ function thieves_elf_help($from) {
 		$session['user']['specialinc']="";
 		debuglog("gained 1 gem from Lonestrider aka $lonestrider for being an ".get_module_setting('preferredrace'));
 	} elseif ($op=="search" || $op=="") {
-		rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
+		if (file_exists("modules/thieves/thieves.jpg")) rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
 		$session['user']['specialmisc']="";
 		output("`n`n`3A strange wind blows from the West.");
 		output("Your keen `6elvish`3 eyes glance about.");
@@ -226,7 +226,7 @@ function thieves_elf_help($from) {
 		if ($costlose < 0) $costlose = 0;
 		thieves_fight($costlose);
 	} elseif ($op == "thiefskill") {
-		rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
+		if (file_exists("modules/thieves/thieves.jpg")) rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
 		$session['user']['specialinc'] = "";
 		// We know the user has a gem since otherwise Lonestrider would
 		// give them one (since we're in the elf side)
@@ -244,7 +244,7 @@ function thieves_elf_help($from) {
 		increment_specialty("`\$");
 		debuglog("paid a gem to Lonestrider aka $lonestrider for thief skills.");
 	} elseif ($op == "money") {
-		rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
+		if (file_exists("modules/thieves/thieves.jpg")) rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
 		$session['user']['specialinc'] = "";
 		if ($session['user']['gems']>3*get_module_setting("mingems")){
 			output("`n`n`6Depressed, you tell %s`6 that you're trying to earn some extra money.",$lonestrider);
@@ -266,7 +266,7 @@ function thieves_elf_help($from) {
 			debuglog("gained $gems gem from Lonestrider aka $lonestrider for being an ".get_module_setting('preferredrace'));
 		}
 	} elseif ($op == "creatures") {
-		rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
+		if (file_exists("modules/thieves/thieves.jpg")) rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");
 		$session['user']['specialinc']="";
 		output("`n`n`6After a full day of fighting, you tell %s`6 that you're looking for more creatures to kill.",$lonestrider);
 		output("He shrugs slightly and doesn't say much, but his puckish smile never leaves his fair features.");
@@ -280,7 +280,7 @@ function thieves_elf_help($from) {
 			$session['user']['turns']++;
 		}
 	} else {
-		rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");	
+		if (file_exists("modules/thieves/thieves.jpg")) rawoutput("<center><img src='modules/thieves/thieves.jpg' alt='Thieves'></center>");	
 		$session['user']['specialinc']="";
 		output("`n`n`6You're a little more relaxed about this infamous rogue, but you tell %s`6 that you're fine and quickly take your leave.",$lonestrider);
 		output("He doesn't say a word, but his puckish smile never leaves his face as you hear a dozen hidden elves begin to sing songs in the forest behind you.");

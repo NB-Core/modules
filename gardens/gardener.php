@@ -197,6 +197,7 @@ function gardener_run() {
 }
 
 function gardener_addimage($args) {
+	if (!file_exists("modules/gardener/".$args)) return;
 	output_notl("`c<img src=\"modules/gardener/".$args."\">`c<br>\n",true);
 }
 
