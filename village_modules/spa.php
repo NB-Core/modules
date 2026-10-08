@@ -19,6 +19,7 @@ function spa_getmoduleinfo(){
 		"settings"=>array(
 			"visitsallowed"=>"Times players are allowed visit per day,int|1",
 			"cost"=>"How much gold does a visit cost per level,int|30",
+			"town"=>"Town with the spa,location|",
 		),
 		"prefs"=>array(
 			"visitstoday"=>"Number of visits today,int|0",
@@ -29,12 +30,10 @@ function spa_getmoduleinfo(){
 
 
 function spa_install(){
-	$vname = "Jiseigakure";
-	if ($vname === NULL) {
-		output("Please install a trollish town before installing this module!");
-		return false;
+	// Keep the town chosen in the settings; without one the spa opens in the capital.
+	if ((string) get_module_setting("town", "spa") === "") {
+		set_module_setting("town", getsetting("villagename", LOCATION_FIELDS), "spa");
 	}
-	set_module_setting("town", $vname);
 	module_addhook("changesetting");
 	module_addhook("village");
 	module_addhook("newday");

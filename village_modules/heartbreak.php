@@ -296,9 +296,10 @@ There is now a new trail in the snow.`n
 }
 
 function heartbreak_get_random_poem() {
-	$files = opendir("modules/heartbreak");
 	$poems=array();
-	while (false !== ($entry = readdir($files))) {
+	// Poems are optional text files in modules/heartbreak/.
+	$files = is_dir("modules/heartbreak") ? opendir("modules/heartbreak") : false;
+	while ($files !== false && false !== ($entry = readdir($files))) {
 		if ($entry=="." || $entry=="..") continue;
 		$poems[]=$entry;
 	}
