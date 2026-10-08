@@ -54,9 +54,9 @@ function clannews_dohook($hookname, $args)
 			while ($row = db_fetch_assoc($res)) {
 				tlschema($row['tlschema']);
 				if ($row['arguments'] != "") {
-					$args = unserialize($row['arguments']);
-					array_unshift($args, $row['newstext']);
-					$news = call_user_func_array("sprintf_translate", $args);
+					$newsargs = unserialize($row['arguments']);
+					array_unshift($newsargs, $row['newstext']);
+					$news = call_user_func_array("sprintf_translate", $newsargs);
 				} else {
 					$news = translate_inline($row['newstext']);
 				}

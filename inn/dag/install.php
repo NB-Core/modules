@@ -29,15 +29,15 @@ function dag_install_private(){
 			amount int(11) unsigned NOT NULL default '0',
 			target int(11) unsigned NOT NULL default '0',
 			setter int(11) unsigned NOT NULL default '0',
-			setdate datetime NOT NULL default '0000-00-00 00:00:00',
+			setdate datetime NOT NULL default '" . DATETIME_DATEMIN . "',
 			status int(11) unsigned NOT NULL default '0',
 			winner int(11) unsigned NOT NULL default '0',
-			windate datetime NOT NULL default '0000-00-00 00:00:00',
+			windate datetime NOT NULL default '" . DATETIME_DATEMIN . "',
 			PRIMARY KEY (bountyid),
 			INDEX(status),
 			INDEX(target),
 			INDEX(status,target)
-		) Type=INNODB";
+		) ENGINE=InnoDB";
 		db_query($sql);
 	}
 	//look to see if we're migrating bounties from the old system.

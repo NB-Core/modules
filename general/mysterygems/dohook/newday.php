@@ -9,7 +9,7 @@ if (!get_module_setting('runoncemove') && get_module_setting('move'))
 	set_module_pref('userplace', $key);
 }
 if (get_module_pref('lostmountdays') < 0) set_module_pref('lostmountdays', 0);
-if (get_module_pref('lostmount') && !get_module_pref('runoncemount'))
+if (get_module_pref('lostmount') && !get_module_setting('runoncemount'))
 {
 	set_module_pref('lostmountdays', get_module_pref('lostmountdays') - 1);
 	if (get_module_pref('lostmountdays') > 0)
@@ -29,5 +29,5 @@ if (get_module_pref('lostmount') && !get_module_pref('runoncemount'))
 		set_module_pref('mountid', 0);
 	}
 }
-if (!get_module_pref('runonceused')) set_module_pref('used', 0);
+if (!get_module_setting('runonceused')) set_module_pref('used', 0);
 ?>
