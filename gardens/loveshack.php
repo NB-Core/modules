@@ -54,7 +54,7 @@ function loveshack_install(){
 	module_addhook("newday");
 //	module_addhook_priority("footer-inn",1);
 	module_addhook("gardens");
-	if ($SCRIPT_NAME == "modules.php"){
+	if (basename($_SERVER['SCRIPT_NAME'] ?? '') === "modules.php"){
 		$module=httpget("module");
 		if ($module == "Loveshack"){
 			require_once("modules/loveshack/lovedrinks.php");
