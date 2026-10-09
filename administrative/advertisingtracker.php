@@ -1,4 +1,7 @@
 <?php
+use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
+
 function advertisingtracker_getmoduleinfo(){
 	$info = array(
 		"name"=>"Advertising Tracker (inGame)",
@@ -77,9 +80,27 @@ function advertisingtracker_dohook($hookname,$args){
 	return $args;
 }
 
+/**
+ * Whether the request is the posted wipe confirmation with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function advertisingtracker_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:advertisingtracker");
+}
+
 function advertisingtracker_run(){
 	global $session;
 	$op=httpget('op');
+	// The navs below are shown by rank; require the same rank for the action itself.
+	$needed=SU_EDIT_USERS;
+	if ($op=="") $needed=SU_EDIT_COMMENTS;
+	if ($op=="wipe" || $op=="presearchmail" || $op=="searchmail") $needed=SU_MEGAUSER;
+	if (($session['user']['superuser'] & $needed)!=$needed) {
+		redirect("superuser.php");
+	}
 	require_once("lib/superusernav.php");
 	superusernav();
 	page_header("Advertising Tracker");
@@ -119,11 +140,13 @@ function advertisingtracker_run(){
 	switch ($op) {
 		case "wipe":
 			$action=httpget('action');
+			// Wiping needs the confirmation form's POST and token; a bare link only shows the confirmation.
+			if ($action=="reallywipe" && !advertisingtracker_validpost()) $action="confirm";
 			output("`4You are now going to:`n`c`\$->wipe a user from the game`n->insert mails to&from him from the mail into the abusemail table`n->log his account info into the abuseuser table`n->if active, the email will be moved to the blocked list on char creation`n`c`n");
 			output("`4Think carefully before you do this! The char gets deleted, so the char restorer (if installed) will work. Though, it's a bad thing. ONLY do this if you have an absolute jerk on your server you want to get off immediately and still have his actions logged.`n`n");
 			switch ($action) {
 				case "reallywipe":
-					$target=httpget('target');
+					$target=(int)httpget('target');
 					$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1";
 					$result=db_query($sql);
 					$account=db_fetch_assoc($result);
@@ -134,25 +157,21 @@ function advertisingtracker_run(){
 					$number=db_affected_rows($result);
 					$sql="DESCRIBE ".db_prefix('abuseuser').";";
 					$result=db_query($sql);
-					$newsql="INSERT INTO ".db_prefix('abuseuser')." (";
 					$array=array();
 					while ($row=db_fetch_assoc($result)) {
-						$newsql.=$row['Field'].",";
 						$array[]=$row['Field'];
 					}
-					
-					$newsql=substr($newsql,0,strlen($newsql)-1).") VALUES (";
+					// The account's own fields (bio, title, ...) are player text, so they are bound, not pasted.
+					$abuserow=array();
 					foreach ($array as $field) {
-						$newsql.="'".$account[$field]."',";
+						$abuserow[$field]=$account[$field] ?? '';
 					}
-					$newsql=substr($newsql,0,strlen($newsql)-1)."); ";
-					debug($newsql);
-					db_query($newsql); //insert infos
+					Database::getDoctrineConnection()->insert(db_prefix('abuseuser'), $abuserow); //insert infos
 					require_once("lib/charcleanup.php");
 					char_cleanup($target,"CHAR_DELETE_MANUAL"); //finish prefs
 					$sql="DELETE FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1;";
 					db_query($sql); //gone
-					output("`4User %s`4 has been deleted, %s mails have been moved to the abusemail table.`n`n",$row['name'],$number);
+					output("`4User %s`4 has been deleted, %s mails have been moved to the abusemail table.`n`n",$account['name'],$number);
 					
 					//automatically revoke him to make a new char by email if the blocker is installed
 					
@@ -171,13 +190,17 @@ function advertisingtracker_run(){
 					break;
 					
 				case "confirm":
-					$target=httpget('target');
+					$target=(int)httpget('target');
 					$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1";
 					$result=db_query($sql);
 					$row=db_fetch_assoc($result);
 					output("`\$Do you really want to delete the user %s`\$, record his mails and so on?`n(Note: Mails displayed below to/from him)`%`n`n",$row['name']);
-					addnav("User Wipe!");
-					addnav(array("`\$Wipe user %s",$row['name']),"runmodule.php?module=advertisingtracker&op=wipe&action=reallywipe&target=$target");
+					$wipeurl="runmodule.php?module=advertisingtracker&op=wipe&action=reallywipe&target=$target";
+					$wipelabel=sprintf_translate("Wipe user %s",full_sanitize($row['name']));
+					rawoutput("<form action='$wipeurl' method='post'>"
+						.(class_exists(Csrf::class) ? Csrf::hiddenField("module:advertisingtracker") : "")
+						."<input type='submit' class='button' value='".htmlspecialchars($wipelabel, ENT_QUOTES)."'></form><br>");
+					addnav("",$wipeurl);
 					
 					$ac=db_prefix("accounts");
 					$mail=db_prefix("mail");
@@ -504,7 +527,7 @@ function advertisingtracker_run(){
 					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $ac.login like '$target' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
 					break;
 				case "string":
-					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $cm.comment like '$search' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
+					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $cm.comment like '$target' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
 					break;
 			}
 

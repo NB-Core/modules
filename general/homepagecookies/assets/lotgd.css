@@ -1,0 +1,121 @@
+﻿/* Klaro Modal Container */
+#klaro .cookie-modal {
+	background-color: #f9f9f9;
+	border-radius: 10px;
+	box-shadow: 0 0 10px rgba(0,0,0,0.3);
+	color: #222; /* dark text for contrast */
+	font-family: 'Segoe UI', sans-serif;
+}
+
+/* Klaro Modal Content */
+#klaro .cookie-modal .cookie-modal-content {
+	padding: 20px;
+	line-height: 1.5;
+}
+
+/* Semi-transparent background (Backdrop) */
+#klaro .cookie-modal:not(.cookie-modal-hidden)::before {
+	background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Klaro Headline */
+#klaro .cookie-modal h1 {
+	font-size: 1.5em;
+	color: #fff;
+}
+
+/* Klaro Buttons: Basic properties */
+#klaro .cm-btn {
+	color: #ffffff !important;
+	text-shadow: none !important;
+	font-weight: bold;
+	font-size: 14px;
+	border: none !important;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+	cursor: pointer;
+}
+
+/* Accept all */
+#klaro .cm-btn-success.cm-btn-accept-all {
+	background-color: #218838 !important;
+}
+
+#klaro .cm-btn-success.cm-btn-accept-all:hover {
+	background-color: #1e7e34 !important;
+}
+
+/* Accept selected */
+#klaro .cm-btn-success.cm-btn-accept {
+	background-color: #007bff !important;
+}
+
+#klaro .cm-btn-success.cm-btn-accept:hover {
+	background-color: #0069d9 !important;
+}
+
+/* "Decline" button */
+#klaro .cm-btn-decline {
+	background-color: #c82333 !important;
+}
+
+#klaro .cm-btn-decline:hover {
+	background-color: #bd2130 !important;
+}
+
+/* "Save" button – if not accept */
+#klaro .cm-btn.cm-btn-save {
+	background-color: #0069d9 !important;
+}
+
+#klaro .cm-btn.cm-btn-save:hover {
+	background-color: #005cbf !important;
+}
+
+/* "1 service" chips */
+#klaro .cm-btn.cm-btn-info {
+	background-color: #222 !important; 
+	color: #fff !important;
+	font-weight: bold !important;
+	padding: 4px 10px;
+	font-size: 13px;
+	border-radius: 3px;
+}
+
+/* Klaro footer link (Realized with Klaro) */
+#klaro .cookie-modal a[href*="kiprotect.com"] {
+	color: #d8d8d8 !important; 
+	font-weight: bold !important;
+	text-decoration: underline;
+}
+
+#klaro .cookie-modal a[href*="kiprotect.com"]:hover {
+	color: #002b5e !important;
+}
+
+/* Keyboard focus indicator */
+#klaro .cookie-modal button:focus,
+#klaro .cookie-modal a:focus {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+}
+
+/* Mobile: responsive optimization */
+@media (max-width: 480px) {
+	#klaro .cookie-modal .cookie-modal-content {
+		padding: 10px;
+	}
+
+	#klaro .cookie-modal .cookie-modal-footer .cm-btn {
+		display: block;
+		width: 100%;
+		margin-bottom: 10px;
+	}
+}
+
+.klaro .cookie-modal .cm-list-description, .klaro .context-notice .cm-list-description, .klaro .cookie-notice .cm-list-description {
+color: #9b9898;
+}
+
+.klaro .cookie-modal a, .klaro .context-notice a, .klaro .cookie-notice a {
+	color: #23e82d;
+}
