@@ -80,20 +80,12 @@ function visalogin_run(){
 
 	output("`c`b`\$Visa Owner Login`b`n");
 	addnav("Back to index","index.php");
-	//This is just a partial copy of login.php with two extra elements.
-	rawoutput("<script src='src/Lotgd/md5.js' defer></script>");
-	rawoutput("<script>
-	function md5pass(){
-		var passbox = document.getElementById('password');
-		if (passbox.value.substring(0, 5) != '!md5!') {
-			passbox.value = '!md5!' + hex_md5(passbox.value);
-		}
-	}
-	</script>");
+	//This is just a partial copy of the core login form with two extra elements.
+	// The password is posted as typed, like the core form: login.php no longer accepts "!md5!" digests.
 	$uname = translate_inline("<u>U</u>sername");
 	$pass = translate_inline("<u>P</u>assword");
 	$butt = translate_inline("Log in");
-	rawoutput("<form action='login.php' method='POST' onSubmit=\"md5pass();\">".templatereplace("login",array("username"=>$uname,"password"=>$pass,"button"=>$butt))."<input type=\"hidden\" name=\"visalogin\" value=\"visalogin\"/>");
+	rawoutput("<form action='login.php' method='POST'>".templatereplace("login",array("username"=>$uname,"password"=>$pass,"button"=>$butt))."<input type=\"hidden\" name=\"visalogin\" value=\"visalogin\"/>");
 	rawoutput("<input name='force' value='1' type='hidden'> </form>");	//needed if you have forgottenpasswordblocker module installed
 	// Render reCAPTCHA token into the visa login form.
 	// The index-login hook injects enterprise.js + hidden token field;

@@ -111,8 +111,8 @@ function haberdasher_dohook($hookname, $args){
 		}
 		break;
 	case "biostat":
-		if (get_module_pref("hatsize",false,$args['acctid'])){
-			output("`^Hat Size: `@%s`n", get_module_pref("hatsize",false,$args['acctid']));
+		if (get_module_pref("hatsize", "haberdasher",$args['acctid'])){
+			output("`^Hat Size: `@%s`n", get_module_pref("hatsize", "haberdasher",$args['acctid']));
 		}
 		break;
 	case "dragonkilltext":

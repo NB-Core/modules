@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 // translator ready
 // addnews ready
@@ -302,7 +303,8 @@ $ranks = translate_inline($args['ranks']);
 			// end collapse
 			modulehook("}collapse");
 		}elseif ($op=="deleteclan"){
-			if (httpget("sop")=="yes") {
+			// Deleting needs the confirmation form's POST and token; a bare link only shows the confirmation.
+			if (httpget("sop")=="yes" && Csrf::validatePostRequest("module:claneditor")) {
 				//notify users of the deletion of the clan
 				$rows = $conn->executeQuery(
 					"SELECT acctid FROM {$accountsTable} WHERE clanid = :clanid",
@@ -342,8 +344,11 @@ $ranks = translate_inline($args['ranks']);
 			} else {
 				output("`%`c`bAre you SURE you want to delete this clan?`b`c`n");
 				$dc = translate_inline("Delete this clan? Are you sure!");
-				rawoutput("[<a href='runmodule.php?module=claneditor&op=deleteclan&sop=yes&dt=$dt' onClick=\'return confirm(\"$dc\");'>$dc</a>]");
-				addnav("","runmodule.php?module=claneditor&op=deleteclan&sop=yes&dt=$dt");
+				$deleteurl = "runmodule.php?module=claneditor&op=deleteclan&sop=yes&dt=".(int)$dt;
+				rawoutput("<form action='$deleteurl' method='post' onSubmit='return confirm(".htmlspecialchars(json_encode($dc), ENT_QUOTES).");'>"
+					.Csrf::hiddenField("module:claneditor")
+					."<input type='submit' class='button' value='".htmlspecialchars($dc, ENT_QUOTES)."'></form>");
+				addnav("",$deleteurl);
 			}
 		}elseif ($op=="editmodule"||$op=="editmodulesave"){
 			$mdule = httpget("mdule");
@@ -497,17 +502,18 @@ $ranks = translate_inline($args['ranks']);
 			if ($setrank>""){
 				// httpget() values carry legacy addslashes() escaping; bind the unescaped login.
 				$conn->executeStatement(
-					"UPDATE {$accountsTable} SET clanrank = :clanrank WHERE login = :login",
-					['clanrank' => (int)$setrank, 'login' => stripslashes($who)],
-					['clanrank' => ParameterType::INTEGER, 'login' => ParameterType::STRING]
+					"UPDATE {$accountsTable} SET clanrank = :clanrank WHERE login = :login AND clanid = :clanid",
+					['clanrank' => (int)$setrank, 'login' => stripslashes($who), 'clanid' => (int)$claninfo['clanid']],
+					['clanrank' => ParameterType::INTEGER, 'login' => ParameterType::STRING, 'clanid' => ParameterType::INTEGER]
 				);
 			}
 			$remove = httpget('remove');
 			if ($remove>""){
 				$conn->executeStatement(
-					"UPDATE {$accountsTable} SET clanrank=".CLAN_APPLICANT.",clanid=0,clanjoindate='".DATETIME_DATEMIN."' WHERE login = :login AND clanrank <= :clanrank",
-					['login' => stripslashes($remove), 'clanrank' => (int)$session['user']['clanrank']],
-					['login' => ParameterType::STRING, 'clanrank' => ParameterType::INTEGER]
+					// Staff with SU_EDIT_USERS may remove any member of the clan being edited; their own clan rank does not matter.
+					"UPDATE {$accountsTable} SET clanrank=".CLAN_APPLICANT.",clanid=0,clanjoindate='".DATETIME_DATEMIN."' WHERE login = :login AND clanid = :clanid",
+					['login' => stripslashes($remove), 'clanid' => (int)$claninfo['clanid']],
+					['login' => ParameterType::STRING, 'clanid' => ParameterType::INTEGER]
 				);
 				//delete unread application emails from this user.
 				//breaks if the applicant has had their name changed via

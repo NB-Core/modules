@@ -144,13 +144,13 @@ function unclean_dohook($hookname, $args)
 		global $session;
 
 		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
-			$usercomment = (string) get_module_pref("usercomment", false, $args['acctid']);
+			$usercomment = (string) get_module_pref("usercomment", "unclean", $args['acctid']);
 			$usercomment=sanitize_mb($usercomment);
 			if (!empty($usercomment)) {
 				$usercomment = sanitize_mb($usercomment);
 			}
 				else $usercomment = '';
-			$userfilthiness = (string) get_module_pref("filthiness", false, $args['acctid']);
+			$userfilthiness = (string) get_module_pref("filthiness", "unclean", $args['acctid']);
 
 			if ($userfilthiness != 0)
 				output("`^Filter Trips: `@%s`0`n", $userfilthiness);

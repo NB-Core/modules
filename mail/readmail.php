@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Forms;
 use Lotgd\MySQL\Database;
 
 function readmail_getmoduleinfo() {
@@ -30,6 +31,11 @@ function readmail_dohook($hookname,$args) {
 	global $session;
 	switch ($hookname) {
                 case "header-mail":
+                        // The buttons sit in the inbox form, which carries mail.php's form token.
+                        // mail.php checks that token only after this hook, so check it here first.
+                        if ((httppost('delete_readmails') || httppost('mark_as_read')) && !Forms::validateCsrf()) {
+                                break;
+                        }
                         if (httppost('delete_readmails')) {
                                 $connection = Database::getDoctrineConnection();
                                 $mailTable = Database::prefix('mail');

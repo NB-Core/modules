@@ -64,8 +64,8 @@ function mutemod_dohook($hookname,$args){
 		// Handle the ability for super users to mute/unmute the player.
 		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
 			addnav("Mute Player Options");
-			$muted = get_module_pref("muted", false, $id);
-			$tmuted = get_module_pref("tempmute", false, $id);
+			$muted = get_module_pref("muted", "mutemod", $id);
+			$tmuted = get_module_pref("tempmute", "mutemod", $id);
 			if ($muted) {
 				output("`n`\$This player has been permanently muted!`0`n");
 				addnav("U?Un-mute player",
@@ -105,28 +105,28 @@ function mutemod_domute($id){
 	$op = httpget('op');
 	if (is_module_active("biocomment") && httpget('refresh')) return false;
 	if ($op=="mute") {
-		set_module_pref("muted",1,false,$id);
-		set_module_pref("whomuted",$session['user']['login'],false,$id);
+		set_module_pref("muted",1, "mutemod",$id);
+		set_module_pref("whomuted",$session['user']['login'], "mutemod",$id);
 		modulehook("mute",array("userid"=>$id, "staffid"=>$session['user']['acctid'], "when"=>date("Y-m-d H:i:s")));
 		output("`n`\$This player has now been muted!");
 		output("`nThis will last until it is lifted, by you or another member of staff!`0`n");
 	} elseif ($op=="unmute") {
-		set_module_pref("muted",0,false,$id);
+		set_module_pref("muted",0, "mutemod",$id);
 		output("`n`\$This player has now been unmuted!");
 		output("`nThey can talk again!`0`n");
 	} elseif ($op=="tempmute") {
-		set_module_pref("tempmute",1,false,$id);
-		set_module_pref("whomuted",$session['user']['login'],false,$id);
+		set_module_pref("tempmute",1, "mutemod",$id);
+		set_module_pref("whomuted",$session['user']['login'], "mutemod",$id);
 		modulehook("tempmute",array("userid"=>$id, "staffid"=>$session['user']['acctid'], "length"=>1,"when"=>date("Y-m-d H:i:s")));
 		output("`n`\$This player has now been muted temporarily!");
 		output("`nThey cannot talk until the next new day!`0`n");
 	} elseif ($op=="untempmute") {
-		set_module_pref("tempmute",0,false,$id);
+		set_module_pref("tempmute",0, "mutemod",$id);
 		output("`n`\$This player has now been unmuted (from a temporary mute)!");
 		output("`nThey can talk again!`0`n");
 	} elseif ($op=="exttempmute") {
-		$tmuted = get_module_pref("tempmute",false,$id)+1;
-		set_module_pref("tempmute",$tmuted,false,$id);
+		$tmuted = get_module_pref("tempmute", "mutemod",$id)+1;
+		set_module_pref("tempmute",$tmuted, "mutemod",$id);
 		modulehook("tempmute",array("userid"=>$id, "staffid"=>$session['user']['acctid'], "length"=>$tmuted,"when"=>date("Y-m-d H:i:s")));
 		output("`n`\$This player's tempory mute has been extended!");
 		output("`nThey cannot talk until %s days have passed!`0`n", $tmuted);

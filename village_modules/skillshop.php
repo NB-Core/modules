@@ -117,6 +117,9 @@ function skillshop_run(){
 		}else{
 			output("`)%s`) stares at you, \"`2You need to come back at the newday... my powers are weak now from helping you earlier...`)\"",$name);
 		}
+	} elseif ($op == "refresh" && ($refresh >= $max || $session['user']['gold'] < $cost)) {
+		// The same checks as the link: refreshes left today and the gold to pay.
+		output("`)%s`) stares at you, \"`2You need to come back at the newday... my powers are weak now from helping you earlier...`)\"",$name);
 	} elseif ($op == "refresh"){
 		$specialties = modulehook("specialtymodules");
 		if ($session['user']['specialty']=='SS') {
@@ -124,14 +127,14 @@ function skillshop_run(){
 			set_module_pref("uses",0-$bonus,"specialtysystem");
 			set_module_pref("cache",'',"specialtysystem");
 		} else {
-			foreach ($specialties as $key=>$name) {
-				$amt = (int)(get_module_pref("skill", $name) / 3);
-				if ($session['user']['specialty'] == $spec) $amt++;
-				set_module_pref("uses", $amt, $name);
+			foreach ($specialties as $key=>$specmodule) {
+				$amt = (int)(get_module_pref("skill", $specmodule) / 3);
+				if ($session['user']['specialty'] == $key) $amt++;
+				set_module_pref("uses", $amt, $specmodule);
 			}
 		}
 		$session['user']['gold']-=$cost;
-		set_module_pref("refresh",1);
+		set_module_pref("refresh",$refresh+1);
 		output("`)%s`) smiles and takes your `^%s `)gold.",$name,$cost);
 		output("\"`2Your skills have been refreshed.`)\"");
 	}

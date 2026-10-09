@@ -73,11 +73,11 @@ function jeweler_dohook($hookname,$args){
 		}
 		break;
 	case "biostat":
-		$choker = get_module_pref("chokerheld", false, $args['acctid']);
-		$amulet = get_module_pref("amuletheld", false, $args['acctid']);
-		$necklace = get_module_pref("necklaceheld", false, $args['acctid']);
-		$bracelet = get_module_pref("braceletheld", false, $args['acctid']);
-		$ring = get_module_pref("ringheld", false, $args['acctid']);
+		$choker = get_module_pref("chokerheld", "jeweler", $args['acctid']);
+		$amulet = get_module_pref("amuletheld", "jeweler", $args['acctid']);
+		$necklace = get_module_pref("necklaceheld", "jeweler", $args['acctid']);
+		$bracelet = get_module_pref("braceletheld", "jeweler", $args['acctid']);
+		$ring = get_module_pref("ringheld", "jeweler", $args['acctid']);
 
 		if ($choker||$amulet||$necklace||$bracelet||$ring) {
 			output("`^Jewelry: ");

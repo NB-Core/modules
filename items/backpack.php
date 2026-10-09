@@ -3,6 +3,7 @@
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 //function showform and most code extracted and adapted from XChrisX item system
 function backpack_getmoduleinfo(){
@@ -51,6 +52,11 @@ function backpack_run(){
         $conn = Database::getDoctrineConnection();
         $op2 = httpget('op2');
         $id = httpget('id');
+	// Equip, unequip and activate change the inventory. The module overrides forced navigation,
+	// so only a posted form carrying this module's token may trigger them.
+	if (in_array($op2, array("equip","unequip","activate"), true) && !Csrf::validatePostRequest("module:backpack")) {
+		$op2 = "";
+	}
 	switch($op2) {
                 case "show":
                         $sql = "SELECT {$item}.name, {$item}.description FROM {$item} WHERE itemid = :itemid";
@@ -202,6 +208,17 @@ function backpack_run(){
 	popup_footer();
 }
 
+/**
+ * An inline POST button for an inventory change, carrying the module's CSRF token.
+ */
+function backpack_actionbutton($op2, $id, $label){
+	$url = "runmodule.php?module=backpack&op=charstat&op2=$op2&id=$id";
+	addnav("", $url);
+	return "[ <form action='$url' method='post' style='display:inline'>"
+		. Csrf::hiddenField("module:backpack")
+		. "<input type='submit' class='button' value='" . htmlspecialchars($label, ENT_QUOTES) . "'></form> ]";
+}
+
 function backpack_showform($layout,$row){
 	global $session;
  	static $showform_id=0;
@@ -260,14 +277,11 @@ function backpack_showform($layout,$row){
 					}
 					output_notl("%s`7%s`7 (%s)", $itsval['equipped']?"`^*":"", $itsval['name'], $itsval['quantity']);
 					if ($itsval['equipped'] && $itsval['equippable']) {
-						rawoutput("[ <a href='runmodule.php?module=backpack&op=charstat&op2=unequip&id={$itsval['itemid']}'>$unequip</a> ]");
-						addnav("", "runmodule.php?module=backpack&op=charstat&op2=unequip&id={$itsval['itemid']}");
+						rawoutput(backpack_actionbutton("unequip", (int)$itsval['itemid'], $unequip));
 					} else if ($itsval['equippable'] == 1) {
-						rawoutput("[ <a href='runmodule.php?module=backpack&op=charstat&op2=equip&id={$itsval['itemid']}'>$equip</a> ]");
-						addnav("", "runmodule.php?module=backpack&op=charstat&op2=equip&id={$itsval['itemid']}");
+						rawoutput(backpack_actionbutton("equip", (int)$itsval['itemid'], $equip));
 					} else if (($itsval['activationhook'] & 64) && $session['user']['alive']) {
-						rawoutput("[ <a href='runmodule.php?module=backpack&op=charstat&op2=activate&id={$itsval['itemid']}'>$activate</a> ]");
-						addnav("", "runmodule.php?module=backpack&op=charstat&op2=activate&id={$itsval['itemid']}");
+						rawoutput(backpack_actionbutton("activate", (int)$itsval['itemid'], $activate));
 					} else {
 						//output("(Gold value: %s, Gem Value: %s)", $itsval['gold'], $itsval['gems']);
 					}
