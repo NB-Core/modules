@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 
 // mail ready
 // addnews ready
@@ -156,6 +157,35 @@ function clantrees_dohook($hookname,$args){
 function clantrees_runevent(){
 }
 
+/**
+ * Whether the request is a posted tree purchase or decoration with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function clantrees_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:clantrees");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function clantrees_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:clantrees") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function clantrees_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.clantrees_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function clantrees_run(){
 	global $session;
 	$op = httpget("op");
@@ -172,12 +202,13 @@ function clantrees_run(){
 	$prices = array("small"=>array(5000,5,10), "normal"=>array(10000,10,20), "grand"=>array(25000,25,50));
 	if ($op == "tree") {
 		$size = httpget("size");
-		// A tree is bought once, in an offered size, with the gold and gems for it.
-		if ($havetree || !isset($prices[$size]) || $gold < $prices[$size][0] || $gems < $prices[$size][1]) $op = "buytree";
+		// A tree is bought once, in an offered size, with the gold and gems for it, from the posted button with its token.
+		if ($havetree || !isset($prices[$size]) || $gold < $prices[$size][0] || $gems < $prices[$size][1] || !clantrees_validpost()) $op = "buytree";
 	}
 	if ($havetree && $op == "buytree") $op = "";
 	if (!$havetree && in_array($op, array("treetime","treetinsel","treebaubles","alter"), true)) $op = "buytree";
-	if ($op == "alter" && !in_array(httpget("what"), array("time","gold","gems"), true)) $op = "";
+	// Decorating spends from the posted form with its token only.
+	if ($op == "alter" && (!in_array(httpget("what"), array("time","gold","gems"), true) || !clantrees_validpost())) $op = "";
 	if (!in_array($op, array("buytree","tree","treetime","treetinsel","treebaubles","alter"), true)) redirect("clan.php");
 
 	page_header("Christmas Trees");
@@ -197,18 +228,14 @@ function clantrees_run(){
 			output("`@You realize you don't have enough money on you to purchase any of the trees, even the smallest, and vow to return later with more money.");
 		}
 
-		addnav("Buy a Tree");
 		if (($gold>=5000) && ($gems>=5)) {
-			addnav("Buy A Scraggly Tree",
-					"runmodule.php?module=clantrees&op=tree&size=small");
+			rawoutput(clantrees_postbutton("runmodule.php?module=clantrees&op=tree&size=small", translate_inline("Buy A Scraggly Tree"))." ");
 		}
 		if (($gold>=10000) && ($gems>=10)) {
-			addnav("Buy A Pretty Tree",
-					"runmodule.php?module=clantrees&op=tree&size=normal");
+			rawoutput(clantrees_postbutton("runmodule.php?module=clantrees&op=tree&size=normal", translate_inline("Buy A Pretty Tree"))." ");
 		}
 		if (($gold>=25000) && ($gems>=25)) {
-			addnav("Buy A Grand Tree",
-					"runmodule.php?module=clantrees&op=tree&size=grand");
+			rawoutput(clantrees_postbutton("runmodule.php?module=clantrees&op=tree&size=grand", translate_inline("Buy A Grand Tree")));
 		}
 	} elseif ($op=="tree") {
 		$size=httpget("size");
@@ -252,7 +279,7 @@ function clantrees_run(){
 			"replystuff"=>"Turns to spend,range,0,".$session['user']['turns'].",1",
 		);
 		require_once("lib/showform.php");
-	   	rawoutput("<form action='runmodule.php?module=clantrees&op=alter&what=time' method='POST'>");
+	   	rawoutput("<form action='runmodule.php?module=clantrees&op=alter&what=time' method='POST'>".clantrees_tokenfield());
 		showform($replyinfo,array(),true);
 		addnav("","runmodule.php?module=clantrees&op=alter&what=time");
 		$turns = translate_inline("Spend Turns");
@@ -267,7 +294,7 @@ function clantrees_run(){
 			"replystuff"=>"Gold to spend,int",
 		);
 		require_once("lib/showform.php");
-	   	rawoutput("<form action='runmodule.php?module=clantrees&op=alter&what=gold' method='POST'>");
+	   	rawoutput("<form action='runmodule.php?module=clantrees&op=alter&what=gold' method='POST'>".clantrees_tokenfield());
 	   	showform($replyinfo,array(),true);
 		addnav("","runmodule.php?module=clantrees&op=alter&what=gold");
 		$spend = translate_inline("Spend Gold");
@@ -282,7 +309,7 @@ function clantrees_run(){
 			"replystuff"=>"Gems to invest,int",
 		);
 		require_once("lib/showform.php");
-	   	rawoutput("<form action='runmodule.php?module=clantrees&op=alter&what=gems' method='POST'>");
+	   	rawoutput("<form action='runmodule.php?module=clantrees&op=alter&what=gems' method='POST'>".clantrees_tokenfield());
 	   	showform($replyinfo,array(),true);
 		addnav("","runmodule.php?module=clantrees&op=alter&what=gems");
 		$invest = translate_inline("Invest Gems");
