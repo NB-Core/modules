@@ -5,7 +5,7 @@ use Lotgd\Security\Csrf;
 function advertisingtracker_getmoduleinfo(){
 	$info = array(
 		"name"=>"Advertising Tracker (inGame)",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Administrative",
 		"download"=>"",
@@ -57,9 +57,44 @@ function advertisingtracker_install(){
 		'key-PRIMARY'=>array('name'=>'PRIMARY','type'=>'primary key','unique'=>'1','columns'=>'acctid'),
 		);
 	require_once("lib/tabledescriptor.php");
+	advertisingtracker_normalize_archive_dates(db_prefix("abusemail"), $abusemail);
+	advertisingtracker_normalize_archive_dates(db_prefix("abuseuser"), $abuseuser);
 	synctable(db_prefix("abusemail"), $abusemail, true);
 	synctable(db_prefix("abuseuser"), $abuseuser, true);
 	return true;
+}
+
+/**
+ * Upgrade legacy archive dates before a strict-mode ALTER TABLE validates them.
+ * Compare as text: comparing a datetime to a zero-date literal can itself fail.
+ */
+function advertisingtracker_normalize_archive_dates(string $tablename, array $descriptor): void
+{
+    if (!db_table_exists($tablename)) {
+        return;
+    }
+
+    $connection = Database::getDoctrineConnection();
+    $table = $connection->quoteIdentifier($tablename);
+    $columns = array_flip($connection->fetchFirstColumn("SHOW COLUMNS FROM $table"));
+    $updates = array();
+    $conditions = array();
+    foreach ($descriptor as $name => $definition) {
+        if (($definition['type'] ?? '') !== 'datetime' || !isset($columns[$name])) {
+            continue;
+        }
+        $column = $connection->quoteIdentifier($name);
+        $condition = "LEFT(CAST($column AS CHAR), 10) = :zeroDate";
+        $updates[] = "$column = CASE WHEN $condition THEN :minimumDate ELSE $column END";
+        $conditions[] = $condition;
+    }
+
+    if ($updates) {
+        $connection->executeStatement(
+            "UPDATE $table SET " . implode(', ', $updates) . " WHERE " . implode(' OR ', $conditions),
+            ['zeroDate' => '0000-00-00', 'minimumDate' => DATETIME_DATEMIN]
+        );
+    }
 }
 
 function advertisingtracker_uninstall(){
