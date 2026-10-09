@@ -73,6 +73,24 @@ function claneditor_validpost(){
 	return Csrf::validatePostRequest("module:claneditor");
 }
 
+/**
+ * The hidden token field for this editor's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function claneditor_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:claneditor") : "";
+}
+
+/**
+ * An inline POST button for a membership change, carrying the module's CSRF token.
+ */
+function claneditor_actionbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='$url' method='post' style='display:inline'$onsubmit>"
+		.claneditor_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function claneditor_run(){
 	global $session;
 	// The Grotto link is only offered to SU_EDIT_USERS; enforce the same here.
@@ -174,6 +192,10 @@ $ranks = translate_inline($args['ranks']);
 			$e4 = translate_inline("`%Karissa`7 looks over your form but informs you that the clan name %s is already taken, and hands you a blank form.");
 			$e5 = translate_inline("`%Karissa`7 looks over your form but informs you that the short name %s is already taken, and hands you a blank form.");
 			if ($ocs==""&&$ocn==""&&!httppostisset('clanname')&&!httppostisset('clanshort')) {
+				output_notl($e);
+				clanform();
+			}elseif (!claneditor_validpost()) {
+				// Only the posted form with its token creates a clan.
 				output_notl($e);
 				clanform();
 			}elseif ($clanname!=$ocn || $clanshort!=$ocs){
@@ -357,28 +379,31 @@ $ranks = translate_inline($args['ranks']);
 				$dc = translate_inline("Delete this clan? Are you sure!");
 				$deleteurl = "runmodule.php?module=claneditor&op=deleteclan&sop=yes&dt=".(int)$dt;
 				rawoutput("<form action='$deleteurl' method='post' onSubmit='return confirm(".htmlspecialchars(json_encode($dc), ENT_QUOTES).");'>"
-					.(class_exists(Csrf::class) ? Csrf::hiddenField("module:claneditor") : "")
+					.claneditor_tokenfield()
 					."<input type='submit' class='button' value='".htmlspecialchars($dc, ENT_QUOTES)."'></form>");
 				addnav("",$deleteurl);
 			}
 		}elseif ($op=="editmodule"||$op=="editmodulesave"){
 			$mdule = httpget("mdule");
-			if ($op=="editmodulesave") {
-				// Save module prefs
+			if ($op=="editmodulesave" && claneditor_validpost()) {
+				// Save module prefs; the token is not one of them.
 				$post = httpallpost();
 				foreach($post as $key=>$val) {
+					if (class_exists(Csrf::class) && $key === Csrf::FIELD) continue;
 					set_module_objpref("clans", $dt, $key, $val, $mdule);
 				}
 				output("`^Saved!`0`n");
 			}
-			rawoutput("<form action='runmodule.php?module=claneditor&op=editmodulesave&dt=$dt&mdule=$mdule' method='POST'>");
+			rawoutput("<form action='runmodule.php?module=claneditor&op=editmodulesave&dt=$dt&mdule=$mdule' method='POST'>".claneditor_tokenfield());
 			module_objpref_edit("clans", $mdule, $dt);
 			rawoutput("</form>");
 			addnav("","runmodule.php?module=claneditor&op=editmodulesave&dt=$dt&mdule=$mdule");
 		}elseif ($op=="updinfo"){
 			page_header("Update Clan Information");
+			// Changes are saved only from the posted form with its token; anything else just shows the form.
+			$posted = claneditor_validpost();
 			$clanmotd = substr(httppost('clanmotd'), 0, 4096);
-			if (httppostisset('clanmotd') && $clanmotd!=$claninfo['clanmotd']){
+			if ($posted && httppostisset('clanmotd') && $clanmotd!=$claninfo['clanmotd']){
 				if ($clanmotd=="") {
 					$mauthor=0;
 				} else {
@@ -396,7 +421,7 @@ $ranks = translate_inline($args['ranks']);
 				$claninfo['motdauthor']=$mauthor;
 			}
 			$clandesc = httppost('clandesc');
-			if (httppostisset('clandesc') && $clandesc!=$claninfo['clandesc']){
+			if ($posted && httppostisset('clandesc') && $clandesc!=$claninfo['clandesc']){
 				if ($clandesc=="") {
 					$claninfo['descauthor']=0;
 					$dauthor=0;
@@ -414,7 +439,7 @@ $ranks = translate_inline($args['ranks']);
 				$claninfo['descauthor']=$session['user']['acctid'];
 			}
 			$customsay = httppost('customsay');
-			if (httppostisset('customsay') && $customsay!=$claninfo['customsay']){
+			if ($posted && httppostisset('customsay') && $customsay!=$claninfo['customsay']){
 				$conn->executeStatement(
 					"UPDATE {$clansTable} SET customsay = :customsay WHERE clanid = :clanid",
 					['customsay' => stripslashes($customsay), 'clanid' => (int)$claninfo['clanid']],
@@ -428,7 +453,7 @@ $ranks = translate_inline($args['ranks']);
 			if ($clanname) $clanname = full_sanitize($clanname);
 			$clanshort = httppost('clanshort');
 			if ($clanshort) $clanshort = full_sanitize($clanshort);
-			if (httppostisset('clanname') && $clanname!=$claninfo['clanname']){
+			if ($posted && httppostisset('clanname') && $clanname!=$claninfo['clanname']){
 				output("Updating the clan name`n");
 				$conn->executeStatement(
 					"UPDATE {$clansTable} SET clanname = :clanname WHERE clanid = :clanid",
@@ -438,7 +463,7 @@ $ranks = translate_inline($args['ranks']);
 				invalidatedatacache("clandata-{$claninfo['clanid']}");
 				$claninfo['clanname']=$clanname;
 			}
-			if (httppostisset('clanshort') && $clanshort!=$claninfo['clanshort']){
+			if ($posted && httppostisset('clanshort') && $clanshort!=$claninfo['clanshort']){
 				output("Updating the short clan name`n");
 				$conn->executeStatement(
 					"UPDATE {$clansTable} SET clanshort = :clanshort WHERE clanid = :clanid",
@@ -460,7 +485,7 @@ $ranks = translate_inline($args['ranks']);
 			output_notl(nltoappon($claninfo['clanmotd'])."`n");
 			output("`&`bCurrent Description:`b `#by %s`2`n",$descauthname);
 			output_notl(nltoappon($claninfo['clandesc'])."`n");
-			rawoutput("<form action='runmodule.php?module=claneditor&op=updinfo&dt=$dt' method='POST'>");
+			rawoutput("<form action='runmodule.php?module=claneditor&op=updinfo&dt=$dt' method='POST'>".claneditor_tokenfield());
 			addnav("","runmodule.php?module=claneditor&op=updinfo&dt=$dt");
 			output("`&`bMoTD:`b `7(4096 chars)`n");
 			rawoutput("<textarea name='clanmotd' cols='50' rows='10'>".htmlentities($claninfo['clanmotd'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
@@ -471,7 +496,7 @@ $ranks = translate_inline($args['ranks']);
 			rawoutput("<input name='clanshort' value=\"".htmlentities($claninfo['clanshort'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."\" maxlength=5 size=5>");
 			output_notl("`n");
 			output("`n`&`bDescription:`b `7(4096 chars)`n");
-			if (httppost('block')>""){
+			if ($posted && httppost('block')>""){
 				$blockdesc = translate_inline("Description blocked for inappropriate usage.");
 				output("Blocking public description`n");
 				$conn->executeStatement(
@@ -482,7 +507,7 @@ $ranks = translate_inline($args['ranks']);
 				invalidatedatacache("clandata-".$claninfo['clanid']."");
 				$claninfo['blockdesc']="";
 				$claninfo['descauthor']=4294967295;
-			}elseif (httppost('unblock')>""){
+			}elseif ($posted && httppost('unblock')>""){
 				$sql = "UPDATE " . db_prefix("clans") . " SET descauthor=0, clandesc='' where clanid='".$claninfo['clanid']."'";
 				output("Unblocking public description`n");
 				db_query($sql);
@@ -508,9 +533,11 @@ $ranks = translate_inline($args['ranks']);
 			rawoutput("</form>");
 		}elseif ($op=="membership"){
 			output("This is the clans current membership:`n");
+			// Rank changes and removals need a posted button with the token; a bare link only lists the members.
+			$posted = claneditor_validpost();
 			$setrank = httpget('setrank');
 			$who = httpget('who');
-			if ($setrank>""){
+			if ($setrank>"" && $posted){
 				// httpget() values carry legacy addslashes() escaping; bind the unescaped login.
 				$conn->executeStatement(
 					"UPDATE {$accountsTable} SET clanrank = :clanrank WHERE login = :login AND clanid = :clanid",
@@ -519,7 +546,7 @@ $ranks = translate_inline($args['ranks']);
 				);
 			}
 			$remove = httpget('remove');
-			if ($remove>""){
+			if ($remove>"" && $posted){
 				$conn->executeStatement(
 					// Staff with SU_EDIT_USERS may remove any member of the clan being edited; their own clan rank does not matter.
 					"UPDATE {$accountsTable} SET clanrank=".CLAN_APPLICANT.",clanid=0,clanjoindate='".DATETIME_DATEMIN."' WHERE login = :login AND clanid = :clanid",
@@ -555,7 +582,7 @@ $ranks = translate_inline($args['ranks']);
 			$demote = translate_inline("Demote");
 			$remove = translate_inline("Remove From The Clan");
 			$confirm = translate_inline("Are you sure you wish to remove this member from the clan?");
-			rawoutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td>".($session['user']['clanrank']>CLAN_MEMBER?"<td>$ops</td>":"")."</tr>",true);
+			rawoutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td><td>$ops</td></tr>",true);
 			$i=0;
 			$tot = 0;
 			while ($row=db_fetch_assoc($result)){
@@ -580,12 +607,11 @@ $ranks = translate_inline($args['ranks']);
 				output_notl("`#%s`0",reltime(strtotime($row['laston'])));
 				rawoutput("</td>");
 				rawoutput("<td>");
-				rawoutput("[ <a href='runmodule.php?module=claneditor&op=membership&dt=$dt&setrank=".($row['clanrank']+1)."&who=".rawurlencode($row['login'])."'>$promote</a> | ");
-				addnav("","runmodule.php?module=claneditor&op=membership&dt=$dt&setrank=".($row['clanrank']+1)."&who=".rawurlencode($row['login']));
-				rawoutput("<a href='runmodule.php?module=claneditor&op=membership&dt=$dt&setrank=".($row['clanrank']-1)."&who=".rawurlencode($row['login'])."'>$demote</a> | ");
-				addnav("","runmodule.php?module=claneditor&op=membership&dt=$dt&setrank=".($row['clanrank']-1)."&who=".rawurlencode($row['login']));
-				rawoutput("<a href='runmodule.php?module=claneditor&op=membership&dt=$dt&remove=".rawurlencode($row['login'])."' onClick=\"return confirm('$confirm');\">$remove</a> ]");
-				addnav("","runmodule.php?module=claneditor&op=membership&dt=$dt&remove=".rawurlencode($row['login']));
+				$memberurl = "runmodule.php?module=claneditor&op=membership&dt=".(int)$dt;
+				$whourl = "&who=".rawurlencode($row['login']);
+				rawoutput("[ ".claneditor_actionbutton($memberurl."&setrank=".($row['clanrank']+1).$whourl, $promote)." | ");
+				rawoutput(claneditor_actionbutton($memberurl."&setrank=".($row['clanrank']-1).$whourl, $demote)." | ");
+				rawoutput(claneditor_actionbutton($memberurl."&remove=".rawurlencode($row['login']), $remove, $confirm)." ]");
 				rawoutput("</td>");
 				rawoutput("</tr>");
 			}
@@ -606,8 +632,8 @@ $ranks = translate_inline($args['ranks']);
 }
 
 function clanform(){
-	$id = httpget("id");
-	rawoutput("<form action='runmodule.php?module=claneditor&op=new&apply=1&id=".$id."' method='POST'>");
+	$id = (int)httpget("id");
+	rawoutput("<form action='runmodule.php?module=claneditor&op=new&apply=1&id=".$id."' method='POST'>".claneditor_tokenfield());
 	addnav("","runmodule.php?module=claneditor&op=new&apply=1&id=".$id."");
 	output("`@`b`cNew Clan Form`c`b");
 	output("Clan Name: ");

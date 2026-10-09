@@ -129,7 +129,7 @@ function skillshop_run(){
 		} else {
 			foreach ($specialties as $key=>$specmodule) {
 				$amt = (int)(get_module_pref("skill", $specmodule) / 3);
-				if ($session['user']['specialty'] == $key) $amt++;
+				if ($session['user']['specialty'] == $key) $amt += getsetting("specialtybonus", 1);
 				set_module_pref("uses", $amt, $specmodule);
 			}
 		}
