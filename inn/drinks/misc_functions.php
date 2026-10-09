@@ -26,6 +26,35 @@ function drinks_gettexts() {
 
 
 // Support functions
+/**
+ * Whether the request is a posted drink editor change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function drinks_validpost(){
+	if (!class_exists(\Lotgd\Security\Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return \Lotgd\Security\Csrf::validatePostRequest("module:drinks");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function drinks_tokenfield(){
+	return class_exists(\Lotgd\Security\Csrf::class) ? \Lotgd\Security\Csrf::hiddenField("module:drinks") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function drinks_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.drinks_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function drinks_editor(){
 	global $mostrecentmodule;
 	if (!get_module_pref("canedit")) check_su_access(SU_EDIT_USERS);
@@ -36,7 +65,7 @@ function drinks_editor(){
 	addnav("Drink Editor");
 	addnav("Add a drink","runmodule.php?module=drinks&act=editor&op=add&admin=true");
 	$op = httpget('op');
-	$drinkid = httpget('drinkid');
+	$drinkid = (int)httpget('drinkid');
 	$header = "";
 	if ($op != "") {
 		addnav("Drink Editor Main","runmodule.php?module=drinks&act=editor&admin=true");
@@ -80,6 +109,11 @@ function drinks_editor(){
 	);
 	$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
 	$table = \Lotgd\MySQL\Database::prefix("drinks");
+	// Saving, deleting and (de)activating need a posted form or button with the token; a bare link shows the list.
+	if (in_array($op, array("del","save","activate","deactivate"), true) && !drinks_validpost()) {
+		$op = "";
+		httpset('op', "");
+	}
 	if($op=="del"){
 		module_delete_objprefs('drinks', $drinkid);
 		$conn->executeStatement(
@@ -136,7 +170,7 @@ function drinks_editor(){
 				}
 			}
 		} elseif ($subop == "module") {
-			$drinkid = httpget("drinkid");
+			$drinkid = (int)httpget("drinkid");
 			// Save module settings
 			$module = httpget("editmodule");
 			// This should obey the same rules as the configuration editor
@@ -144,6 +178,8 @@ function drinks_editor(){
 			//$sql = "DELETE FROM " . db_prefix("module_objprefs") . " WHERE objtype='drinks' AND objid='$drinkid' AND modulename='$module'";
 			//db_query($sql);
 			$post = httpallpost();
+			// The form tokens are not prefs.
+			if (class_exists(\Lotgd\Security\Csrf::class)) $post = \Lotgd\Security\Csrf::stripFrom($post);
 			foreach ($post as $key => $val) {
 				set_module_objpref("drinks", $drinkid,$key, $val, $module);
 			}
@@ -199,15 +235,12 @@ function drinks_editor(){
 			rawoutput("<td nowrap>[ <a href='runmodule.php?module=drinks&act=editor&op=edit&drinkid=$id&admin=true'>$edit</a>");
 			addnav("","runmodule.php?module=drinks&act=editor&op=edit&drinkid=$id&admin=true");
 			if ($row['active']) {
-				rawoutput(" | <a href='runmodule.php?module=drinks&act=editor&op=deactivate&drinkid=$id&admin=true'>$deac</a>");
-				addnav("","runmodule.php?module=drinks&act=editor&op=deactivate&drinkid=$id&admin=true");
+				rawoutput(" | ".drinks_postbutton("runmodule.php?module=drinks&act=editor&op=deactivate&drinkid=$id&admin=true", $deac));
 			} else {
-				rawoutput(" | <a href='runmodule.php?module=drinks&act=editor&op=activate&drinkid=$id&admin=true'>$act</a>");
-				addnav("","runmodule.php?module=drinks&act=editor&op=activate&drinkid=$id&admin=true");
+				rawoutput(" | ".drinks_postbutton("runmodule.php?module=drinks&act=editor&op=activate&drinkid=$id&admin=true", $act));
 			}
 
-			rawoutput(" | <a href='runmodule.php?module=drinks&act=editor&op=del&drinkid=$id&admin=true' onClick='return confirm(\"$conf\");'>$del</a> ]</td>");
-			addnav("","runmodule.php?module=drinks&act=editor&op=del&drinkid=$id&admin=true");
+			rawoutput(" | ".drinks_postbutton("runmodule.php?module=drinks&act=editor&op=del&drinkid=$id&admin=true", $del, $conf)." ]</td>");
 			output_notl("<td>`^%s</td>`0", $id, true);
 			output_notl("<td>`&%s`0</td>", $row['name'], true);
 			output_notl("<td>`^%s`0</td>", $row['drunkeness'], true);
@@ -225,7 +258,7 @@ function drinks_editor(){
 		if ($subop=="module") {
 			$module = httpget("editmodule");
 			$oldmodule = $mostrecentmodule;
-			rawoutput("<form action='runmodule.php?module=drinks&act=editor&op=save&subop=module&editmodule=$module&drinkid=$drinkid&admin=true' method='POST'>");
+			rawoutput("<form action='runmodule.php?module=drinks&act=editor&op=save&subop=module&editmodule=$module&drinkid=$drinkid&admin=true' method='POST'>".drinks_tokenfield());
 			module_objpref_edit('drinks', $module, $drinkid);
 			$mostrecentmodule = $oldmodule;
 			rawoutput("</form>");
@@ -244,7 +277,7 @@ function drinks_editor(){
 	}
 
 	if (($op == "edit" || $op == "add") && $subop=="") {
-		rawoutput("<form action='runmodule.php?module=drinks&act=editor&op=save&admin=true' method='POST'>");
+		rawoutput("<form action='runmodule.php?module=drinks&act=editor&op=save&admin=true' method='POST'>".drinks_tokenfield());
 		addnav("","runmodule.php?module=drinks&act=editor&op=save&admin=true");
 		showform($drinksarray,$row);
 		rawoutput("</form>");

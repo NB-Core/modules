@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 
 // this is a module that should be able to keep track of recent dirty
 // commentary before it is filtered.
@@ -46,6 +47,34 @@ function unclean_install()
 function unclean_uninstall()
 {
    return true;
+}
+
+/**
+ * Whether the request is a posted history change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function unclean_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:unclean");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function unclean_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:unclean") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function unclean_postbutton($url, $label){
+	addnav("", $url);
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'>"
+		.unclean_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
 }
 
 function unclean_dohook($hookname, $args)
@@ -104,8 +133,13 @@ function unclean_dohook($hookname, $args)
 		$maxhistory = get_module_setting("maxhistory");
 
 		if (httpget("unclean_op") === "clearfirst") {
-			array_pop($comments);
-			set_module_setting("comments", serialize($comments));
+			// The nav only asks; the posted button with the token clears the entry.
+			if (unclean_validpost()) {
+				array_pop($comments);
+				set_module_setting("comments", serialize($comments));
+			} elseif (count($comments)) {
+				rawoutput(unclean_postbutton("badword.php?unclean_op=clearfirst", translate_inline("Clear Most Recent Comment"))."<br>");
+			}
 		}
 		if ($maxhistory < 0) {
 			$maxhistory = 0;

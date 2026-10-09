@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 function billboard_getmoduleinfo(){
 	$info = array(
@@ -75,6 +76,35 @@ function billboard_dohook($hookname, $args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted billboard note or takedown with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function billboard_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:billboard");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function billboard_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:billboard") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function billboard_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.billboard_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function billboard_run(){
 	global $session;
 	require_once("lib/commentary.php");
@@ -145,6 +175,8 @@ function billboard_run(){
 	}
 	
 	$action = httpget('action');
+	// Taking a post down needs the posted button with the token; a bare link shows the board.
+	if ($action == "takedown" && !billboard_validpost()) $action = "";
 	
 	switch ($action) {
 		case "post":
@@ -160,7 +192,8 @@ function billboard_run(){
 		if (strlen($subject)>$subjectlimit) {
 			output("You realize the subject too long... please shorten it.");
 		}
-		if (strlen($subject)<=$subjectlimit && strlen($body)<=$bodylimit && strlen($body)>0) {
+		// A note goes up only from the posted form with its token.
+		if (strlen($subject)<=$subjectlimit && strlen($body)<=$bodylimit && strlen($body)>0 && billboard_validpost()) {
 			//all good, post
 			$barkeep = translate_inline(getsetting("barkeep", "`%Don Johnson"));
 			output("`&You ask `x%s`& to put a note on the board.`n`nHe puts the note with a lazy gesture next to the other ones.`n`n",$barkeep);			
@@ -186,7 +219,7 @@ function billboard_run(){
 			break;
 		}
 		rawoutput("<div id='billboard_table'>");
-		rawoutput("<form action='runmodule.php?module=billboard&action=post' method='POST'>");
+		rawoutput("<form action='runmodule.php?module=billboard&action=post' method='POST'>".billboard_tokenfield());
 		addnav("","runmodule.php?module=billboard&action=post");
 			rawoutput("<div class='billboard_row'>");
 				rawoutput("<div class='billboard_name'>");
@@ -257,8 +290,7 @@ debug($row);
 					rawoutput("</div>");
 					rawoutput("<div class='billboard_subject'>");
 						if ($session['user']['acctid']==$row['acctid'] || ($session['user']['superuser'] & SU_EDIT_COMMENTS)==SU_EDIT_COMMENTS) {
-							rawoutput("<a href='runmodule.php?module=billboard&action=takedown&id=".$row['id']."'>".translate_inline('Take down post')."</a>");
-							addnav("","runmodule.php?module=billboard&action=takedown&id=".$row['id']);	
+							rawoutput(billboard_postbutton("runmodule.php?module=billboard&action=takedown&id=".(int)$row['id'], translate_inline('Take down post')));
 						}
 					rawoutput("</div>");
 				rawoutput("</div>");

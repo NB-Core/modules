@@ -1,4 +1,6 @@
 <?php
+use Lotgd\Security\Csrf;
+
 require_once("lib/nltoappon.php");
 function polling_getmoduleinfo(){
 	$info = array(
@@ -48,8 +50,38 @@ function polling_dohook($hookname,$args){
 	}
 	return $args;
 }
+/**
+ * Whether the request is a posted vote or wipe with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function polling_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:polling");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function polling_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:polling") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function polling_postbutton($url, $label){
+	addnav("", $url);
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'>"
+		.polling_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function polling_run(){
 	global $session;
+	// The poll is linked from the Grotto only; superuser.php lets in the same accounts.
+	check_su_access(0xFFFFFFFF & ~SU_DOESNT_GIVE_GROTTO);
 	$subject = get_module_setting("subject");
 	$one = get_module_setting("one");
 	$two = get_module_setting("two");
@@ -68,6 +100,14 @@ function polling_run(){
 	$threes = translate_inline($votethree != 1?"s":"");
 			
 	$op = httpget('op');
+	// A vote needs an open poll, no earlier vote, an offered option and the posted lever with its token.
+	if (in_array($op, array("one","two","three"), true)
+			&& (get_module_setting("isactive") != 1 || $hasvote != 0 || ($op == "three" && $three == "") || !polling_validpost())) {
+		$op = "enter";
+	}
+	// Wiping is for megausers, from the posted button with its token.
+	if ($op == "megayes" && !polling_validpost()) $op = "mega";
+	if (($op == "mega" || $op == "megayes") && !($session['user']['superuser'] & SU_MEGAUSER)) $op = "view";
 
 	switch ($op){
 		case "enter":
@@ -83,10 +123,10 @@ function polling_run(){
 			if (get_module_setting("blurb") <> ""){
 				output("`n`n`c%s`c`0",nltoappon(get_module_setting("blurb")));
 			}
-			addnav("Levers");
-			addnav(array("%s",$one),"runmodule.php?module=polling&op=one");
-			addnav(array("%s",$two),"runmodule.php?module=polling&op=two");
-			if ($three <> "") addnav(array("%s",$three),"runmodule.php?module=polling&op=three");
+			output_notl("`n`n");
+			rawoutput(polling_postbutton("runmodule.php?module=polling&op=one", full_sanitize($one))." ");
+			rawoutput(polling_postbutton("runmodule.php?module=polling&op=two", full_sanitize($two))." ");
+			if ($three <> "") rawoutput(polling_postbutton("runmodule.php?module=polling&op=three", full_sanitize($three)));
 			addnav("Other");
 			addnav("View Results","runmodule.php?module=polling&op=view");
 			if ($session['user']['superuser'] & SU_MEGAUSER){
@@ -136,13 +176,10 @@ function polling_run(){
 			if ($three <> "") output("`n`nYou note that there %s `^%s `3vote%s for `\$%s`3.",$threeare, $votethree, $threes, $three);
 			break;
 		case "mega":
-			output("`3Do you wish to clear all Data?");
-			addnav("Options");
-			addnav("Wipe all Data","runmodule.php?module=polling&op=megayes");
+			output("`3Do you wish to clear all Data?`n`n");
+			rawoutput(polling_postbutton("runmodule.php?module=polling&op=megayes", translate_inline("Wipe all Data")));
 			break;
 		case "megayes":
-			// The wipe link is only offered to megausers; enforce the same here.
-			check_su_access(SU_MEGAUSER);
 			output("`3All Polling Results Cleared.");
 			output("`nAll Votes Burned.");
 			output("`nPoll Is Inactive.");

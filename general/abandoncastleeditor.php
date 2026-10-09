@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 
 /**
  * Abandoned Castle Maze Editor
@@ -18,6 +19,9 @@ function abandoncastleeditor_getmoduleinfo()
         'version' => '1.0.0',
         'author' => 'Shinobi Legends',
         'category' => 'Administrative',
+        // The editor saves through an AJAX POST, which forced navigation would refuse; the save
+        // checks the access rights and the module's CSRF token itself.
+        'override_forced_nav' => true,
         'prefs' => [
             'User Access,title',
             'allowed' => 'User may access Abandoned Castle Maze Editor,bool|0',
@@ -54,6 +58,24 @@ function abandoncastleeditor_dohook($hookname, $args)
     return $args;
 }
 
+/**
+ * Whether the request is a posted maze save with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function abandoncastleeditor_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:abandoncastleeditor");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function abandoncastleeditor_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:abandoncastleeditor") : "";
+}
+
 function abandoncastleeditor_run()
 {
     global $session;
@@ -65,6 +87,12 @@ function abandoncastleeditor_run()
     $op = httpget('op');
 
     if ($op === 'save') {
+        // Only the editor's own request, which carries the token, may write a file.
+        if (!abandoncastleeditor_validpost()) {
+            header('HTTP/1.1 400 Bad Request');
+            echo 'Not saved: the request did not come from the editor.';
+            exit();
+        }
         $layout = httppost('layout');
         $layout = abandoncastleeditor_sanitize_layout($layout);
         $title = strip_tags(httppost('title'));
@@ -73,17 +101,6 @@ function abandoncastleeditor_run()
         $dir = __DIR__ . '/abandoncastle/custom';
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
-        }
-
-        $safeTitle = preg_replace('/[^a-zA-Z0-9_-]/', '', $title);
-        $filename = sprintf('%s/maze_%s_%d.txt', $dir, $safeTitle ?: 'untitled', time());
-        $content = sprintf("//author: %s\n//title: %s\n%s\n", $creator, $title, $layout);
-        $result = file_put_contents($filename, $content);
-        if ($result === false) {
-            // Graceful error message, do not expose system details
-            header('HTTP/1.1 500 Internal Server Error');
-            echo 'An error occurred while saving your maze. Please try again later.';
-            exit();
         }
 
         // Sanitize title: allow only alphanumerics, dash, underscore, and limit length
@@ -101,7 +118,12 @@ function abandoncastleeditor_run()
             exit();
         }
         $content = sprintf("//author: %s\n//title: %s\n%s\n", $creator, $title, $layout);
-        file_put_contents($realFile, $content);
+        if (file_put_contents($realFile, $content) === false) {
+            // Graceful error message, do not expose system details
+            header('HTTP/1.1 500 Internal Server Error');
+            echo 'An error occurred while saving your maze. Please try again later.';
+            exit();
+        }
 
         echo 'Saved to ' . basename($realFile);
         exit();
@@ -319,7 +341,7 @@ $(function(){
         if (!title) {
             return;
         }
-        $.post('runmodule.php?module=abandoncastleeditor&op=save', {layout: exported, title: title}, function(resp){
+        $.post('runmodule.php?module=abandoncastleeditor&op=save', {layout: exported, title: title, csrf_token: CSRF_TOKEN}, function(resp){
             alert(resp);
         });
     });
@@ -336,7 +358,9 @@ SCRIPT;
     <button id="close-export-modal">Close</button>
 </div>
 ');
-            rawoutput($script);
+            // The save request carries the module's token.
+            $token = class_exists(Csrf::class) ? Csrf::token("module:abandoncastleeditor") : "";
+            rawoutput(str_replace('CSRF_TOKEN', json_encode($token), $script));
 
             break;
 

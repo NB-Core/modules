@@ -19,7 +19,38 @@ function dag_sortbountieslevel($x, $y) {
 	}
 }
 
+/**
+ * Whether the request is a posted bounty admin change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function dag_validpost(){
+	if (!class_exists(\Lotgd\Security\Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return \Lotgd\Security\Csrf::validatePostRequest("module:dag");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function dag_tokenfield(){
+	return class_exists(\Lotgd\Security\Csrf::class) ? \Lotgd\Security\Csrf::hiddenField("module:dag") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function dag_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.dag_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function dag_manage(){
+	// The Grotto link is only offered to SU_EDIT_USERS; enforce the same here.
+	check_su_access(SU_EDIT_USERS);
 	page_header("Dag's Bounty Lists");
 	require_once("lib/superusernav.php");
 	superusernav();
@@ -138,7 +169,7 @@ function dag_manage(){
 		}
 		rawoutput("</table>");
 		output("`n`n`c`bAdd Bounty`b`c`n");
-		rawoutput("<form action='runmodule.php?module=dag&manage=true&op=addbounty&admin=true' method='POST'>");
+		rawoutput("<form action='runmodule.php?module=dag&manage=true&op=addbounty&admin=true' method='POST'>".dag_tokenfield());
 		output("`2Target: ");
 		rawoutput("<input name='contractname'>");
 		output_notl("`n");
@@ -167,7 +198,7 @@ function dag_manage(){
 			output("Too many names!");
 		} elseif(db_num_rows($result) > 1) {
 			output("Select the correct name:`n");
-			rawoutput("<form action='runmodule.php?module=dag&manage=true&op=addbounty&subfinal=1&admin=true' method='POST'>");
+			rawoutput("<form action='runmodule.php?module=dag&manage=true&op=addbounty&subfinal=1&admin=true' method='POST'>".dag_tokenfield());
 			output("`2Target: ");
 			rawoutput("<select name='contractname'>");
 			for ($i=0;$i<db_num_rows($result);$i++){
@@ -183,7 +214,7 @@ function dag_manage(){
 			$final = translate_inline("Finalize Contract");
 			rawoutput("<input type='submit' class='button' value='$final'>");
 			rawoutput("</form>");
-			addnav("","runmodule.php?module=dag&manage=true&op=addbounty&subfinal=1");
+			addnav("","runmodule.php?module=dag&manage=true&op=addbounty&subfinal=1&admin=true");
 		} else {
 			// Now, we have just the one, so check it.
 			$row  = db_fetch_assoc($result);
@@ -193,6 +224,9 @@ function dag_manage(){
 			$amt = (int)httppost('amount');
 			if ($amt <= 0) {
 				output("That bounty value make no sense.");
+			} elseif (!dag_validpost()) {
+				// Only the posted form with its token places a bounty.
+				output("Nothing added.");
 			} else {
 				// All good!
 				$sql = "INSERT INTO " . db_prefix("bounty") . " (amount, target, setter, setdate) VALUES ($amt, ".$row['acctid'].", 0, '".date("Y-m-d H:i:s")."')";
@@ -472,17 +506,17 @@ function dag_manage(){
 			output_notl("`^%s`0", $row['status']?$row['windate']:"");
 			rawoutput("</td><td>");
 			if ($row['status'] == 0) {
-				$link = "runmodule.php?module=dag&manage=true&op=closebounty&id={$row['bountyid']}&admin=true";
+				$link = "runmodule.php?module=dag&manage=true&op=closebounty&id=".(int)$row['bountyid']."&admin=true";
 				$close = translate_inline("Close");
-				rawoutput("<a href=\"$link\">$close</a>");
-				addnav("",$link);
+				rawoutput(dag_postbutton($link, $close));
 			} else {
 				rawoutput("&nbsp;");
 			}
 			rawoutput("</td></tr>");
 		}
 		rawoutput("</table>");
-	} else if ($op == "closebounty") {
+	} else if ($op == "closebounty" && dag_validpost()) {
+		// Only the posted button with its token closes a bounty.
 		$windate = date("Y-m-d H:i:s");
 		$bountyid = (int)httpget('id');
 		$sql = "UPDATE " . db_prefix("bounty") . " SET status=1,winner=0,windate=\"$windate\" WHERE bountyid=$bountyid";

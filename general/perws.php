@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 
 function perws_getmoduleinfo(){
 	$info = array(
@@ -70,17 +71,49 @@ function perws_dohook($hookname,$args){
 		}
 	return $args;
 }
+/**
+ * Whether the request is a posted URL ban change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function perws_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:perws");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function perws_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:perws") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function perws_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.perws_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function perws_run(){
 	global $sesion;
+	// The Grotto link is only offered with the access pref; enforce the same here.
+	if (!get_module_pref("access")) redirect("superuser.php");
 	$op = httpget('op');
-	$id = httpget('id');
-	$ban = httpget('ban');
+	// Bans change only from the posted buttons with the token.
+	$id = perws_validpost() ? (int)httpget('id') : 0;
+	$ban = (int)httpget('ban') ? 1 : 0;
 	$sub = translate_inline("Your URL has been banned.");
 	$body = translate_inline("We are sorry, but due to certain reasons, your personal URL has been banned. Please take this up with your local admin. There, you may discuss why your URL was banned, and see for a means of fixing this all up. Thank you.");
 	page_header("Moderate URLs");
 	switch ($op){
 		case "list":
-			if ($id <> ""){
+			if ($id > 0){
 				set_module_pref("ban",$ban,"perws",$id);
 				output("`cUser's URL has been `^%s`0.`c",translate_inline($ban?"banned":"unbanned"));
 				require_once("lib/systemmail.php");
@@ -98,15 +131,9 @@ function perws_run(){
 				$row = db_fetch_assoc($res);
 				rawoutput("<tr class='".($i%2?"trdark":"trlight")."'><td>");
 				if ($row['ban'] == 0){
-					rawoutput("<a href='runmodule.php?module=perws&op=list&id=".rawurlencode($row['acctid'])."&ban=1'>");
-					output("Ban");
-					rawoutput("</a>");
-					addnav("","runmodule.php?module=perws&op=list&id=".$row['acctid']."&ban=1");
+					rawoutput(perws_postbutton("runmodule.php?module=perws&op=list&id=".(int)$row['acctid']."&ban=1", translate_inline("Ban")));
 				}else{
-					rawoutput("<a href='runmodule.php?module=perws&op=list&id=".rawurlencode($row['acctid'])."&ban=0'>");
-					output("Un-Ban");
-					rawoutput("</a>");
-					addnav("","runmodule.php?module=perws&op=list&id=".$row['acctid']."&ban=0");
+					rawoutput(perws_postbutton("runmodule.php?module=perws&op=list&id=".(int)$row['acctid']."&ban=0", translate_inline("Un-Ban")));
 				}					
 				rawoutput("</td><td>");
 				output_notl("`@%s",$row['name']);

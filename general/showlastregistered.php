@@ -50,6 +50,11 @@ function showlastregistered_run(): void
 {
     global $session;
 
+    // The Grotto link is only offered to comment or petition moderators; the list shows IPs and IDs.
+    if (($session['user']['superuser'] & (SU_EDIT_COMMENTS | SU_EDIT_PETITIONS)) === 0) {
+        redirect('superuser.php');
+    }
+
     $rangeParam = httpget('range');
 
     $ranges = [

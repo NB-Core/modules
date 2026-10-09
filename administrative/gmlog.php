@@ -1,6 +1,7 @@
 <?php
 
 use Doctrine\DBAL\ParameterType;
+use Lotgd\Forms;
 use Lotgd\MySQL\Database;
 
 function gmlog_getmoduleinfo() {
@@ -46,6 +47,9 @@ function gmlog_dohook($hookname, $args) {
 	switch ($hookname) {
 		case "header-bans":
 			$op=httpget('op');
+			// bans.php refuses a ban without its form token but leaves op in the URL; log only verified bans.
+			// A core without Forms::validateCsrf() (before September 2026) has no form token to check.
+			if ($op=='saveban' && method_exists(Forms::class, 'validateCsrf') && !Forms::validateCsrf()) $op='';
 			if ($op=='saveban') {
                                 // ban is setup, record it
                                 $type = httppost("type");

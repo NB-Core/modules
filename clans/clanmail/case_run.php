@@ -4,7 +4,9 @@ switch($op) {
 		$subject=httppost('subject');
 		$body=httppost('body');
 		$limit=(int)getsetting('mailsizelimit',1024);
-		if (httppost('submit')) {
+		$sent=false;
+		// Only the posted form with its token sends; anything else is a preview.
+		if (httppost('submit') && clanmail_validpost()) {
 			//send
 			$subject=str_replace("`n","",httppost('subject'));
 			$body=str_replace("`n","\n",httppost('body'));
@@ -26,6 +28,7 @@ switch($op) {
 					systemmail($acctid,$subject,$body,$session['user']['acctid']);
 				}
 				$session['user']['gold']-=$cost;
+				$sent=true;
 				output("`\$Mail has been sent! Paid `^%s gold`\$ for the delivery.`n`n",$cost);
 				debuglog("paid $cost gold for sending a clan mail");
 			}
@@ -35,7 +38,7 @@ switch($op) {
 		
 		if ($body) {
 			rawoutput("<hr noshade width='100%' size='3'>");
-			if (httppost('submit')) output("`iSent Mail`i:`n`n");
+			if (httppost('submit') && $sent) output("`iSent Mail`i:`n`n");
 				else output("`i`4Preview`i:`n`n");
 			output("`4From:`# %s`0`n`n",$session['user']['name']);			
 			if ($subject=='') $sub=translate_inline("`i(No Subject)`i","mail");
@@ -50,7 +53,7 @@ switch($op) {
 		}
 		
 		output("`7Write down the subject and the body (You may not exceed %s chars)!`n`n",$limit);
-		rawoutput("<form action='runmodule.php?module=clanmail&op=write' method='post'>");
+		rawoutput("<form action='runmodule.php?module=clanmail&op=write' method='post'>".clanmail_tokenfield());
 		addnav("","runmodule.php?module=clanmail&op=write");
 		output("`7From: %s`0`n`n",$session['user']['name']);
 		output("`7Subject:`n");

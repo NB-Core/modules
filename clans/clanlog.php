@@ -1,4 +1,6 @@
 <?php
+use Lotgd\Forms;
+
 //only working in 1.1.1 nighborn edition or up
 
 function clanlog_getmoduleinfo(){
@@ -40,10 +42,20 @@ function clanlog_dohook($hookname,$args){
 					$arg = modulehook('clanranks', array('ranks'=>$ranks, 'clanid'=>$session['user']['clanid']));
 					$ranks = translate_inline($arg['ranks']);
 					tlschema();
-					$setrank = (int) httppost('setrank');
-					if ($setrank===0) $setrank=(int) httpget('setrank');
-					$remove=(int) httpget('remove');
-					$whoacctid = (int) httpget('whoacctid');
+					if (method_exists(Forms::class, 'isUnverifiedRequest')) {
+						// The core changes ranks and members from its posted, token-checked form only and
+						// empties the POST otherwise, so these are the changes it made.
+						$setrank = (int) httppost('setrank');
+						$remove = (int) httppost('remove');
+						$whoacctid = (int) httppost('whoacctid');
+					} else {
+						// Older cores took these from the links.
+						$setrank = (int) httppost('setrank');
+						if ($setrank===0) $setrank=(int) httpget('setrank');
+						$remove=(int) httpget('remove');
+						$whoacctid = (int) httpget('whoacctid');
+					}
+					if ($setrank > $session['user']['clanrank']) $setrank = 0;
 					if ($setrank!=0 && $whoacctid>0) {
 						$sql="SELECT name,login from ".db_prefix("accounts")." WHERE acctid=$whoacctid LIMIT 1";
 						$result=db_query($sql);

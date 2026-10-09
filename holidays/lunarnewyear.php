@@ -97,7 +97,7 @@ function lunarnewyear_dohook($location,$args) {
 			{
 				if ($had_event) {
 					// No need to reset the event if it's ouside of lunar new year
-					set_module_pref('hadevent','lunarnewyear',0);
+					set_module_pref('hadevent',0,'lunarnewyear');
 				}
 			}
 			else {

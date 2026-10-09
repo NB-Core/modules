@@ -1,4 +1,24 @@
 <?php
+use Lotgd\Security\Csrf;
+
+/**
+ * Whether the request is a posted favorite change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function recentsql_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:recentsql");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function recentsql_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:recentsql") : "";
+}
+
 function recentsql_getmoduleinfo(){
 	$info = array(
 		"name"=>"Recent SQL/PHP history",
@@ -68,7 +88,7 @@ function recentsql_dohook($hookname,$args){
 		rawoutput("</form>");
 
 		//form to save favorites
-		rawoutput("<form action='rawsql.php?op=$op&subop=addFavorite' method='POST'>");
+		rawoutput("<form action='rawsql.php?op=$op&subop=addFavorite' method='POST'>".recentsql_tokenfield());
 		addnav("","rawsql.php?op=$op&subop=addFavorite");
 		rawoutput("<input type='radio' name='action' value='add' checked>");
 		output("Add the most recently executed statement to a favorite`n");
@@ -81,8 +101,9 @@ function recentsql_dohook($hookname,$args){
 		rawoutput("</form>");
 
 		//store saved favorites if found.
+		// Favorites change only from the posted form with its token.
 		$fav = httppost("favoritename");
-		if ($fav > ""){
+		if ($fav > "" && recentsql_validpost()){
 			$favorites = unserialize(get_module_pref("favorite".strtoupper($op)));
 			if (!is_array($favorites)) $favorites = array();
 			$recent = unserialize(get_module_pref($type));

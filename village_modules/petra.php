@@ -540,8 +540,11 @@ function petra_run() {
 			villagenav();
 		}
 	} elseif ($op == "instaheal") {
-		output("The rawness of your tattoo, and its pain, fades, as if by magic!");
-		set_module_pref("lasttat",0);
+		// Offered to developers only.
+		if ($session['user']['superuser'] & SU_DEVELOPER) {
+			output("The rawness of your tattoo, and its pain, fades, as if by magic!");
+			set_module_pref("lasttat",0);
+		}
 		addnav("Return to Parlor", "runmodule.php?module=petra");
 	} elseif ($op == "") {
 		output("`7You step in to admire the lovely designs on the walls, but then you think about the pain of the last inking you had done.`n`n");

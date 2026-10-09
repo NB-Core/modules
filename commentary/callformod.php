@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 /*
 1.1 added the last commentary lines to the submit, also you can enter a comment to the request
@@ -45,6 +46,24 @@ function callformod_dohook($hookname, $args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted moderator call with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function callformod_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:callformod");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function callformod_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:callformod") : "";
+}
+
 function callformod_run(){
 	global $session;
 	popup_header("Call for moderator help");
@@ -69,7 +88,7 @@ function callformod_run(){
 				output("`^The last commentary lines will be added to your petition.`n");
 			output("Please describe as precisely as possible why exactly a moderator is needed right now.");
 			output("`n`c`b`\$Remember: a misuse of this function might also mean consequences for your person.`b`c`n`n");
-			rawoutput("<form action='runmodule.php?module=callformod&op=submit&section=$section' method='POST'>");
+			rawoutput("<form action='runmodule.php?module=callformod&op=submit&section=$section' method='POST'>".callformod_tokenfield());
 			addnav("","runmodule.php?module=callformod&op=submit&section=$section");
 			rawoutput("<textarea name='reason' class='input' cols='60' rows='5'>".$defaulttext.$signature."</textarea><br>");
 			rawoutput("<br><input type='submit' value='$value'>");
@@ -79,6 +98,11 @@ function callformod_run(){
 			rawoutput("</form>");
 			break;
                 case "submit":
+                        // The module overrides forced navigation, so only its posted form with the token may send.
+                        if (!callformod_validpost()) {
+                                output("Nothing has been sent.");
+                                break;
+                        }
                         require_once("lib/systemmail.php");
                         // The form names a moderator; only accept one who is still an online moderator.
                         $moderator=(int)httppost('moderator');

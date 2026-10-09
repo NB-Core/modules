@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 // translator ready
 // addnews ready
 // mail ready
@@ -35,6 +36,27 @@ function mutemod_uninstall(){
 	return true;
 }
 
+/**
+ * Whether the request is a posted mute change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function mutemod_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:mutemod");
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function mutemod_postbutton($url, $label){
+	addnav("", $url);
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'>"
+		.(class_exists(Csrf::class) ? Csrf::hiddenField("module:mutemod") : "")
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function mutemod_dohook($hookname,$args){
 	global $session;
 	switch ($hookname) {
@@ -60,7 +82,7 @@ function mutemod_dohook($hookname,$args){
 		$char = httpget('char');
 		$id = $args['acctid'];
 		// Only moderators may change mutes; the links below are theirs too.
-		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) mutemod_domute($id);
+		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) mutemod_domute($id, $args['login']);
 		// Handle the ability for super users to mute/unmute the player.
 		if ($session['user']['superuser'] & SU_EDIT_COMMENTS) {
 			addnav("Mute Player Options");
@@ -100,10 +122,20 @@ function mutemod_dohook($hookname,$args){
 	return $args;
 }
 
-function mutemod_domute($id){
+function mutemod_domute($id, $login){
 	global $session;
 	$op = httpget('op');
 	if (is_module_active("biocomment") && httpget('refresh')) return false;
+	// The bio navs only ask; the posted button with the token changes the mute.
+	$labels = array("unmute"=>"Un-mute player", "tempmute"=>"Tempmute player", "untempmute"=>"Un-tempmute player", "exttempmute"=>"Extend tempmute");
+	if (($op=="mute" || isset($labels[$op])) && !mutemod_validpost()) {
+		if (isset($labels[$op])) {
+			output_notl("`n");
+			rawoutput(mutemod_postbutton("bio.php?char=".rawurlencode($login)."&ret=".rawurlencode(httpget("ret"))."&op=$op", translate_inline($labels[$op])));
+			output_notl("`n");
+		}
+		return false;
+	}
 	if ($op=="mute") {
 		set_module_pref("muted",1, "mutemod",$id);
 		set_module_pref("whomuted",$session['user']['login'], "mutemod",$id);

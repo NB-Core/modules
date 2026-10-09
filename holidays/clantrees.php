@@ -164,6 +164,22 @@ function clantrees_run(){
 	$clanid = $session['user']['clanid'];
 	$salesman=get_module_setting("salesman");
 
+	// The same conditions as the clan hall links.
+	if (!get_module_setting("treebuy") || !$session['user']['alive'] || !$clanid || $session['user']['clanrank'] <= CLAN_APPLICANT) {
+		redirect("clan.php");
+	}
+	$havetree = get_module_objpref("clans", $clanid, "havetree");
+	$prices = array("small"=>array(5000,5,10), "normal"=>array(10000,10,20), "grand"=>array(25000,25,50));
+	if ($op == "tree") {
+		$size = httpget("size");
+		// A tree is bought once, in an offered size, with the gold and gems for it.
+		if ($havetree || !isset($prices[$size]) || $gold < $prices[$size][0] || $gems < $prices[$size][1]) $op = "buytree";
+	}
+	if ($havetree && $op == "buytree") $op = "";
+	if (!$havetree && in_array($op, array("treetime","treetinsel","treebaubles","alter"), true)) $op = "buytree";
+	if ($op == "alter" && !in_array(httpget("what"), array("time","gold","gems"), true)) $op = "";
+	if (!in_array($op, array("buytree","tree","treetime","treetinsel","treebaubles","alter"), true)) redirect("clan.php");
+
 	page_header("Christmas Trees");
 	if ($op=="buytree") {
 		output("`@You decide that your clan does indeed need cheering up this winter, and go outside to talk to %s`@ about getting a tree for your clan.",$salesman);
@@ -275,7 +291,8 @@ function clantrees_run(){
 	   	addnav("Return to the Hall","clan.php");
 	} elseif ($op=="alter") {
 		$what=httpget("what");
-		$howmuch = httppost('replystuff');
+		// A whole, non-negative amount: a negative one would pay the player instead.
+		$howmuch = max(0, (int)httppost('replystuff'));
 		$cur = get_module_objpref("clans", $clanid, $what);
 		$field = $what;
 		if ($field == "time") $field = 'turns';

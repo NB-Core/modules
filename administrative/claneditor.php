@@ -388,8 +388,8 @@ $ranks = translate_inline($args['ranks']);
 			if ($op=="editmodulesave" && claneditor_validpost()) {
 				// Save module prefs; the token is not one of them.
 				$post = httpallpost();
+				if (class_exists(Csrf::class)) $post = Csrf::stripFrom($post);
 				foreach($post as $key=>$val) {
-					if (class_exists(Csrf::class) && $key === Csrf::FIELD) continue;
 					set_module_objpref("clans", $dt, $key, $val, $mdule);
 				}
 				output("`^Saved!`0`n");

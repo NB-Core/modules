@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 function adfuncbio_getmoduleinfo(){
         $info = array(
@@ -61,6 +62,27 @@ function adfuncbio_allowed(){
         || (get_module_setting("runfrom", "adfuncbio") == 1 && get_module_pref("ha", "adfuncbio") == 1)
         || (get_module_setting("runfrom", "adfuncbio") == 2 && $session['user']['superuser'] & SU_EDIT_USERS && get_module_pref("ha", "adfuncbio") == 1);
 }
+/**
+ * Whether the request is a posted admin action with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function adfuncbio_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:adfuncbio");
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function adfuncbio_postbutton($url, $label){
+	addnav("", $url);
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'>"
+		.(class_exists(Csrf::class) ? Csrf::hiddenField("module:adfuncbio") : "")
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function adfuncbio_run(){
     global $session;
     if (!adfuncbio_allowed()) {
@@ -87,6 +109,18 @@ function adfuncbio_run(){
 
     switch ($op){
         case "opt":
+            // Kill Player is offered only while the setting allows it.
+            if ($act == "kp" && get_module_setting("hakil") != 1) $act = "";
+            // The bio navs only ask; the posted button with the token carries the action out.
+            if (!adfuncbio_validpost()) {
+                $labels = array("fn"=>"Fix Navs", "kp"=>"Kill Player");
+                if (isset($labels[$act])) {
+                    $label = translate_inline($labels[$act]);
+                    output("`2%s`2: %s`n`n", $label, $name);
+                    rawoutput(adfuncbio_postbutton("runmodule.php?module=adfuncbio&op=opt&act=$act&id=".(int)$id, $label));
+                }
+                break;
+            }
             switch ($act){
                 case "nd":
                     $offset = "-".(24 / (int)getsetting("daysperday",4))." hours";

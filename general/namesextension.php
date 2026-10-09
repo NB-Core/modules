@@ -1,4 +1,6 @@
 <?php
+use Lotgd\Security\Csrf;
+
 /*
 Module to be used for the prefs.
 */
@@ -38,11 +40,47 @@ function namesextension_dohook($hookname, $args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted name conversion with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function namesextension_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:namesextension");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function namesextension_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:namesextension") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function namesextension_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.namesextension_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function namesextension_run(){
 global $session;
+	// The Grotto link is only offered to megausers; enforce the same here.
+	check_su_access(SU_MEGAUSER);
 	page_header("Conversion");
 	addnav("Back to the grotto","superuser.php");
 	$op=httpget('op');
+	// The nav only asks; the posted button with the token runs the conversion over all accounts.
+	if ($op=="convert" && !namesextension_validpost()) {
+		rawoutput(namesextension_postbutton("runmodule.php?module=namesextension&op=convert", translate_inline("Name Conversion")));
+		$op="";
+	}
 	switch($op) {
 		case "convert":
 			mb_internal_encoding(getsetting("charset", "ISO-8859-1"));

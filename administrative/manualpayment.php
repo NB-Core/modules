@@ -1,4 +1,6 @@
 <?php
+use Lotgd\Security\Csrf;
+
 function manualpayment_getmoduleinfo(){
 	$info = array(
 		"name"=>"Manual Payment Entry",
@@ -43,10 +45,30 @@ function manualpayment_dohook($hookname,$args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted payment form with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function manualpayment_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:manualpayment");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function manualpayment_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:manualpayment") : "";
+}
+
 function manualpayment_run(){
 	global $session;
 	check_su_access(SU_EDIT_PAYLOG); //check again Superuser Access
 	$op=httpget('op');
+	// An entry is written only from the posted form with its token; anything else shows the form.
+	if ($op=="write" && !manualpayment_validpost()) $op="";
 	page_header ('Manual Payment');
 	addnav("Navigation");
 	addnav("Return to the paylog","paylog.php");
@@ -87,7 +109,7 @@ function manualpayment_run(){
 			output("`c`b`^Manual Payment`c`b");
 			output_notl("`n`n");
 			output("`7Enter here the payment you have manually received, make sure to calculate fees correctly!`n`n");
-			rawoutput("<form action='runmodule.php?module=manualpayment&op=write' method='post'>");
+			rawoutput("<form action='runmodule.php?module=manualpayment&op=write' method='post'>".manualpayment_tokenfield());
 			addnav("","runmodule.php?module=manualpayment&op=write");
 			output("Player Acctid:`n");
 			rawoutput("<input type='input' class='input' length=20 name='acctid'><br>");

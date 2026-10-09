@@ -1,4 +1,6 @@
 <?php
+use Lotgd\Security\Csrf;
+
 //module requires inventory
 function crimsonleaf_getmoduleinfo(){
 	$info = array(
@@ -144,9 +146,40 @@ function crimsonleaf_dohook($hookname,$args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted clover reset with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function crimsonleaf_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:crimsonleaf");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function crimsonleaf_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:crimsonleaf") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function crimsonleaf_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.crimsonleaf_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function crimsonleaf_run(){
 	global $session;
 	$op = httpget("op");
+	// The reset is offered to megausers only, and runs from the posted button with its token.
+	if ($op == "reset" && ($session['user']['superuser'] & SU_MEGAUSER) != SU_MEGAUSER) redirect("superuser.php");
 	page_header("The Gypsy");
 	$name="`qCrimson `2Leaf `gClover";
 	output("`b`i`c`v%s`c`i`b`n`5",$name);
@@ -154,6 +187,11 @@ function crimsonleaf_run(){
 
 	switch ($op) {
 		case "reset":
+			if (!crimsonleaf_validpost()) {
+				rawoutput(crimsonleaf_postbutton("runmodule.php?module=crimsonleaf&op=reset", translate_inline("Reset Crimson Leaf Clover")));
+				villagenav();
+				break;
+			}
 			$sql="SELECT i.itemid AS itemid FROM ".db_prefix("item")." AS i WHERE i.name='$name';";
 			$row=db_fetch_assoc(db_query($sql));
 			require_once("modules/inventory/lib/itemhandler.php");

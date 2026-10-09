@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 function clanranks_getmoduleinfo(){
 	$info = array(
@@ -65,6 +66,35 @@ function clanranks_dohook($hookname, $args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted rank title change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function clanranks_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:clanranks");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function clanranks_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:clanranks") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function clanranks_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.clanranks_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function clanranks_run(){
 	global $session;
 	$dks=get_module_setting("dks");
@@ -108,7 +138,7 @@ function clanranks_run(){
 			addnav("Clan Rank Editor Main","runmodule.php?module=clanranks&op=editor");
 			addnav("Operations");
 			//mainly copy+paste from titleedit.php
-			$id = httpget('id');
+			$id = (int)httpget('id');
 			$editarray=array(
 					"Titles,title",
 					"titleid"=>"# of Clan Rank,viewonly",
@@ -116,6 +146,8 @@ function clanranks_run(){
 					//"female"=>"Female Title,text|",
 					);
 			$title=httpget('title');
+			// Saving and deleting need a posted form or button with the token; a bare link shows the list.
+			if (($title=="save" || $title=="delete") && !clanranks_validpost()) $title="";
 			$titleid=httppost('titleid');
 			if ($title=="save") {
 				$titleid=httppost('titleid');
@@ -127,10 +159,11 @@ function clanranks_run(){
 				if ($id == -1) {
 					if (clanranks_get_title($titleid,$clanid)) {
 						$here=translate_inline("here");
-						output("`^Title already exists. Nothing saved, choose a number that is not occupied`nIf you want to change the current title displayed below, please click %s.`0","<a href=runmodule.php?module=clanranks&op=editor&title=save&id=$titleid&hardsettitle=".rawurlencode($title).">$here</a>",true);
-						addnav("","runmodule.php?module=clanranks&op=editor&title=save&id=$titleid&hardsettitle=".rawurlencode($title));
-						$formertitle=$title;
-						addnav(array("Change title `^%s`0 to `2%s`0",$titleid,$formertitle),"runmodule.php?module=clanranks&op=editor&title=save&id=$titleid&hardsettitle=".rawurlencode($title));
+						$titleid=(int)$titleid;
+						output("`^Title already exists. Nothing saved, choose a number that is not occupied`nIf you want to change the current title displayed below, please click %s.`0",$here);
+						output_notl("`n");
+						rawoutput(clanranks_postbutton("runmodule.php?module=clanranks&op=editor&title=save&id=$titleid&hardsettitle=".rawurlencode(stripslashes($title)), sprintf_translate("Change title %s to %s", $titleid, full_sanitize(stripslashes($title)))));
+						output_notl("`n");
 						$title="add";
 					} else {
 						clanranks_set_title($titleid,$clanid,$title);
@@ -167,7 +200,7 @@ function clanranks_run(){
 						$editarray['titleid']="# of Clan Rank,range,1,30,1";
 						$id = -1;
 					}
-					rawoutput("<form action='runmodule.php?module=clanranks&op=editor&title=save&id=$id' method='POST'>");
+					rawoutput("<form action='runmodule.php?module=clanranks&op=editor&title=save&id=$id' method='POST'>".clanranks_tokenfield());
 					addnav("","runmodule.php?module=clanranks&op=editor&title=save&id=$id");
 					showform($editarray,$row);
 					rawoutput("</form>");
@@ -207,9 +240,8 @@ function clanranks_run(){
 					$i=0;
 					foreach($titlearray as $key=>$rank) {
 						rawoutput("<tr class='".($i%2?"trlight":"trdark")."'>");
-						rawoutput("<td>[<a href='runmodule.php?module=clanranks&op=editor&title=edit&id=$key'>$edit</a>|<a href='runmodule.php?module=clanranks&op=editor&title=delete&id=$key' onClick='return confirm(\"$delconfirm\");'>$del</a>]</td>");
+						rawoutput("<td>[<a href='runmodule.php?module=clanranks&op=editor&title=edit&id=$key'>$edit</a>|".clanranks_postbutton("runmodule.php?module=clanranks&op=editor&title=delete&id=$key", $del, $delconfirm)."]</td>");
 						addnav("","runmodule.php?module=clanranks&op=editor&title=edit&id=$key");
-						addnav("","runmodule.php?module=clanranks&op=editor&title=delete&id=$key");
 						rawoutput("<td>");
 						output_notl("`&%s`0",$key);
 						rawoutput("</td><td>");

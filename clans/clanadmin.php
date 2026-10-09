@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 
 function clanadmin_getmoduleinfo(){
 	$info = array(
@@ -48,6 +49,35 @@ function clanadmin_dohook($hookname,$args){
 	return $args;
 }
 
+/**
+ * Whether the request is a posted application toggle with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function clanadmin_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:clanadmin");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function clanadmin_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:clanadmin") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function clanadmin_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.clanadmin_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function clanadmin_run(){
 	global $session;
 	// Same condition as the clan hall links.
@@ -58,6 +88,12 @@ function clanadmin_run(){
 	page_header("Clan Administratives");
 	addnav("Navigation");
 	addnav("Back to the Clanhall","clan.php");
+	// The clan hall navs only ask; the posted button with the token changes the setting.
+	if (($op=="closeapps" || $op=="openapps") && !clanadmin_validpost()) {
+		$label = translate_inline($op=="closeapps" ? "Close Clan for Applications" : "Open Clan for Applications");
+		rawoutput(clanadmin_postbutton("runmodule.php?module=clanadmin&op=$op", $label));
+		$op = "";
+	}
 	switch ($op) {
 		case "closeapps":
 			output("`\$The Clan is now closed for applications. Applicants will not be allowed.");

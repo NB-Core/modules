@@ -1,4 +1,5 @@
 <?php
+use Lotgd\Security\Csrf;
 // translator ready
 // addnews ready
 // mail ready
@@ -29,6 +30,27 @@ function faqmute_uninstall(){
 	return true;
 }
 
+/**
+ * Whether the request is a posted FAQ mute reset with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function faqmute_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:faqmute");
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function faqmute_postbutton($url, $label){
+	addnav("", $url);
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'>"
+		.(class_exists(Csrf::class) ? Csrf::hiddenField("module:faqmute") : "")
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function faqmute_dohook($hookname,$args){
 	global $session;
 	$seen=get_module_pref("seenfaq");
@@ -48,8 +70,15 @@ function faqmute_dohook($hookname,$args){
 		$id = $args['acctid'];
 		$seen=get_module_pref("seenfaq", "faqmute",$id);
 		if (httpget("op")=="faqmute" && ($session['user']['superuser'] & SU_EDIT_COMMENTS)){
-			set_module_pref("seenfaq",false, "faqmute",$id);
-			output("`nPlayer's FAQ seen status reset.`n");
+			// The nav only asks; the posted button with the token resets the status.
+			if (faqmute_validpost()) {
+				set_module_pref("seenfaq",false, "faqmute",$id);
+				output("`nPlayer's FAQ seen status reset.`n");
+			} else {
+				output_notl("`n");
+				rawoutput(faqmute_postbutton("bio.php?char=".rawurlencode($args['login'])."&ret=".rawurlencode(httpget("ret"))."&op=faqmute", translate_inline("FAQmute player")));
+				output_notl("`n");
+			}
 		} elseif (($session['user']['superuser'] & SU_EDIT_COMMENTS) &&
 				$seen && !$args['dragonkills']) {
 			addnav("Mute Player Options");

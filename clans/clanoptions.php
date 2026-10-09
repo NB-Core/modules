@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Security\Csrf;
 
 /*
 Details:
@@ -157,9 +158,43 @@ function clanoptions_dohook($hookname, $args){
         return $args;
 }
 
+/**
+ * Whether the request is a posted clan setting change with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function clanoptions_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:clanoptions");
+}
+
+/**
+ * The hidden token field for this module's forms; empty on a core without Lotgd\Security\Csrf.
+ */
+function clanoptions_tokenfield(){
+	return class_exists(Csrf::class) ? Csrf::hiddenField("module:clanoptions") : "";
+}
+
+/**
+ * An inline POST button carrying the module's CSRF token.
+ */
+function clanoptions_postbutton($url, $label, $confirm = ""){
+	addnav("", $url);
+	$onsubmit = $confirm > "" ? " onSubmit='return confirm(".htmlspecialchars(json_encode($confirm), ENT_QUOTES).");'" : "";
+	return "<form action='".htmlspecialchars($url, ENT_QUOTES)."' method='post' style='display:inline'$onsubmit>"
+		.clanoptions_tokenfield()
+		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
+}
+
 function clanoptions_run() {
         global $session;
         $op = httpget('op');
+        // The same conditions as the clan hall links: the fountain for officers and up, the options for those who may manage them.
+        if (($op == "fountain" && ($session['user']['clanid'] == 0 || $session['user']['clanrank'] < CLAN_OFFICER))
+                        || ($op == "admin" && !clanoptions_user_can_manage_settings())) {
+                redirect("clan.php");
+        }
         switch ($op) {
                 case "fountain":
 			page_header("High Fountain");
@@ -392,7 +427,8 @@ function clanoptions_fountain() {
 			viewcommentary("clanoptions-fount-".$session['user']['clanid'],"`#Talk?`@",25,"talks");
 		break;
 		case "poster":
-			if (httpget('s')=='yes') {
+			// Only the posted form with its token replaces the poster.
+			if (httpget('s')=='yes' && clanoptions_validpost()) {
 				output("`@You decide the old poster is boring, and change it.");
 				$poster = substr(str_replace("'","\'",httppost('poster')),0,255);
 				set_module_objpref("clans", $clan, "fountPoster",$poster);
@@ -405,7 +441,7 @@ function clanoptions_fountain() {
 				$authID = $session['user']['name'];
 				output("`@You read the poster that is attached to the wall opposite the fountain.`nIt says `^%s`0`@... with your name etched in a corner.`nYou then stare at the waterclock- `^%s`@.`nYou figure a new day in `^%s hours %s minutes and %s seconds`@.`0",str_replace("\'","'",str_replace("\\\"","\"",get_module_objpref("clans", $clan, "fountPoster"))),$author,getgametime(),date("G",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")),date("i",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")),date("s",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")));
 			} else {
-				rawoutput("<form action='".$link."type=poster&s=yes' method='POST'>");
+				rawoutput("<form action='".$link."type=poster&s=yes' method='POST'>".clanoptions_tokenfield());
 				addnav("",$link."type=poster&s=yes");
 				output("`&`bNew Poster:`b `7(255 chars max)`n");
 				rawoutput("<input name='poster' value='' maxlength='255' size='50'>");
@@ -436,6 +472,8 @@ function clanoptions_setup() {
         $canManage = clanoptions_user_can_manage_settings();
         addnav("Navigation");
         addnav("Actions");
+        // Every change needs a posted form or button with the token; officer editing is the leader's to toggle.
+        if ($type > "" && (!clanoptions_validpost() || ($type == "toggle" && $session['user']['clanrank'] < CLAN_LEADER))) $type = "";
         switch ($type) {
                 case "save":
                         $minDKs=httppost('minDKs');
@@ -475,7 +513,7 @@ function clanoptions_setup() {
                 break;
         }
         modulehook("clanoptions-admin-savetext");
-        rawoutput("<form action='".$link."&type=save' method='POST'>");
+        rawoutput("<form action='".$link."&type=save' method='POST'>".clanoptions_tokenfield());
         $b = translate_inline("Minimum Dragon Kills limit:");
         $s = translate_inline('Submit');
 	output("`n`&");
@@ -488,7 +526,7 @@ function clanoptions_setup() {
         output("`n`b`@Clan Tattoo Offerings`b`n");
         output("`@List each tattoo on a new line using the format `^identifier`@|`^Display Name`@|`^Color`@|`^Description`@.`n`@Only the identifier and display name are required. The color uses standard LoGD color codes, and the description is shown during Petra's purchase flow.`n");
         $saveLink = $link."&type=tattoosave";
-        rawoutput("<form action='".$saveLink."' method='POST'>");
+        rawoutput("<form action='".$saveLink."' method='POST'>".clanoptions_tokenfield());
         $readOnly = $canManage ? '' : " readonly='readonly'";
         rawoutput("<textarea name='tattoo_list' rows='6' cols='70'".$readOnly.">".
                 htmlentities($tattooLines, ENT_COMPAT, $charset)."</textarea><br>");
@@ -509,13 +547,15 @@ function clanoptions_setup() {
 	if ($session['user']['clanrank'] == CLAN_LEADER){
 		$status = translate_inline((get_module_objpref("clans", $clan, "officersUse")?"On":"Off"));
 		output_notl("`n`@%s `^%s `@%s",translate_inline("You currently have Officers Setup Editing"),$status,translate_inline(". If this is on, Officers and all higher ranks can change the settings, otherwise, only Leaders can."));
-		addnav(array("`^%s`@%s`^%s",translate_inline("Toggle Clan Officers (Currently: "),$status,translate_inline(")")),$link."&type=toggle");
+		output_notl("`n");
+		rawoutput(clanoptions_postbutton($link."&type=toggle", sprintf("%s%s%s", translate_inline("Toggle Clan Officers (Currently: "), $status, translate_inline(")"))));
 	}
 	output("`n`@The minimum DK limit for your clan is `&%s`@.",get_module_objpref("clans", $session['user']['clanid'], "minDKs"));
 	output("`n`@Anyone who cannot change settings here will be kicked out, if they do not meet the requirement.");
-	output_notl("`n`@%s `^%s `@%s",translate_inline("You currently have Auto Accept"),$status,translate_inline(". If this is on, users will automatically be added to the clan upon application."));
 	$status = translate_inline((get_module_objpref("clans", $clan, "autoAc")?"On":"Off"));
-	addnav(array("`^%s`@%s`^%s",translate_inline("Toggle Auto Accept (Currently: "),$status,translate_inline(")")),$link."&type=atoggle");
+	output_notl("`n`@%s `^%s `@%s",translate_inline("You currently have Auto Accept"),$status,translate_inline(". If this is on, users will automatically be added to the clan upon application."));
+	output_notl("`n");
+	rawoutput(clanoptions_postbutton($link."&type=atoggle", sprintf("%s%s%s", translate_inline("Toggle Auto Accept (Currently: "), $status, translate_inline(")"))));
 	modulehook("clanoptions-admin-text");
 }
 ?>
