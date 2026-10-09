@@ -62,6 +62,17 @@ function claneditor_dohook($hookname,$args) {
 	return $args;
 }
 
+/**
+ * Whether the request is the posted delete confirmation with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function claneditor_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:claneditor");
+}
+
 function claneditor_run(){
 	global $session;
 	// The Grotto link is only offered to SU_EDIT_USERS; enforce the same here.
@@ -304,7 +315,7 @@ $ranks = translate_inline($args['ranks']);
 			modulehook("}collapse");
 		}elseif ($op=="deleteclan"){
 			// Deleting needs the confirmation form's POST and token; a bare link only shows the confirmation.
-			if (httpget("sop")=="yes" && Csrf::validatePostRequest("module:claneditor")) {
+			if (httpget("sop")=="yes" && claneditor_validpost()) {
 				//notify users of the deletion of the clan
 				$rows = $conn->executeQuery(
 					"SELECT acctid FROM {$accountsTable} WHERE clanid = :clanid",
@@ -346,7 +357,7 @@ $ranks = translate_inline($args['ranks']);
 				$dc = translate_inline("Delete this clan? Are you sure!");
 				$deleteurl = "runmodule.php?module=claneditor&op=deleteclan&sop=yes&dt=".(int)$dt;
 				rawoutput("<form action='$deleteurl' method='post' onSubmit='return confirm(".htmlspecialchars(json_encode($dc), ENT_QUOTES).");'>"
-					.Csrf::hiddenField("module:claneditor")
+					.(class_exists(Csrf::class) ? Csrf::hiddenField("module:claneditor") : "")
 					."<input type='submit' class='button' value='".htmlspecialchars($dc, ENT_QUOTES)."'></form>");
 				addnav("",$deleteurl);
 			}

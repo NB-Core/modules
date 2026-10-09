@@ -33,7 +33,9 @@ function readmail_dohook($hookname,$args) {
                 case "header-mail":
                         // The buttons sit in the inbox form, which carries mail.php's form token.
                         // mail.php checks that token only after this hook, so check it here first.
-                        if ((httppost('delete_readmails') || httppost('mark_as_read')) && !Forms::validateCsrf()) {
+                        // A core without Forms::validateCsrf() (before September 2026) has no form token to check.
+                        if ((httppost('delete_readmails') || httppost('mark_as_read'))
+                                && method_exists(Forms::class, 'validateCsrf') && !Forms::validateCsrf()) {
                                 break;
                         }
                         if (httppost('delete_readmails')) {

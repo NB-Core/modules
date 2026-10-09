@@ -54,7 +54,7 @@ function backpack_run(){
         $id = httpget('id');
 	// Equip, unequip and activate change the inventory. The module overrides forced navigation,
 	// so only a posted form carrying this module's token may trigger them.
-	if (in_array($op2, array("equip","unequip","activate"), true) && !Csrf::validatePostRequest("module:backpack")) {
+	if (in_array($op2, array("equip","unequip","activate"), true) && !backpack_validpost()) {
 		$op2 = "";
 	}
 	switch($op2) {
@@ -209,13 +209,24 @@ function backpack_run(){
 }
 
 /**
+ * Whether the request is a posted inventory form with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function backpack_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:backpack");
+}
+
+/**
  * An inline POST button for an inventory change, carrying the module's CSRF token.
  */
 function backpack_actionbutton($op2, $id, $label){
 	$url = "runmodule.php?module=backpack&op=charstat&op2=$op2&id=$id";
 	addnav("", $url);
 	return "[ <form action='$url' method='post' style='display:inline'>"
-		. Csrf::hiddenField("module:backpack")
+		. (class_exists(Csrf::class) ? Csrf::hiddenField("module:backpack") : "")
 		. "<input type='submit' class='button' value='" . htmlspecialchars($label, ENT_QUOTES) . "'></form> ]";
 }
 
