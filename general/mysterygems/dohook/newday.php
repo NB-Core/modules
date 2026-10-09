@@ -9,9 +9,10 @@ if (!get_module_setting('runoncemove') && get_module_setting('move'))
 	set_module_pref('userplace', $key);
 }
 if (get_module_pref('lostmountdays') < 0) set_module_pref('lostmountdays', 0);
-if (get_module_pref('lostmount') && !get_module_setting('runoncemount'))
+if (get_module_pref('lostmount'))
 {
-	set_module_pref('lostmountdays', get_module_pref('lostmountdays') - 1);
+	// With runoncemount the server's new day counts down (newday-runonce.php); the mount returns here either way.
+	if (!get_module_setting('runoncemount')) set_module_pref('lostmountdays', get_module_pref('lostmountdays') - 1);
 	if (get_module_pref('lostmountdays') > 0)
 	{
 		output("`&`n`nYour hand still glows with a turquoise hue. Your mount won't return for another %s days.`n`n`0", 

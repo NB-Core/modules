@@ -1,4 +1,6 @@
 <?php
+use Lotgd\Security\Csrf;
+
 function alldp_getmoduleinfo(){
 	$info = array(
 		"name"=>"Donation Points for All",
@@ -33,6 +35,17 @@ function alldp_dohook($hookname,$args){
 	return $args;
 }
 
+/**
+ * Whether the request is the posted points form with a valid token.
+ * Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+ */
+function alldp_validpost(){
+	if (!class_exists(Csrf::class)) {
+		return ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+	}
+	return Csrf::validatePostRequest("module:alldp");
+}
+
 function alldp_run(){
 	global $session;
 	// The Grotto link is only offered to megausers; enforce the same here.
@@ -51,6 +64,8 @@ debug($sql);
 			$result=db_query($sql);
 			switch ($subop) {
 				case "givedp":
+					// Points go out only from the posted form with its token; anything else shows the form again.
+					if (!alldp_validpost()) break;
 					$dp=(int)httppost('dp');
 					$body=str_replace("\n","`n",httppost('body'));
 					$body.=sprintf("`n`n(You have received %s donation points)",$dp);
@@ -94,6 +109,7 @@ debug($sql);
 			$points=translate_inline("How many points:");
 			$submit=translate_inline("Give out points now!");
 			rawoutput("<form action='runmodule.php?module=alldp&subop=givedp' method='POST'>");
+			if (class_exists(Csrf::class)) rawoutput(Csrf::hiddenField("module:alldp"));
 			addnav("","runmodule.php?module=alldp&subop=givedp");
 			output_notl("`n".$subject);
 			rawoutput("<input type='input' class='input' name='subject'>");
