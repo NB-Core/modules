@@ -7,7 +7,7 @@ use Lotgd\MySQL\Database;
 function gmlog_getmoduleinfo() {
 	$info = array(
 		"name"=>"GM Log (ban-based)",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Administrative",
 		"download"=>"",
@@ -33,8 +33,43 @@ function gmlog_install() {
 		'key-PRIMARY' => array('name'=>'PRIMARY', 'type'=>'primary key', 'unique'=>'1', 'columns'=>'id'),
 	);
 	require_once("lib/tabledescriptor.php");
+	gmlog_normalize_archive_dates(db_prefix("gm_log"), $archive);
 	synctable(db_prefix("gm_log"), $archive, true);
 	return true;
+}
+
+/**
+ * Upgrade legacy log dates before a strict-mode ALTER TABLE validates them.
+ * DATETIME_DATEMIN also preserves the sentinel used for permanent bans.
+ */
+function gmlog_normalize_archive_dates(string $tablename, array $descriptor): void
+{
+    if (!db_table_exists($tablename)) {
+        return;
+    }
+
+    $connection = Database::getDoctrineConnection();
+    $table = $connection->quoteIdentifier($tablename);
+    $columns = array_flip($connection->fetchFirstColumn("SHOW COLUMNS FROM $table"));
+    $updates = array();
+    $conditions = array();
+    foreach ($descriptor as $name => $definition) {
+        if (($definition['type'] ?? '') !== 'datetime' || !isset($columns[$name])) {
+            continue;
+        }
+        $column = $connection->quoteIdentifier($name);
+        // A datetime comparison against a zero-date literal can itself fail.
+        $condition = "LEFT(CAST($column AS CHAR), 10) = :zeroDate";
+        $updates[] = "$column = CASE WHEN $condition THEN :minimumDate ELSE $column END";
+        $conditions[] = $condition;
+    }
+
+    if ($updates) {
+        $connection->executeStatement(
+            "UPDATE $table SET " . implode(', ', $updates) . " WHERE " . implode(' OR ', $conditions),
+            ['zeroDate' => '0000-00-00', 'minimumDate' => DATETIME_DATEMIN]
+        );
+    }
 }
 
 function gmlog_uninstall() {
