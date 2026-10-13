@@ -58,12 +58,8 @@ function advertisingtracker_install(){
 	advertisingtracker_normalize_archive_dates(db_prefix("abusemail"), $abusemail);
 	advertisingtracker_normalize_archive_dates(db_prefix("abuseuser"), $abuseuser);
 	synctable(db_prefix("abusemail"), $abusemail, true);
-	synctable(db_prefix("abuseuser"), $abuseuser, true);
-	// synctable() keeps columns it no longer describes, so a table from an
-	// older version loses the ones that are no longer archived here.
-	foreach (advertisingtracker_unarchived_fields() as $field) {
-		advertisingtracker_drop_column(db_prefix("abuseuser"), $field);
-	}
+	// Without nodrop, so an older archive loses the columns no longer kept (password, emailvalidation).
+	synctable(db_prefix("abuseuser"), $abuseuser);
 	return true;
 }
 
@@ -97,33 +93,6 @@ function advertisingtracker_normalize_archive_dates(string $tablename, array $de
             "UPDATE $table SET " . implode(', ', $updates) . " WHERE " . implode(' OR ', $conditions),
             ['zeroDate' => '0000-00-00', 'minimumDate' => DATETIME_DATEMIN]
         );
-    }
-}
-
-/**
- * Account fields a wipe does not copy into the archive: the password hash
- * and the e-mail validation token.
- *
- * @return list<string>
- */
-function advertisingtracker_unarchived_fields(): array
-{
-    return ['password', 'emailvalidation'];
-}
-
-/**
- * Drop one column from a table, if the table has it.
- */
-function advertisingtracker_drop_column(string $tablename, string $column): void
-{
-    if (!db_table_exists($tablename)) {
-        return;
-    }
-
-    $connection = Database::getDoctrineConnection();
-    $table = $connection->quoteIdentifier($tablename);
-    if (in_array($column, $connection->fetchFirstColumn("SHOW COLUMNS FROM $table"), true)) {
-        $connection->executeStatement("ALTER TABLE $table DROP COLUMN " . $connection->quoteIdentifier($column));
     }
 }
 
@@ -229,8 +198,8 @@ function advertisingtracker_run(){
 					// The account's own fields (bio, title, ...) are player text, so they are bound, not pasted.
 					$abuserow=array();
 					foreach ($array as $field) {
-						// Blanked, not skipped: an archive the module has not reinstalled yet still has these columns, without a default.
-						$abuserow[$field]=in_array($field, advertisingtracker_unarchived_fields(), true) ? '' : ($account[$field] ?? '');
+						// Never archived. Should the install have failed, the old columns are still there and need a value.
+						$abuserow[$field]=in_array($field, array('password', 'emailvalidation'), true) ? '' : ($account[$field] ?? '');
 					}
 					Database::getDoctrineConnection()->insert(db_prefix('abuseuser'), $abuserow); //insert infos
 					require_once("lib/charcleanup.php");

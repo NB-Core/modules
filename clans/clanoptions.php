@@ -2,6 +2,7 @@
 
 use Doctrine\DBAL\ParameterType;
 use Lotgd\MySQL\Database;
+use Lotgd\Repository\ClanRepository;
 use Lotgd\Security\Csrf;
 
 /*
@@ -411,18 +412,8 @@ function clanoptions_fountain() {
 			$tomorrow = strtotime(date("Y-m-d 00:00:00",$tomorrow));
 			$secstotomorrow = $tomorrow-$time;
 			$realsecstotomorrow = $secstotomorrow / getsetting("daysperday",4);
-			$authid = (int)get_module_objpref("clans", $clan, "authID");
-			if ($authid!=0) {
-				$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid=".$authid;
-				// Keyed by the author, so a new poster shows its own author at once.
-				$result = db_query_cached($sql, "clanoptions-fount-author-".$authid);
-				$row = db_fetch_assoc($result);
-				// The author's account may be gone since; the poster stays.
-				$author = $row['name'] ?? translate_inline('Anonymous');
-				unset($row,$result,$sql,$time,$secstotomorrow,$tomorrow,$time);
-			} else {
-				$author = translate_inline('Anonymous');
-			}
+			// No author recorded, or the author's account is gone since; the poster stays.
+			$author = ClanRepository::fetchAccountName((int)get_module_objpref("clans", $clan, "authID")) ?? translate_inline('Anonymous');
 			output("`@You read the poster that is attached to wall in front of the fountain.`nIt says `^%s`0`@... and you see the name `&%s`@ etched in a corner.`nYou then stare at the waterclock- `^%s`0",str_replace("\'","'",str_replace("\\\"","\"",get_module_objpref("clans", $clan, "fountPoster"))),$author,getgametime());
 			addcommentary();
 			output("`n`n`#You listen in..`n");
