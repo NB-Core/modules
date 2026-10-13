@@ -35,11 +35,10 @@ function advertisingtracker_install(){
 		);
 	$abuseuser=array(
 		'acctid'=>array('name'=>'acctid', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment'),
-		'name'=>array('name'=>'name', 'type'=>'varchar(60)'),
+		'name'=>array('name'=>'name', 'type'=>'varchar(100)'),
 		'sex'=>array('name'=>'sex', 'type'=>'tinyint(4) unsigned', 'default'=>'0'),
 		'level'=>array('name'=>'level', 'type'=>'int(11) unsigned', 'default'=>'1'),
 		'laston'=>array('name'=>'laston', 'type'=>'datetime', 'default'=>DATETIME_DATEMIN),
-		'password'=>array('name'=>'password', 'type'=>'varchar(32)'),
 		'superuser'=>array('name'=>'superuser', 'type'=>'int(11) unsigned', 'default'=>'1'),
 		'login'=>array('name'=>'login', 'type'=>'varchar(50)'),
 		'lasthit'=>array('name'=>'lasthit', 'type'=>'datetime', 'default'=>DATETIME_DATEMIN),
@@ -48,7 +47,6 @@ function advertisingtracker_install(){
 				'lastip'=>array('name'=>'lastip', 'type'=>'varchar(40)'),
 		'uniqueid'=>array('name'=>'uniqueid', 'type'=>'varchar(32)', 'null'=>'1'),
 		'emailaddress'=>array('name'=>'emailaddress', 'type'=>'varchar(128)'),
-		'emailvalidation'=>array('name'=>'emailvalidation', 'type'=>'varchar(32)'),
 		'donation'=>array('name'=>'donation', 'type'=>'int(11) unsigned', 'default'=>'0'),
 		'donationspent'=>array('name'=>'donationspent', 'type'=>'int(11) unsigned', 'default'=>'0'),
 		'ctitle'=>array('name'=>'ctitle', 'type'=>'varchar(25)'),
@@ -60,7 +58,8 @@ function advertisingtracker_install(){
 	advertisingtracker_normalize_archive_dates(db_prefix("abusemail"), $abusemail);
 	advertisingtracker_normalize_archive_dates(db_prefix("abuseuser"), $abuseuser);
 	synctable(db_prefix("abusemail"), $abusemail, true);
-	synctable(db_prefix("abuseuser"), $abuseuser, true);
+	// Without nodrop, so an older archive loses the columns no longer kept (password, emailvalidation).
+	synctable(db_prefix("abuseuser"), $abuseuser);
 	return true;
 }
 
@@ -199,7 +198,8 @@ function advertisingtracker_run(){
 					// The account's own fields (bio, title, ...) are player text, so they are bound, not pasted.
 					$abuserow=array();
 					foreach ($array as $field) {
-						$abuserow[$field]=$account[$field] ?? '';
+						// Never archived. Should the install have failed, the old columns are still there and need a value.
+						$abuserow[$field]=in_array($field, array('password', 'emailvalidation'), true) ? '' : ($account[$field] ?? '');
 					}
 					Database::getDoctrineConnection()->insert(db_prefix('abuseuser'), $abuserow); //insert infos
 					require_once("lib/charcleanup.php");
