@@ -411,10 +411,11 @@ function clanoptions_fountain() {
 			$tomorrow = strtotime(date("Y-m-d 00:00:00",$tomorrow));
 			$secstotomorrow = $tomorrow-$time;
 			$realsecstotomorrow = $secstotomorrow / getsetting("daysperday",4);
-			$authid = get_module_objpref("clans", $clan, "authID");
-			if ($authID!=0) {
-				$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid='".$authid."'";
-				$result = db_query_cached($sql, "clanoptions-fount-".$clan);
+			$authid = (int)get_module_objpref("clans", $clan, "authID");
+			if ($authid!=0) {
+				$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid=".$authid;
+				// Keyed by the author, so a new poster shows its own author at once.
+				$result = db_query_cached($sql, "clanoptions-fount-author-".$authid);
 				$row = db_fetch_assoc($result);
 				$author = $row['name'];
 				unset($row,$result,$sql,$time,$secstotomorrow,$tomorrow,$time);
@@ -438,8 +439,7 @@ function clanoptions_fountain() {
 				$tomorrow = strtotime(date("Y-m-d 00:00:00",$tomorrow));
 				$secstotomorrow = $tomorrow-$time;
 				$realsecstotomorrow = $secstotomorrow / getsetting("daysperday",4);
-				$authID = $session['user']['name'];
-				output("`@You read the poster that is attached to the wall opposite the fountain.`nIt says `^%s`0`@... with your name etched in a corner.`nYou then stare at the waterclock- `^%s`@.`nYou figure a new day in `^%s hours %s minutes and %s seconds`@.`0",str_replace("\'","'",str_replace("\\\"","\"",get_module_objpref("clans", $clan, "fountPoster"))),$author,getgametime(),date("G",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")),date("i",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")),date("s",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")));
+				output("`@You read the poster that is attached to the wall opposite the fountain.`nIt says `^%s`0`@... with your name etched in a corner.`nYou then stare at the waterclock- `^%s`@.`nYou figure a new day in `^%s hours %s minutes and %s seconds`@.`0",str_replace("\'","'",str_replace("\\\"","\"",get_module_objpref("clans", $clan, "fountPoster"))),getgametime(),date("G",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")),date("i",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")),date("s",strtotime("1970-01-01 00:00:00 + $realsecstotomorrow seconds")));
 			} else {
 				rawoutput("<form action='".$link."type=poster&s=yes' method='POST'>".clanoptions_tokenfield());
 				addnav("",$link."type=poster&s=yes");

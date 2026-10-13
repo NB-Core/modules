@@ -35,11 +35,10 @@ function advertisingtracker_install(){
 		);
 	$abuseuser=array(
 		'acctid'=>array('name'=>'acctid', 'type'=>'int(11) unsigned', 'extra'=>'auto_increment'),
-		'name'=>array('name'=>'name', 'type'=>'varchar(60)'),
+		'name'=>array('name'=>'name', 'type'=>'varchar(100)'),
 		'sex'=>array('name'=>'sex', 'type'=>'tinyint(4) unsigned', 'default'=>'0'),
 		'level'=>array('name'=>'level', 'type'=>'int(11) unsigned', 'default'=>'1'),
 		'laston'=>array('name'=>'laston', 'type'=>'datetime', 'default'=>DATETIME_DATEMIN),
-		'password'=>array('name'=>'password', 'type'=>'varchar(32)'),
 		'superuser'=>array('name'=>'superuser', 'type'=>'int(11) unsigned', 'default'=>'1'),
 		'login'=>array('name'=>'login', 'type'=>'varchar(50)'),
 		'lasthit'=>array('name'=>'lasthit', 'type'=>'datetime', 'default'=>DATETIME_DATEMIN),
@@ -48,7 +47,6 @@ function advertisingtracker_install(){
 				'lastip'=>array('name'=>'lastip', 'type'=>'varchar(40)'),
 		'uniqueid'=>array('name'=>'uniqueid', 'type'=>'varchar(32)', 'null'=>'1'),
 		'emailaddress'=>array('name'=>'emailaddress', 'type'=>'varchar(128)'),
-		'emailvalidation'=>array('name'=>'emailvalidation', 'type'=>'varchar(32)'),
 		'donation'=>array('name'=>'donation', 'type'=>'int(11) unsigned', 'default'=>'0'),
 		'donationspent'=>array('name'=>'donationspent', 'type'=>'int(11) unsigned', 'default'=>'0'),
 		'ctitle'=>array('name'=>'ctitle', 'type'=>'varchar(25)'),
@@ -61,6 +59,11 @@ function advertisingtracker_install(){
 	advertisingtracker_normalize_archive_dates(db_prefix("abuseuser"), $abuseuser);
 	synctable(db_prefix("abusemail"), $abusemail, true);
 	synctable(db_prefix("abuseuser"), $abuseuser, true);
+	// synctable() keeps columns it no longer describes, so a table from an
+	// older version loses the ones that are no longer archived here.
+	foreach (advertisingtracker_unarchived_fields() as $field) {
+		advertisingtracker_drop_column(db_prefix("abuseuser"), $field);
+	}
 	return true;
 }
 
@@ -94,6 +97,33 @@ function advertisingtracker_normalize_archive_dates(string $tablename, array $de
             "UPDATE $table SET " . implode(', ', $updates) . " WHERE " . implode(' OR ', $conditions),
             ['zeroDate' => '0000-00-00', 'minimumDate' => DATETIME_DATEMIN]
         );
+    }
+}
+
+/**
+ * Account fields a wipe does not copy into the archive: the password hash
+ * and the e-mail validation token.
+ *
+ * @return list<string>
+ */
+function advertisingtracker_unarchived_fields(): array
+{
+    return ['password', 'emailvalidation'];
+}
+
+/**
+ * Drop one column from a table, if the table has it.
+ */
+function advertisingtracker_drop_column(string $tablename, string $column): void
+{
+    if (!db_table_exists($tablename)) {
+        return;
+    }
+
+    $connection = Database::getDoctrineConnection();
+    $table = $connection->quoteIdentifier($tablename);
+    if (in_array($column, $connection->fetchFirstColumn("SHOW COLUMNS FROM $table"), true)) {
+        $connection->executeStatement("ALTER TABLE $table DROP COLUMN " . $connection->quoteIdentifier($column));
     }
 }
 
@@ -199,7 +229,8 @@ function advertisingtracker_run(){
 					// The account's own fields (bio, title, ...) are player text, so they are bound, not pasted.
 					$abuserow=array();
 					foreach ($array as $field) {
-						$abuserow[$field]=$account[$field] ?? '';
+						// Blanked, not skipped: an archive the module has not reinstalled yet still has these columns, without a default.
+						$abuserow[$field]=in_array($field, advertisingtracker_unarchived_fields(), true) ? '' : ($account[$field] ?? '');
 					}
 					Database::getDoctrineConnection()->insert(db_prefix('abuseuser'), $abuserow); //insert infos
 					require_once("lib/charcleanup.php");
