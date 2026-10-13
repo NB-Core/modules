@@ -417,7 +417,8 @@ function clanoptions_fountain() {
 				// Keyed by the author, so a new poster shows its own author at once.
 				$result = db_query_cached($sql, "clanoptions-fount-author-".$authid);
 				$row = db_fetch_assoc($result);
-				$author = $row['name'];
+				// The author's account may be gone since; the poster stays.
+				$author = $row['name'] ?? translate_inline('Anonymous');
 				unset($row,$result,$sql,$time,$secstotomorrow,$tomorrow,$time);
 			} else {
 				$author = translate_inline('Anonymous');
