@@ -92,11 +92,13 @@
 				rawoutput("<tr height=30px class='trlight'><td colspan=2>");
 				output("`\$You do not have the %s gold or %s gems required to rename your dwelling!",get_module_setting("namegoldcost"),get_module_setting("namegemcost"));
 	}else{
-		if (method_exists('\\Lotgd\\Forms', 'dataTableAttributes')) {
+		// previewField() takes $talkline = false since the core that added
+		// dataTableAttributes(); older cores keep the old script below.
+		if (method_exists('\\Lotgd\\Forms', 'previewField') && method_exists('\\Lotgd\\Forms', 'dataTableAttributes')) {
 			// The core's colour preview: an inline script for classic players,
 			// markup the partial client renders for the others, so the page
-			// can change in place. Cores before it keep the old script below.
-			rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=name&dwid=$dwid' method='POST' autocomplete='false'>");
+			// can change in place.
+			rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=name&dwid=$dwid' method='POST' autocomplete='off'>");
 			addnav("","runmodule.php?module=dwellings&op=manage-names&subop=rename&change=name&dwid=$dwid");
 			rawoutput(\Lotgd\Forms::previewField('newname', false, false, false, array('size' => '40', 'maxlength' => '255'), false));
 			rawoutput("<input type='submit' class='button' value='$submit'><br>");
@@ -150,7 +152,7 @@
 					}
 					</script>";
 				rawoutput($switchscript);
-					rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=name&dwid=$dwid' method='POST' autocomplete='false'>");
+					rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=name&dwid=$dwid' method='POST' autocomplete='off'>");
 					addnav("","runmodule.php?module=dwellings&op=manage-names&subop=rename&change=name&dwid=$dwid");
 					rawoutput("<input name='newname' id='newname' onKeyUp='previewtext(document.getElementById(\"newname\").value);'; size='40' maxlength='255'>");
 					rawoutput("<input type='submit' class='button' value='$submit'><br>");
@@ -172,7 +174,7 @@
 			rawoutput("<tr height=30px class='trlight'><td colspan=2>");
 			output("`\$You do not have the %s gold or %s gems required to change the description!",get_module_setting("descgoldcost"),get_module_setting("descgemcost"));
 		} else {
-			rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=description&dwid=$dwid' method='POST' autocomplete='false'>");
+			rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=description&dwid=$dwid' method='POST' autocomplete='off'>");
 			addnav("","runmodule.php?module=dwellings&op=manage-names&subop=rename&change=description&dwid=$dwid");
 			rawoutput("<textarea name='newname' cols=50 rows=5>".htmlentities($row['description'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
 			rawoutput("<input type='submit' class='button' value='$submit'></form>");
@@ -192,7 +194,7 @@
 			rawoutput("<tr height=30px class='trlight'><td colspan=2>");
 			output("`\$You do not have the %s gold or %s gems required to change the public description!",get_module_setting("windgoldcost"),get_module_setting("windgemcost"));
 		} else {
-			rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=windowpeer&dwid=$dwid' method='POST' autocomplete='false'>");
+			rawoutput("<form action='runmodule.php?module=dwellings&op=manage-names&subop=rename&change=windowpeer&dwid=$dwid' method='POST' autocomplete='off'>");
 			addnav("","runmodule.php?module=dwellings&op=manage-names&subop=rename&change=windowpeer&dwid=$dwid");
 			rawoutput("<textarea name='newname' cols=50 rows=5>".htmlentities($row['windowpeer'], ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
 			rawoutput("<input type='submit' class='button' value='$submit'></form>");

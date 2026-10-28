@@ -141,7 +141,7 @@ function dwellings_render_datatable_open($tableId, array $headers, array $option
     global $dwellings_datatable_options;
     $dwellings_datatable_options[$tableId] = $options;
     $attributes = dwellings_datatable_declarative()
-        ? \Lotgd\Forms::dataTableAttributes(dwellings_datatable_config($options))
+        ? ' ' . trim(\Lotgd\Forms::dataTableAttributes(dwellings_datatable_config($options)))
         : '';
     rawoutput("<div class='dwellings-datatable-wrapper'>");
     rawoutput("<table id='" . htmlspecialchars($tableId, ENT_QUOTES, getsetting('charset', 'UTF-8')) . "' class='dwellings-datatable'" . $attributes . ">");
