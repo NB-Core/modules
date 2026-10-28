@@ -96,7 +96,12 @@ $ttype = translate_inline('Type');
 $tdesc = translate_inline('Description');
 
 // Completed local dwellings table.
-dwellings_render_datatable_open('dwellings-owned-local-table', [$tname, $tdesc, $ttype, '&nbsp;']);
+dwellings_render_datatable_open('dwellings-owned-local-table', [$tname, $tdesc, $ttype, '&nbsp;'], [
+    'order' => [[0, 'asc']],
+    'columnDefs' => [
+        ['targets' => [3], 'orderable' => false, 'searchable' => false],
+    ],
+]);
 
 if (!db_num_rows($result)) {
     // Keep tbody empty so DataTables can render a valid empty-table state.
@@ -151,12 +156,7 @@ if (!db_num_rows($result)) {
     }
 }
 
-dwellings_render_datatable_close('dwellings-owned-local-table', [
-    'order' => [[0, 'asc']],
-    'columnDefs' => [
-        ['targets' => [3], 'orderable' => false, 'searchable' => false],
-    ],
-]);
+dwellings_render_datatable_close('dwellings-owned-local-table');
 
 output('`n`n`cYou have keys to the following dwellings here:`c`n');
 $dwellings = db_prefix('dwellings');
@@ -177,7 +177,12 @@ $sql = "SELECT $dwellings.name AS name,
         ORDER BY $dwellingkeys.keyid DESC";
 $result = db_query($sql);
 
-dwellings_render_datatable_open('dwellings-keyed-local-table', [$tname, $towner, $tdesc, $ttype, '&nbsp;']);
+dwellings_render_datatable_open('dwellings-keyed-local-table', [$tname, $towner, $tdesc, $ttype, '&nbsp;'], [
+    'order' => [[0, 'asc']],
+    'columnDefs' => [
+        ['targets' => [4], 'orderable' => false, 'searchable' => false],
+    ],
+]);
 if (!db_num_rows($result)) {
     // Keep tbody empty so DataTables can render a valid empty-table state.
 } else {
@@ -208,12 +213,7 @@ if (!db_num_rows($result)) {
         addnav('', "runmodule.php?module=dwellings&op=enter&dwid=$dwid");
     }
 }
-dwellings_render_datatable_close('dwellings-keyed-local-table', [
-    'order' => [[0, 'asc']],
-    'columnDefs' => [
-        ['targets' => [4], 'orderable' => false, 'searchable' => false],
-    ],
-]);
+dwellings_render_datatable_close('dwellings-keyed-local-table');
 
 $noEnter = translate_inline('You need to travel');
 output('`n`n`cIn other villages, you have access to the following dwellings:`c`n');
@@ -235,7 +235,12 @@ $sql = "SELECT $dwellings.name AS name,
 $result = db_query($sql);
 
 $locationLabel = translate_inline('Location');
-dwellings_render_datatable_open('dwellings-keyed-remote-table', [$tname, $towner, $locationLabel, $tdesc, $ttype, '&nbsp;']);
+dwellings_render_datatable_open('dwellings-keyed-remote-table', [$tname, $towner, $locationLabel, $tdesc, $ttype, '&nbsp;'], [
+    'order' => [[2, 'asc']],
+    'columnDefs' => [
+        ['targets' => [5], 'orderable' => false, 'searchable' => false],
+    ],
+]);
 if (!db_num_rows($result)) {
     // Keep tbody empty so DataTables can render a valid empty-table state.
 } else {
@@ -256,12 +261,7 @@ if (!db_num_rows($result)) {
         );
     }
 }
-dwellings_render_datatable_close('dwellings-keyed-remote-table', [
-    'order' => [[2, 'asc']],
-    'columnDefs' => [
-        ['targets' => [5], 'orderable' => false, 'searchable' => false],
-    ],
-]);
+dwellings_render_datatable_close('dwellings-keyed-remote-table');
 
 output('`n`n`cIn other villages, you own the following dwellings:`c`n');
 $sql = "SELECT $dwellings.name AS name,
@@ -278,7 +278,12 @@ $sql = "SELECT $dwellings.name AS name,
         ORDER BY $dwellings.location DESC";
 $result = db_query($sql);
 
-dwellings_render_datatable_open('dwellings-owned-remote-table', [$tname, $towner, $locationLabel, $tdesc, $ttype, '&nbsp;']);
+dwellings_render_datatable_open('dwellings-owned-remote-table', [$tname, $towner, $locationLabel, $tdesc, $ttype, '&nbsp;'], [
+    'order' => [[2, 'asc']],
+    'columnDefs' => [
+        ['targets' => [5], 'orderable' => false, 'searchable' => false],
+    ],
+]);
 if (!db_num_rows($result)) {
     // Keep tbody empty so DataTables can render a valid empty-table state.
 } else {
@@ -299,10 +304,5 @@ if (!db_num_rows($result)) {
         );
     }
 }
-dwellings_render_datatable_close('dwellings-owned-remote-table', [
-    'order' => [[2, 'asc']],
-    'columnDefs' => [
-        ['targets' => [5], 'orderable' => false, 'searchable' => false],
-    ],
-]);
+dwellings_render_datatable_close('dwellings-owned-remote-table');
 ?>

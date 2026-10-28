@@ -85,7 +85,12 @@ if (httpget('subop') == 'buy') {
     $typeLabel = translate_inline('Type');
     $costLabel = translate_inline('Cost');
 
-    dwellings_render_datatable_open('dwellings-forsale-table', [$nameLabel, $typeLabel, $costLabel, $opsLabel]);
+    dwellings_render_datatable_open('dwellings-forsale-table', [$nameLabel, $typeLabel, $costLabel, $opsLabel], [
+        'order' => [[1, 'asc']],
+        'columnDefs' => [
+            ['targets' => [3], 'orderable' => false, 'searchable' => false],
+        ],
+    ]);
 
     if (db_num_rows($result)) {
         while ($row = db_fetch_assoc($result)) {
@@ -131,11 +136,6 @@ if (httpget('subop') == 'buy') {
 
     // Empty bodies are intentional; DataTables uses its emptyTable text without colspan warnings.
     // Keep action column unsortable because it only contains an interaction link.
-    dwellings_render_datatable_close('dwellings-forsale-table', [
-        'order' => [[1, 'asc']],
-        'columnDefs' => [
-            ['targets' => [3], 'orderable' => false, 'searchable' => false],
-        ],
-    ]);
+    dwellings_render_datatable_close('dwellings-forsale-table');
 }
 ?>

@@ -27,11 +27,7 @@ function dwellings_require_datatable_assets()
         return;
     }
 
-    \Lotgd\Output::requireVendorAsset('jquery', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
-    \Lotgd\Output::requireVendorAsset('datatables', 'css', \Lotgd\Output::VENDOR_BUCKET_PRE);
-    \Lotgd\Output::requireVendorAsset('datatables', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
-
-    \Lotgd\Output::addHeadMarkup("<style>
+    $style = "<style>
     .dwellings-datatable-wrapper {
         margin: 0.75rem auto;
         width: 100%;
@@ -77,43 +73,41 @@ function dwellings_require_datatable_assets()
         color: #000;
         background-color: color-mix(in srgb, Canvas 86%, CanvasText 14%);
     }
-    </style>");
+    </style>";
+
+    if (dwellings_datatable_declarative()) {
+        // In the page, not the <head>: a page whose <head> changes cannot be
+        // swapped in place. The core loads jQuery and DataTables itself.
+        rawoutput($style);
+    } else {
+        \Lotgd\Output::requireVendorAsset('jquery', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+        \Lotgd\Output::requireVendorAsset('datatables', 'css', \Lotgd\Output::VENDOR_BUCKET_PRE);
+        \Lotgd\Output::requireVendorAsset('datatables', 'js', \Lotgd\Output::VENDOR_BUCKET_MID);
+        \Lotgd\Output::addHeadMarkup($style);
+    }
 
     $assetsLoaded = true;
 }
 
 /**
- * Starts a semantic DataTables-compatible table with translated headers.
- *
- * @param string $tableId Stable DOM id used by DataTables init.
- * @param array<int, string> $headers Already translated table header labels.
+ * Whether the core sets up sortable tables from markup
+ * (Forms::dataTableAttributes()), so no inline script is needed and the page
+ * can change in place.
  */
-function dwellings_render_datatable_open($tableId, array $headers)
+function dwellings_datatable_declarative()
 {
-    rawoutput("<div class='dwellings-datatable-wrapper'>");
-    rawoutput("<table id='" . htmlspecialchars($tableId, ENT_QUOTES, getsetting('charset', 'UTF-8')) . "' class='dwellings-datatable'>");
-    rawoutput("<thead><tr class='trhead'>");
-    foreach ($headers as $header) {
-        rawoutput('<th>' . $header . '</th>');
-    }
-    rawoutput("</tr></thead><tbody>");
+    return class_exists('\\Lotgd\\Forms') && method_exists('\\Lotgd\\Forms', 'dataTableAttributes');
 }
 
 /**
- * Ends a DataTables table and initializes client-side sorting/search/pagination.
+ * The DataTables options of a dwellings table: the shared defaults with the
+ * table's own on top.
  *
- * Striping is configured here (instead of per-renderer row classes) so every
- * dwellings list table keeps alternating parity after DataTables sort/filter/page redraws.
- * The callback is intentionally shared here so all dwellings DataTables stay
- * consistent without relying on PHP loop parity that can drift after redraws.
- *
- * @param string $tableId Stable DOM id used by DataTables init.
- * @param array<string, mixed> $options DataTables options encoded as JSON.
+ * @param array<string, mixed> $options
+ * @return array<string, mixed>
  */
-function dwellings_render_datatable_close($tableId, array $options = [])
+function dwellings_datatable_config(array $options)
 {
-    rawoutput('</tbody></table></div>');
-
     $defaultOptions = [
         'paging' => true,
         'searching' => true,
@@ -128,7 +122,62 @@ function dwellings_render_datatable_close($tableId, array $options = [])
         ],
     ];
 
-    $config = array_merge($defaultOptions, $options);
+    return array_merge($defaultOptions, $options);
+}
+
+/**
+ * Starts a semantic DataTables-compatible table with translated headers.
+ *
+ * On a core that sets up tables from markup the options travel on the
+ * <table> tag; otherwise dwellings_render_datatable_close() writes them into
+ * its script.
+ *
+ * @param string $tableId Stable DOM id used by DataTables init.
+ * @param array<int, string> $headers Already translated table header labels.
+ * @param array<string, mixed> $options DataTables options for this table.
+ */
+function dwellings_render_datatable_open($tableId, array $headers, array $options = [])
+{
+    global $dwellings_datatable_options;
+    $dwellings_datatable_options[$tableId] = $options;
+    $attributes = dwellings_datatable_declarative()
+        ? \Lotgd\Forms::dataTableAttributes(dwellings_datatable_config($options))
+        : '';
+    rawoutput("<div class='dwellings-datatable-wrapper'>");
+    rawoutput("<table id='" . htmlspecialchars($tableId, ENT_QUOTES, getsetting('charset', 'UTF-8')) . "' class='dwellings-datatable'" . $attributes . ">");
+    rawoutput("<thead><tr class='trhead'>");
+    foreach ($headers as $header) {
+        rawoutput('<th>' . $header . '</th>');
+    }
+    rawoutput("</tr></thead><tbody>");
+}
+
+/**
+ * Ends a DataTables table and, on a core without Forms::dataTableAttributes(),
+ * initializes client-side sorting/search/pagination with an inline script.
+ *
+ * Striping is configured here (instead of per-renderer row classes) so every
+ * dwellings list table keeps alternating parity after DataTables sort/filter/page redraws.
+ * The callback is intentionally shared here so all dwellings DataTables stay
+ * consistent without relying on PHP loop parity that can drift after redraws.
+ *
+ * @param string $tableId Stable DOM id used by DataTables init.
+ * @param array<string, mixed>|null $options DataTables options; null for those given to
+ *                                           dwellings_render_datatable_open().
+ */
+function dwellings_render_datatable_close($tableId, ?array $options = null)
+{
+    global $dwellings_datatable_options;
+    rawoutput('</tbody></table></div>');
+
+    if (dwellings_datatable_declarative()) {
+        return;
+    }
+    if ($options === null) {
+        $options = $dwellings_datatable_options[$tableId] ?? [];
+    }
+
+    $config = dwellings_datatable_config($options);
 
     if (!class_exists('\\Lotgd\\Output')
         || !method_exists('\\Lotgd\\Output', 'requireVendorAsset')
