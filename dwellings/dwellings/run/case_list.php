@@ -119,7 +119,24 @@ if ($ref !== 'hof') {
     $headers[] = $interactLabel;
 }
 
-dwellings_render_datatable_open('dwellings-list-table', $headers);
+$tableOptions = [
+    'order' => [[0, 'asc']],
+];
+if ($ref === 'hamlet') {
+    /*
+     * Enhancement mode: DataTables styles/search/order only the currently
+     * loaded server page. Global search/sort requires async/server endpoints
+     * and is intentionally out of scope for this legacy flow.
+     */
+    $tableOptions['paging'] = false;
+}
+if ($ref !== 'hof') {
+    $tableOptions['columnDefs'] = [
+        ['targets' => [count($headers) - 1], 'orderable' => false, 'searchable' => false],
+    ];
+}
+
+dwellings_render_datatable_open('dwellings-list-table', $headers, $tableOptions);
 
 $status1 = translate_inline('`#Occupied');
 $status2 = translate_inline('`@Financing');
@@ -192,24 +209,7 @@ while ($row = db_fetch_assoc($result)) {
     rawoutput('</td></tr>');
 }
 
-$tableOptions = [
-    'order' => [[0, 'asc']],
-];
-if ($ref === 'hamlet') {
-    /*
-     * Enhancement mode: DataTables styles/search/order only the currently
-     * loaded server page. Global search/sort requires async/server endpoints
-     * and is intentionally out of scope for this legacy flow.
-     */
-    $tableOptions['paging'] = false;
-}
-if ($ref !== 'hof') {
-    $tableOptions['columnDefs'] = [
-        ['targets' => [count($headers) - 1], 'orderable' => false, 'searchable' => false],
-    ];
-}
-
-dwellings_render_datatable_close('dwellings-list-table', $tableOptions);
+dwellings_render_datatable_close('dwellings-list-table');
 
 if ($ref === 'hamlet' && $totalRows > 0) {
     addnav('Pages');

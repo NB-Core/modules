@@ -16,6 +16,13 @@ function dwellings_getmoduleinfo() {
 		"vertxtloc"=>"http://dragonprime.net/users/sixf00t4/",
 		"author"=>"<a href='http://www.joshuadhall.com' target=_new>Sixf00t4</a>, Christian Rutsch, Chris Vorndran, `4Talisman`0, Oliver Brendel",
 		"category"=>"Dwellings",
+		// Pages and forms that change in place on cores with partial rendering
+		// (runmodule.php, info key "partial"); older cores ignore it. Logging in
+		// and out, demolishing and kicking out stay whole pages.
+		"partial"=>array(
+			"GET"=>array("", "list", "enter", "forsale", "coffers", "keys", "manage", "manage-names", "buy", "build"),
+			"POST"=>array("coffers", "keys", "manage-names", "buy", "build"),
+		),
 		"requires"=>array(
 		   "cityprefs"=>"20051110|By Sixf00t4, available on DragonPrime",
 		), 

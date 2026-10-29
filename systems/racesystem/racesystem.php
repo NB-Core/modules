@@ -6,6 +6,8 @@ function racesystem_getmoduleinfo(){
 		"version"=>"1.01",
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Races",
+		// Changes in place on cores with partial rendering; older cores ignore it.
+		"partial"=>array("GET"=>array("ale")),
 		"download"=>"",
 		"settings"=>array(
 			"Race System Settings,title",

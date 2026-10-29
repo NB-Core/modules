@@ -108,9 +108,8 @@ switch ($subop){
 		$submit = translate_inline("Submit");
 		rawoutput("<form action='runmodule.php?module=dwellings&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid' method='POST'>");
 		addnav("","runmodule.php?module=dwellings&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid");
-		rawoutput("<input name='name' id='name'> <input type='submit' class='button' value='$submit'>");
+		rawoutput("<input name='name' id='name' autofocus> <input type='submit' class='button' value='$submit'>");
 		rawoutput("</form>");
-		rawoutput("<script language='JavaScript'>document.getElementById('name').focus()</script>");
 		break;
 	case "givekey2":
 		// login is never used... and we should search for the login first... 
@@ -136,9 +135,8 @@ switch ($subop){
 			rawoutput("<form action='runmodule.php?module=dwellings&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid' method='POST'>");
 			addnav("","runmodule.php?module=dwellings&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid");
 			output("`2Who do you want to give the key to?`n`n");
-			rawoutput("<input name='name' id='name'> <input type='submit' class='button' value='Suchen'>",true);
+			rawoutput("<input name='name' id='name' autofocus> <input type='submit' class='button' value='Suchen'>",true);
 			rawoutput("</form>");
-			rawoutput("<script language='JavaScript'>document.getElementById('name').focus()</script>");
 		}else{
 			output("Which player did you mean?`n`n");
 			rawoutput("<table cellpadding='3' cellspacing='0' border='0'>");
