@@ -513,7 +513,7 @@ function specialtysystem_dohook(string $hookname, array $args)
             if (!specialtysystem_skill_offered($module, $skillname, (string) httpget('cost'))) {
                 // A link from an older menu must not leave the player stuck in it.
                 set_module_pref('cache', '', 'specialtysystem');
-                output('`$That technique is no longer available. Please choose another action.`n');
+                output('`$That technique is no longer available. Please choose another action.`0`n');
                 break;
             }
             $fname = $module . '_apply';
