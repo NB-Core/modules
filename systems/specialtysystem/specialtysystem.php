@@ -215,7 +215,12 @@ function specialtysystem_showfightnav(string $script, bool $force = false): void
 
     $raw = get_module_pref('cache', 'specialtysystem') ?? '';
     $check = unserialize(stripslashes($raw));
-    if (isset($check['system']) && $check['system'] == 'specialtysystem' && ! $force) {
+    // Buff-dependent skills change when a buff expires, even without a jutsu use.
+    $buffNames = array_keys($session['bufflist'] ?? []);
+    if (
+        isset($check['system']) && $check['system'] == 'specialtysystem'
+        && ($check['buffs'] ?? null) === $buffNames && ! $force
+    ) {
         $specs = $check['data'];
         $colours = $check['colours'];
     } else {
@@ -232,7 +237,7 @@ function specialtysystem_showfightnav(string $script, bool $force = false): void
                 $specs[$row['modulename']] = $add;
             }
         }
-        set_module_pref('cache', serialize(['system' => 'specialtysystem', 'data' => $specs, 'colours' => $colours]), 'specialtysystem');
+        set_module_pref('cache', serialize(['system' => 'specialtysystem', 'data' => $specs, 'colours' => $colours, 'buffs' => $buffNames]), 'specialtysystem');
     }
 
     require_once 'modules/specialtysystem/functions.php';
@@ -506,6 +511,9 @@ function specialtysystem_dohook(string $hookname, array $args)
             // skill the fight menu currently offers; add-ons read their cost
             // from httpget('cost'), which this check pins as well.
             if (!specialtysystem_skill_offered($module, $skillname, (string) httpget('cost'))) {
+                // A link from an older menu must not leave the player stuck in it.
+                set_module_pref('cache', '', 'specialtysystem');
+                output('`$That technique is no longer available. Please choose another action.`n');
                 break;
             }
             $fname = $module . '_apply';
