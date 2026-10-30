@@ -3,6 +3,36 @@ declare(strict_types=1);
 
 class WizardService {
     /**
+     * Supply shared defaults for fresh or older saved wizard searches.
+     */
+    public static function normalizeSearchQuery(mixed $query): array
+    {
+        $query = is_array($query) ? $query : [];
+        $defaults = [
+            'number' => 30, 'orderby' => 3, 'orderbyascdesc' => 0, 'exactly' => '',
+            'tid' => '', 'language' => '', 'uri' => '', 'intext' => '',
+            'outtext' => '', 'author' => '', 'version' => '',
+        ];
+        foreach (['language', 'uri', 'intext', 'outtext', 'author', 'version'] as $field) {
+            $defaults['r' . $field] = '';
+            $defaults['r' . $field . '2'] = '';
+        }
+        foreach ($defaults as $field => $default) {
+            $query[$field] ??= $default;
+        }
+        $order = filter_var($query['orderby'], FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 0, 'max_range' => 6],
+        ]);
+        $number = filter_var($query['number'], FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1, 'max_range' => 999],
+        ]);
+        $query['orderby'] = $order === false ? 3 : $order;
+        $query['number'] = $number === false ? 30 : $number;
+
+        return $query;
+    }
+
+    /**
      * Normalize input into an array.
      *
      * @param mixed $value Scalar or array value to wrap

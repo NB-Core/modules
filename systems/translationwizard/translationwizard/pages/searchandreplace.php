@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 //debug($session['user']['specialmisc']);
+$p="";
 switch ($mode)
 {
 	case "select":
@@ -23,7 +24,7 @@ switch ($mode)
 			$forswitch=httppost('orderby');
 			$numberof=httppost('number');
 		} else {
-			$query=unserialize($session['user']['specialmisc']);
+			$query=WizardService::normalizeSearchQuery(unserialize($session['user']['specialmisc']));
 			$sql="Select * from ".db_prefix("translations")." WHERE";
 			$sql2=$sql;
 			if (!$query['exactly']) $p="%";
@@ -203,7 +204,7 @@ switch ($mode)
 
 	case "replace":
 				$delrows = httppost("replacetext");
-				$formerquery=unserialize($session['user']['specialmisc']);	
+				$formerquery=WizardService::normalizeSearchQuery(unserialize($session['user']['specialmisc']));
 				$earlyexit=false;
 				if (is_array($delrows))  //setting for any intexts you might receive
 				{
@@ -235,29 +236,8 @@ switch ($mode)
 				break;
 
 	default:
-				$query=unserialize($session['user']['specialmisc']);
+				$query=WizardService::normalizeSearchQuery(unserialize($session['user']['specialmisc']));
 				$session['user']['specialmisc']='';
-				if (!isset($query['exactly'])) $query['exactly']="";
-				if (!isset($query['number'])) $query['number']="";
-				if (!isset($query['tid'])) $query['tid']="";
-				if (!isset($query['language'])) $query['language']="";
-				if (!isset($query['uri'])) $query['uri']="";
-				if (!isset($query['intext'])) $query['intext']="";
-				if (!isset($query['outtext'])) $query['outtext']="";
-				if (!isset($query['rlanguage'])) $query['rlanguage']="";
-				if (!isset($query['ruri'])) $query['ruri']="";
-				if (!isset($query['rintext'])) $query['rintext']="";
-				if (!isset($query['routtext'])) $query['routtext']="";
-				if (!isset($query['rlanguage2'])) $query['rlanguage2']="";
-				if (!isset($query['ruri2'])) $query['ruri2']="";
-				if (!isset($query['rintext2'])) $query['rintext2']="";
-				if (!isset($query['routtext2'])) $query['routtext2']="";
-				if (!isset($query['author'])) $query['author']="";
-				if (!isset($query['rauthor'])) $query['rauthor']="";
-				if (!isset($query['rauthor2'])) $query['rauthor2']="";
-				if (!isset($query['version'])) $query['version']="";
-				if (!isset($query['rversion'])) $query['rversion']="";
-				if (!isset($query['rversion2'])) $query['rversion2']="";
 				$orderby=array(translate_inline("Tid"),translate_inline("Language"),translate_inline("Namespace"),translate_inline("Intext"),translate_inline("Outtext"),translate_inline("Author"),translate_inline("Version"));
 				output("This lets you search your translations table and replace words or strings with other words or strings.");
 				output_notl("`n");
@@ -278,7 +258,7 @@ switch ($mode)
 				output("Order results by:");
 				rawoutput("<select name='orderby'>");
 				foreach($orderby as $key=>$val) {
-					rawoutput("<option value=\"".$key."\"".($val == (isset($query['orderby'])?httppost("orderby"):"Intext")?"selected" : "").">".$val."</option>");
+					rawoutput("<option value=\"".$key."\"".((int)$key === $query['orderby']?" selected" : "").">".$val."</option>");
 				}
 				rawoutput("</select>");
 				rawoutput("<select name='orderbyascdesc'>");
