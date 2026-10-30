@@ -1,10 +1,11 @@
 <?php
 
+// 1.1: retain eligible zero-DK/zero-PvP targets, including pumpkin holders.
 
 function halloween_getmoduleinfo(){
 	$info = array(
 		"name"=>"`qHallo`Qween `~Surprise`0 (timelocked)",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Holidays|Halloween",
 		"settings" =>
@@ -96,13 +97,24 @@ function halloween_dohook($hookname,$args){
 				db_prefix("clans") . " ON " . db_prefix("clans") . ".clanid=" .
 				db_prefix("accounts") . ".clanid WHERE (locked=0) " . 
 				"AND (slaydragon=0) AND " .
-				"(dragonkills>0 OR pk>0) " .
+				// Match the core's immunity rule: age/experience can also end protection.
+				"(dragonkills>0 OR pk>0 OR age>:days OR experience>:exp) " .
 			// no regrets
 			//	"AND (alive=1) " .
 	//			"AND (laston<'$last' OR loggedin=0) AND (acctid<>$id) " . 
 				"ORDER BY location, level DESC, " .
 				"experience DESC, dragonkills DESC";
-			$result=db_query($sql);
+			$result = \Lotgd\MySQL\Database::getDoctrineConnection()->executeQuery(
+				$sql,
+				[
+					'days' => (int) getsetting('pvpimmunity', 5),
+					'exp' => (int) getsetting('pvpminexp', 1500),
+				],
+				[
+					'days' => \Doctrine\DBAL\ParameterType::INTEGER,
+					'exp' => \Doctrine\DBAL\ParameterType::INTEGER,
+				]
+			);
 			$pvp = array();
 			while($row = db_fetch_assoc($result)) {
 				$row['pvpflag']=0;
