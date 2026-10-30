@@ -178,7 +178,7 @@ function erosennin_runevent($type,$link) {
 				$result = db_query($sql);
 				$row = db_fetch_assoc($result);
 				$mname = sanitize($row['mountname']);
-				if (stristr($mname,"Gamabunta") && isset($session['bufflist']['mount']) && !$session['bufflist']['mount']['suspended'] )
+				if (stristr($mname,"Gamabunta") && isset($session['bufflist']['mount']) && empty($session['bufflist']['mount']['suspended']) )
 				{
 					output("Oh no! It seems that he summoned the frog boss! It's `^%s`3!",$row['mountname']);
 					suspend_buff_by_name("mount",array("`b`n`nWell, %s`3 has disappeared from your side... and is now loyal to the strange old man... you have to fight against your own mount!`b`0",$row['mountname']));
