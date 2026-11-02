@@ -306,7 +306,7 @@ function plunder_getmemyarray($id){
 	$sql = "SELECT name,ownerid FROM ".db_prefix("dwellings")." WHERE dwid=$id";
 	$result = db_query($sql);
 	$row = db_fetch_assoc($result);
-	return array("name"=>$row['name'],"id"=>$id,"typeid"=>httpget('typeid'),"ownerid"=>$row['ownerid']);
+	return array("name"=>$row['name'],"id"=>$id,"typeid"=>(int) httpget('typeid'),"ownerid"=>$row['ownerid']);
 }
 
 function plunder_getcoffers($id) {

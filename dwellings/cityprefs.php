@@ -82,7 +82,7 @@ function cityprefs_run() {
 	global $session;
     page_header("City Prefs Editor");
     $op=httpget('op');
-	$cityid = httpget('cityid');
+	$cityid = (int) httpget('cityid');
 	if($cityid>0){
 	$cityname=get_cityprefs_cityname("cityid",$cityid);
 		page_header("%s Properties",$cityname);
@@ -200,16 +200,21 @@ function cityprefs_run() {
         case "editcity2":
 			addnav("Navigation");
 			addnav("Back to city properties","runmodule.php?module=cityprefs&op=editmodule&cityid=$cityid");
-            $cityname = httppost('cityname');
-            $modulename = httppost('modulename');
-            db_query("update ".db_prefix("cityprefs")." set cityname='".$cityname."',module='".$modulename."' where cityid=$cityid");
+            // httppost() escapes with addslashes(); the values are bound below.
+            $cityname = stripslashes((string) httppost('cityname'));
+            $modulename = stripslashes((string) httppost('modulename'));
+            \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+                "update ".db_prefix("cityprefs")." set cityname = :cityname, module = :module where cityid = :cityid",
+                ['cityname' => (string) $cityname, 'module' => (string) $modulename, 'cityid' => $cityid],
+                ['cityname' => \Doctrine\DBAL\ParameterType::STRING, 'module' => \Doctrine\DBAL\ParameterType::STRING, 'cityid' => \Doctrine\DBAL\ParameterType::INTEGER]
+            );
             output("The city name is now %s and the module name is %s.",$cityname,$modulename);
         break;
         
         case "delcity":
 			addnav("Navigation");
 			addnav("Back to city properties","runmodule.php?module=cityprefs&op=editmodule&cityid=$cityid");
-            $cityid = httpget('cityid');
+            $cityid = (int) httpget('cityid');
             output("Are you sure you want to delete this city?  All city prefs will be deleted.  If you would like to retain these settings for a future city, just rename it.");
         break;
 

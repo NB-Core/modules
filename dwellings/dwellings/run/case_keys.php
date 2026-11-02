@@ -122,7 +122,8 @@ switch ($subop){
 		// It's faster, more secure (except you can tell the difference of a white ctitle and
 		// a not-colored ctitle by just looking at it in the commentary area :)
 		//			$sql = "SELECT login,name,level,acctid FROM accounts WHERE name = '".addslashes($_POST['name'])."' AND acctid != ".$session['user']['acctid']." AND locked=0 ORDER BY level,login";
-		$searchname = (string) httppost('name');
+		// httppost() escapes with addslashes(); the name is bound below.
+		$searchname = stripslashes((string) httppost('name'));
 		$conn = Database::getDoctrineConnection();
 		$rows = $conn->executeQuery(
 			"SELECT name,level,acctid FROM ".db_prefix("accounts")." WHERE login = :login AND acctid != :me AND locked=0 ORDER BY level,login",
