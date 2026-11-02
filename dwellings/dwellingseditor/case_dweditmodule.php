@@ -1,7 +1,7 @@
 <?php
 	page_header("Dwelling Listing");
 	$dwid = httpget("dwid");
-	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : 0;
 	addnav("Back to Dwelling List","runmodule.php?module=dwellingseditor");
 	$mdule = httpget("mdule");
 	if($mdule == ""){

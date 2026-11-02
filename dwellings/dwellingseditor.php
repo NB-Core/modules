@@ -36,7 +36,7 @@ function dwellingseditor_dohook($hookname,$args) {
 			break;
 		case "moderate":
 			$dwid = httpget('dwid');
-			$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
+			$dwid = ctype_digit((string) $dwid) ? (int) $dwid : 0;
 			$area = httpget('area');
 			if($area == "dwellings-$dwid"){
 				addnav("Return");
@@ -65,7 +65,7 @@ function dwellingseditor_run(){
 	$typeid = httpget("typeid");
 	$type = "";
 	$dwid = httpget('dwid');
-	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : 0;
 	if($typeid == "" && $dwid > 0){
 		$sql = "SELECT type FROM ".db_prefix("dwellings")." WHERE dwid=$dwid";
 		$result = db_query($sql);
