@@ -28,6 +28,7 @@ function dwellings_pvp_run(){
 	$cl = db_prefix("clans");
 	$op = httpget('op');
 	$dwid = httpget('dwid');
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 	page_header("Dwellings PvP");
 	
 	if ($op!='' && $op != "fight1" && $op != "fight") require_once("modules/dwellings_pvp/run/case_$op.php");

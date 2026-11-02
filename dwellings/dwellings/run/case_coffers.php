@@ -3,6 +3,7 @@
 //Added the commentary/log thingy at the bottom of the page.
 
 $dwid = httpget("dwid");
+$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 $subop = httpget('subop');
 $g = httpget('g');
 $amount = httppost('amount');

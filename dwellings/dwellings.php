@@ -120,6 +120,7 @@ function dwellings_run() {
 	global $session;
 	$op = httpget("op");
 	$dwid = httpget('dwid');
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 	$type = httpget('type');
 	if ($op != "list" && $op != ""){
 		addnav("Navigation");

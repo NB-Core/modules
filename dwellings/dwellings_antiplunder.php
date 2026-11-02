@@ -103,6 +103,7 @@ function dwellings_antiplunder_dohook($hookname,$args){
 function dwellings_antiplunder_run(){
 	global $session;
 	$dwid=httpget('dwid');
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 	$op=httpget('op');
 	page_header("Coffers Safety");
 	output("`b`i`5`cCoffers `2Safety`c`i`b`n`n");

@@ -85,6 +85,7 @@ function dwellings_plunder_run(){
 	global $session,$plunder;
 	$op=httpget('op');
 	$dwid=httpget('dwid');
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 	if ($session['user']['specialmisc']=='') { //easier way to prevent unnecessary queries
 		if ($dwid==0) {
 			output_notl("Critical module error, please report this to your admin.");

@@ -10,6 +10,7 @@
 function dwellingform()
 {
 	$dwid = httpget("dwid");
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 	$dwell = array();
 
 	if ($dwid > 0) {

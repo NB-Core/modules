@@ -1,5 +1,6 @@
 <?php
 	$dwid = httpget('dwid');
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
 	$confirm = httpget("confirm");
 	if($confirm){
 		output("This dwelling has been deleted.");
