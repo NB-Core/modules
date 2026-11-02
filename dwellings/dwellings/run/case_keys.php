@@ -1,8 +1,14 @@
 <?php
+use Doctrine\DBAL\ParameterType;
+use Lotgd\MySQL\Database;
+
 $subop = httpget('subop');
 $confirm = httpget('confirm');
-$keyid = httpget('keyid');
-$keyowner = httpget('keyowner');
+// Numbers only: they are written into the queries below. An empty key id
+// stays empty (givekey3 then picks a free key).
+$dwid = (int) $dwid;
+$keyid = ctype_digit((string) httpget('keyid')) ? (int) httpget('keyid') : '';
+$keyowner = (int) httpget('keyowner');
 $sql = "SELECT ownerid FROM ".db_prefix("dwellings")." WHERE dwid=$dwid";
 $res = db_query($sql);
 $row = db_fetch_assoc($res);
@@ -116,21 +122,28 @@ switch ($subop){
 		// It's faster, more secure (except you can tell the difference of a white ctitle and
 		// a not-colored ctitle by just looking at it in the commentary area :)
 		//			$sql = "SELECT login,name,level,acctid FROM accounts WHERE name = '".addslashes($_POST['name'])."' AND acctid != ".$session['user']['acctid']." AND locked=0 ORDER BY level,login";
-		$sql = "SELECT name,level,acctid FROM ".db_prefix("accounts")." WHERE login = '".addslashes($_POST['name'])."' AND acctid != ".$session['user']['acctid']." AND locked=0 ORDER BY level,login";
-		$result = db_query($sql);
-		if (db_num_rows($result) <> 1) {
+		$searchname = (string) httppost('name');
+		$conn = Database::getDoctrineConnection();
+		$rows = $conn->executeQuery(
+			"SELECT name,level,acctid FROM ".db_prefix("accounts")." WHERE login = :login AND acctid != :me AND locked=0 ORDER BY level,login",
+			['login' => $searchname, 'me' => (int) $session['user']['acctid']],
+			['login' => ParameterType::STRING, 'me' => ParameterType::INTEGER]
+		)->fetchAllAssociative();
+		if (count($rows) <> 1) {
 			$string="%";
-			for ($x=0;$x<strlen(httppost('name'));$x++){
-				$string .= substr(httppost('name'),$x,1)."%";
+			for ($x=0;$x<strlen($searchname);$x++){
+				$string .= substr($searchname,$x,1)."%";
 			}
 			// Here we may have a look at the name :)
-			//				$sql = "SELECT login,name,level,acctid FROM accounts WHERE name LIKE '".addslashes($string)."' AND acctid != ".$session['user']['acctid']." AND locked=0 ORDER BY level,login";
-			$sql = "SELECT name,level,acctid FROM ".db_prefix("accounts")." WHERE name LIKE '".addslashes($string)."' AND acctid != ".$session['user']['acctid']." AND locked=0 ORDER BY level,login";
-			$result = db_query($sql);
+			$rows = $conn->executeQuery(
+				"SELECT name,level,acctid FROM ".db_prefix("accounts")." WHERE name LIKE :pattern AND acctid != :me AND locked=0 ORDER BY level,login",
+				['pattern' => $string, 'me' => (int) $session['user']['acctid']],
+				['pattern' => ParameterType::STRING, 'me' => ParameterType::INTEGER]
+			)->fetchAllAssociative();
 		}
-		if (db_num_rows($result)<=0){
+		if (count($rows)<=0){
 			output("`2There is no one with that name.");
-		}elseif(db_num_rows($result)>100){
+		}elseif(count($rows)>100){
 			output("Found over 100 players that fit that description. Please try to be more exact.`n`n");
 			rawoutput("<form action='runmodule.php?module=dwellings&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid' method='POST'>");
 			addnav("","runmodule.php?module=dwellings&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid");
@@ -141,8 +154,7 @@ switch ($subop){
 			output("Which player did you mean?`n`n");
 			rawoutput("<table cellpadding='3' cellspacing='0' border='0'>");
 			rawoutput("<tr class='trhead'><td>Name</td><td>Level</td></tr>");
-			for ($i=0;$i<db_num_rows($result);$i++){
-				$row = db_fetch_assoc($result);
+			foreach ($rows as $i => $row){
 				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
 				// A number is a number is a number... :)
 				//					rawoutput("<a href='runmodule.php?module=dwellings&op=keys&subop=givekey3&keyid=$keyid&dwid=$dwid&keyowner=".HTMLEntities($row['acctid'])."'>");
@@ -185,6 +197,8 @@ switch ($subop){
 		systemmail($keyowner,array("`^You have a key!`0"),array("`&%s`& has given you a key to their %s`0 in %s",$session['user']['name'],$cname,$row2['location']));
 		break;
 	case "takekey":
+		// No key id (a hand-made link): no key to take back.
+		$keyid = (int) $keyid;
 		$sql = "SELECT keyowner FROM ".db_prefix("dwellingkeys")." WHERE keyid=$keyid";
 		$res = db_query($sql);
 		$row1 = db_fetch_assoc($res);
