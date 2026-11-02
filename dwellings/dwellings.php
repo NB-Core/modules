@@ -131,7 +131,7 @@ function dwellings_run() {
 		addnav("Navigation");
 	}
 	if($type == "" && $dwid>0){
-		$sql = "SELECT type FROM ".db_prefix("dwellings")." WHERE dwid=$dwid";
+		$sql = "SELECT type FROM ".db_prefix("dwellings")." WHERE dwid=".(int) $dwid;
 		$result = db_query($sql);
 		$row = db_fetch_assoc($result); 
 		$type = $row['type'];
