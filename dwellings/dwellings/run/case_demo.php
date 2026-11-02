@@ -1,6 +1,6 @@
 <?php
 	$pct = (get_module_setting("demoper","dwellings")/100);
-	$sql = "SELECT gold,gems FROM ".db_prefix("dwellings")." WHERE dwid='".httpget('dwid')."'";
+	$sql = "SELECT gold,gems FROM ".db_prefix("dwellings")." WHERE dwid=".(int) $dwid;
 	$res = db_query($sql);
 	$row = db_fetch_assoc($res);
 	$gems = round($row['gems']*$pct);

@@ -12,6 +12,7 @@
 
 
 	$dwid = httpget("dwid");
+	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : 0;
 	$subop = httpget('subop');
 
 	page_header("Dwelling Management - Names and Descriptions");
