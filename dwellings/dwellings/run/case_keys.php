@@ -197,6 +197,8 @@ switch ($subop){
 		systemmail($keyowner,array("`^You have a key!`0"),array("`&%s`& has given you a key to their %s`0 in %s",$session['user']['name'],$cname,$row2['location']));
 		break;
 	case "takekey":
+		// No key id (a hand-made link): no key to take back.
+		$keyid = (int) $keyid;
 		$sql = "SELECT keyowner FROM ".db_prefix("dwellingkeys")." WHERE keyid=$keyid";
 		$res = db_query($sql);
 		$row1 = db_fetch_assoc($res);
