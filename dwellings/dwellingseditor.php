@@ -63,6 +63,7 @@ function dwellingseditor_run(){
 	if($op != "typsu") addnav("Type Pref Editor","runmodule.php?module=dwellingseditor&op=typesu");  
 	modulehook("dwellingseditor-main");
 	$typeid = httpget("typeid");
+	$typeid = ctype_digit((string) $typeid) ? (int) $typeid : '';
 	$type = "";
 	$dwid = httpget('dwid');
 	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : 0;

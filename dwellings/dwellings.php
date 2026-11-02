@@ -121,7 +121,9 @@ function dwellings_run() {
 	$op = httpget("op");
 	$dwid = httpget('dwid');
 	$dwid = ctype_digit((string) $dwid) ? (int) $dwid : false;
-	$type = httpget('type');
+	// A module name, nothing else: it goes into the queries and names the
+	// type's settings.
+	$type = preg_replace('/[^A-Za-z0-9_]/', '', (string) httpget('type'));
 	if ($op != "list" && $op != ""){
 		addnav("Navigation");
 		addnav("Return to Hamlet","runmodule.php?module=dwellings");
@@ -137,7 +139,9 @@ function dwellings_run() {
 		$row = db_fetch_assoc($result); 
 		$type = $row['type'];
 	}
-	$cityid = httpget('cityid');	
+	$cityid = httpget('cityid');
+	// A number, or empty: the pages then look the city up from the location.
+	$cityid = ctype_digit((string) $cityid) ? (int) $cityid : '';
 	require_once("modules/dwellings/run/case_$op.php");
 	page_footer();
 }

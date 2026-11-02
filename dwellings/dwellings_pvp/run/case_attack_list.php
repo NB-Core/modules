@@ -6,7 +6,7 @@
 	$exp = getsetting("pvpminexp",1000);
 	$id = $session['user']['acctid'];
 	$loc = $session['user']['location'];
-	$typeid = httpget('typeid');
+	$typeid = (int) httpget('typeid');
 	$top = $session['user']['level']+get_module_objpref("dwellingtypes",$typeid,"top-band","dwellings_pvp");
 	$bottom = $session['user']['level']-get_module_objpref("dwellingtypes",$typeid,"bottom-band","dwellings_pvp");
 

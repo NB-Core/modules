@@ -1,5 +1,5 @@
 <?php
-	$typeid = httpget('type');
+	$typeid = (int) httpget('type');
 	$gold_cost = get_module_objpref("dwellingtypes",$typeid,"cost-gold","dwellings_pvp");
 	$gems_cost = get_module_objpref("dwellingtypes",$typeid,"cost-gems","dwellings_pvp");
 	$gold_paid = get_module_objpref("dwellings",$dwid,"gold-paid","dwellings_pvp");

@@ -3,7 +3,7 @@
 	if($mdule == ""){
 		output("Select a pref to edit.");
 		addnav("Operations");
-		$sql = "SELECT module FROM ".db_prefix("dwellingtypes")." WHERE typeid=$typeid";
+		$sql = "SELECT module FROM ".db_prefix("dwellingtypes")." WHERE typeid=".(int) $typeid;
 		$res = db_query($sql);
 		$row = db_fetch_assoc($res);
 		$modlink = $row['module'];
