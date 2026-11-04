@@ -58,6 +58,11 @@
         if (db_num_rows($result) == 1) {
             $row = db_fetch_assoc($result);
             $allowednavs = \Lotgd\Serialization::safeUnserialize($row['allowednavs']);
+            // Empty while this click holds the page (the core clears the stored
+            // links when it claims the page revision), or not an array at all.
+            if (!is_array($allowednavs)) {
+                $allowednavs = array();
+            }
             $allowednavs[$row['restorepage']] = true;
             // Write back to database
             $serialized = addslashes(serialize($allowednavs));
