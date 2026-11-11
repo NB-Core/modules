@@ -93,9 +93,14 @@ function abandoncastleeditor_run()
             echo 'Not saved: the request did not come from the editor.';
             exit();
         }
-        $layout = httppost('layout');
-        $layout = abandoncastleeditor_sanitize_layout($layout);
-        $title = strip_tags(httppost('title'));
+        // httppost() hands values back addslashes()-escaped; the layout's quotes must be plain to be read.
+        $layout = abandoncastleeditor_sanitize_layout(stripslashes((string) httppost('layout')));
+        if (!abandoncastleeditor_entrance_is_passage($layout)) {
+            header('HTTP/1.1 400 Bad Request');
+            echo 'Not saved: the entrance needs a passage tile.';
+            exit();
+        }
+        $title = strip_tags(stripslashes((string) httppost('title')));
         $creator = $session['user']['login'] ?? 'anonymous';
 
         $dir = __DIR__ . '/abandoncastle/custom';
@@ -177,6 +182,18 @@ function abandoncastleeditor_sanitize_layout(string $layout): string
     }
 
     return "array('" . implode("','", $letters) . "');";
+}
+
+/**
+ * Whether a sanitized layout has a passage on the entrance, the room every
+ * player starts in.
+ */
+function abandoncastleeditor_entrance_is_passage(string $layout): bool
+{
+    require_once __DIR__ . '/abandoncastle/src/Tiles.php';
+    preg_match_all("/'([a-z])'/", $layout, $matches);
+    $letter = $matches[1][\Shinobi\Modules\AbandonCastle\Tiles::ENTRANCE_INDEX] ?? '';
+    return \Shinobi\Modules\AbandonCastle\Tiles::isPassage($letter);
 }
 
 /**

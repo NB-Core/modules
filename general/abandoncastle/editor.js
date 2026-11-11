@@ -190,6 +190,11 @@
     });
 
     document.getElementById('ac-export').addEventListener('click', function () {
+        if (!layout[config.entrance] || !config.tiles[layout[config.entrance]].passage) {
+            say(config.text.entranceNeedsPassage);
+            focusCell(config.entrance);
+            return;
+        }
         if (layout.indexOf(config.exit) === -1) {
             say(config.text.noExit);
             return;
