@@ -95,6 +95,13 @@ function abandoncastleeditor_run()
         }
         // httppost() hands values back addslashes()-escaped; the layout's quotes must be plain to be read.
         $layout = abandoncastleeditor_sanitize_layout(stripslashes((string) httppost('layout')));
+        // The game reads the maze by room number, so it needs every one of the 143 rooms.
+        $rooms = \Shinobi\Modules\AbandonCastle\Tiles::WIDTH * \Shinobi\Modules\AbandonCastle\Tiles::HEIGHT;
+        if (substr_count($layout, "'") !== 2 * $rooms) {
+            header('HTTP/1.1 400 Bad Request');
+            echo "Not saved: a maze needs exactly {$rooms} rooms.";
+            exit();
+        }
         if (!abandoncastleeditor_entrance_is_passage($layout)) {
             header('HTTP/1.1 400 Bad Request');
             echo 'Not saved: the entrance needs a passage tile.';
