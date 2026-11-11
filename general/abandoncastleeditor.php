@@ -93,9 +93,21 @@ function abandoncastleeditor_run()
             echo 'Not saved: the request did not come from the editor.';
             exit();
         }
-        $layout = httppost('layout');
-        $layout = abandoncastleeditor_sanitize_layout($layout);
-        $title = strip_tags(httppost('title'));
+        // httppost() hands values back addslashes()-escaped; the layout's quotes must be plain to be read.
+        $layout = abandoncastleeditor_sanitize_layout(stripslashes((string) httppost('layout')));
+        // The game reads the maze by room number, so it needs every one of the 143 rooms.
+        $rooms = \Shinobi\Modules\AbandonCastle\Tiles::WIDTH * \Shinobi\Modules\AbandonCastle\Tiles::HEIGHT;
+        if (substr_count($layout, "'") !== 2 * $rooms) {
+            header('HTTP/1.1 400 Bad Request');
+            echo "Not saved: a maze needs exactly {$rooms} rooms.";
+            exit();
+        }
+        if (!abandoncastleeditor_entrance_is_passage($layout)) {
+            header('HTTP/1.1 400 Bad Request');
+            echo 'Not saved: the entrance needs a passage tile.';
+            exit();
+        }
+        $title = strip_tags(stripslashes((string) httppost('title')));
         $creator = $session['user']['login'] ?? 'anonymous';
 
         $dir = __DIR__ . '/abandoncastle/custom';
@@ -139,229 +151,8 @@ function abandoncastleeditor_run()
 
     switch ($op) {
         case 'new':
-            // Load available tile images
-            $imageDir = __DIR__ . '/abandoncastle/images';
-            if (is_dir($imageDir) && is_readable($imageDir)) {
-                $files = scandir($imageDir);
-            } else {
-                $files = false;
-                output("Error: Unable to access the tile images directory.");
-            }
-            $tiles = [];
-            if ($files !== false) {
-                foreach ($files as $file) {
-                    if (preg_match('/^([a-z])maze\.gif$/', $file, $matches)) {
-                        $tiles[$matches[1]] = $file;
-                    }
-                }
-            }
-            require_once __DIR__ . '/abandoncastle/src/MazeRepository.php';
-            $startTile = \Shinobi\Modules\AbandonCastle\MazeRepository::START_TILE;
-            $letters = [];
-            foreach (\Shinobi\Modules\AbandonCastle\MazeRepository::getMazes() as $maze) {
-                $letters = array_merge($letters, $maze);
-            }
-            $letters = array_unique($letters);
-            $letters[] = 'x';
-            $tiles = array_intersect_key($tiles, array_flip($letters));
-            ksort($tiles);
-
-            $currentLink = 'runmodule.php?module=abandoncastleeditor&op=new';
-
-            // Palette
-            rawoutput("<div id='palette'>");
-            foreach ($tiles as $letter => $file) {
-                $src = "modules/abandoncastle/images/{$file}";
-                rawoutput("<img src='{$src}' data-letter='{$letter}' data-src='{$src}' class='tile'>");
-            }
-            rawoutput('</div>');
-
-            // Grid 11x13 with bottom row rendered last so index 0 maps to bottom-left
-            $cols = 11;
-            $rows = 13;
-            $ENTRANCE_INDEX = 5; // Bottom row, 6th cell
-            rawoutput("<table id='maze-grid'>");
-            for ($row = 0; $row < $rows; $row++) {
-                rawoutput('<tr>');
-                for ($col = 0; $col < $cols; $col++) {
-                    // Map visual grid coordinates to 1D index so that index 0 is bottom-left.
-                    // This inverts the row order: row 0 is the bottom row, row $rows-1 is the top.
-                    $index = ($rows - 1 - $row) * $cols + $col;
-                    if ($index === $ENTRANCE_INDEX) {
-                        $src = "modules/abandoncastle/images/{$startTile}maze.gif";
-                        rawoutput("<td data-index='{$index}' class='cell'><img src='{$src}'></td>");
-                    } else {
-                        rawoutput("<td data-index='{$index}' class='cell'></td>");
-                    }
-                }
-                rawoutput('</tr>');
-            }
-            rawoutput('</table>');
-
-            // Controls
-            $clearLink = $currentLink;
-            $fillLink = $currentLink;
-            $exportLink = $currentLink;
-            rawoutput("<div id='controls'>");
-            rawoutput("<a href='{$clearLink}' id='clear-btn' class='button'>Clear</a>");
-            rawoutput("<a href='{$fillLink}' id='fill-btn' class='button'>Fill</a>");
-            rawoutput("<a href='{$exportLink}' id='export-btn' class='button'>Export</a>");
-            rawoutput('</div>');
-            addnav('', $clearLink);
-            addnav('', $fillLink);
-            addnav('', $exportLink);
-
-            // Styles
-            $style = <<<'CSS'
-<style>
-#palette img {
-    cursor: pointer;
-    margin: 2px;
-    border: 1px solid transparent;
-}
-#palette img.selected {
-    border-color: #f00;
-}
-#maze-grid {
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-#maze-grid td {
-    width: 24px;
-    height: 24px;
-    text-align: center;
-    border: 1px solid #000;
-    cursor: pointer;
-    font-weight: bold;
-}
-#controls {
-    margin-top: 10px;
-}
-#controls .button {
-    margin-right: 5px;
-}
-</style>
-CSS;
-            rawoutput($style);
-
-            // Scripts
-            require_once __DIR__ . '/abandoncastle/src/MazeRepository.php';
-            $startTile = \Shinobi\Modules\AbandonCastle\MazeRepository::START_TILE;
-            $exitTile = \Shinobi\Modules\AbandonCastle\MazeRepository::EXIT_TILE;
-            rawoutput("<script>const START_TILE = '{$startTile}'; const EXIT_TILE = '{$exitTile}'; const START_SRC = 'modules/abandoncastle/images/{$startTile}maze.gif'; const EXIT_SRC = 'modules/abandoncastle/images/{$exitTile}maze.gif'; const ENTRANCE_INDEX = {$ENTRANCE_INDEX};</script>");
-            rawoutput("<script src='../ext/js/jquery.min.js'></script>");
-            $script = <<<'SCRIPT'
-<script>
-$(function(){
-    const cols = 11;
-    const rows = 13;
-    let layout = new Array(cols * rows).fill('');
-    let selected = '';
-    let selectedSrc = '';
-    let startIdx = ENTRANCE_INDEX;
-    let exitIdx = null;
-    layout[startIdx] = START_TILE;
-    $('#maze-grid td[data-index="'+startIdx+'"]').html('<img src="'+START_SRC+'">');
-
-    $('#palette img').on('click', function(){
-        $('#palette img').removeClass('selected');
-        $(this).addClass('selected');
-        selected = $(this).data('letter');
-        selectedSrc = $(this).data('src');
-    });
-
-    $('#maze-grid td').on('click', function(){
-        if (!selected) return;
-        const idx = $(this).data('index');
-        if (idx === startIdx) {
-            return;
-        }
-        if (selected === START_TILE) {
-            alert('Start position is fixed and cannot be moved.');
-            return;
-        } else if (selected === EXIT_TILE) {
-            if (exitIdx !== null && exitIdx !== idx) {
-                alert('Exit already placed. Previous exit removed.');
-                layout[exitIdx] = '';
-                $('#maze-grid td[data-index="'+exitIdx+'"]').empty();
-            }
-            exitIdx = idx;
-        } else {
-            if (idx === exitIdx) {
-                exitIdx = null;
-            }
-        }
-        layout[idx] = selected;
-        $(this).html('<img src="'+selectedSrc+'">');
-    });
-
-    $('#clear-btn').on('click', function(e){
-        e.preventDefault();
-        layout.fill('');
-        $('#maze-grid td').empty();
-        startIdx = ENTRANCE_INDEX;
-        layout[startIdx] = START_TILE;
-        $('#maze-grid td[data-index="'+startIdx+'"]').html('<img src="'+START_SRC+'">');
-        exitIdx = null;
-    });
-
-    $('#fill-btn').on('click', function(e){
-        e.preventDefault();
-        if (!selected) return;
-        if (selected === START_TILE || selected === EXIT_TILE) {
-            alert('Fill operation not allowed for start and exit tiles.');
-            return;
-        }
-        layout.fill(selected);
-        $('#maze-grid td').html('<img src="'+selectedSrc+'">');
-        if (startIdx !== null) {
-            layout[startIdx] = START_TILE;
-            $('#maze-grid td[data-index="'+startIdx+'"]').html('<img src="'+START_SRC+'">');
-        }
-        if (exitIdx !== null) {
-            layout[exitIdx] = EXIT_TILE;
-            $('#maze-grid td[data-index="'+exitIdx+'"]').html('<img src="'+EXIT_SRC+'">');
-        }
-    });
-
-    $('#export-btn').on('click', function(e){
-        e.preventDefault();
-        const exported = 'array(' + layout.map(l => '\'' + l + '\'').join(',') + ');';
-        $('#export-text').val(exported);
-        $('#export-modal').show();
-    });
-
-    $('#close-export-modal').on('click', function(){
-        $('#export-modal').hide();
-    });
-
-    $('#save-file-btn').on('click', function(){
-        const exported = $('#export-text').val();
-        const title = prompt('Enter maze title:');
-        if (!title) {
-            return;
-        }
-        $.post('runmodule.php?module=abandoncastleeditor&op=save', {layout: exported, title: title, csrf_token: CSRF_TOKEN}, function(resp){
-            alert(resp);
-        });
-    });
-});
-</script>
-SCRIPT;
-            // Add modal HTML for export
-            rawoutput('
-<div id="export-modal" style="display:none; position:fixed; top:20%; left:50%; transform:translateX(-50%); background:#fff; border:1px solid #333; padding:20px; z-index:1000;">
-    <h3>Maze Layout Export</h3>
-    <textarea id="export-text" style="width:100%;height:100px;"></textarea>
-    <br>
-    <button id="save-file-btn">Save to temp file</button>
-    <button id="close-export-modal">Close</button>
-</div>
-');
-            // The save request carries the module's token.
-            $token = class_exists(Csrf::class) ? Csrf::token("module:abandoncastleeditor") : "";
-            rawoutput(str_replace('CSRF_TOKEN', json_encode($token), $script));
-
+            require_once __DIR__ . '/abandoncastle/src/Tiles.php';
+            abandoncastleeditor_render();
             break;
 
         default:
@@ -384,19 +175,147 @@ SCRIPT;
  */
 function abandoncastleeditor_sanitize_layout(string $layout): string
 {
-    // allow only lowercase letters and array syntax characters
-    $layout = strtolower($layout);
-    $layout = preg_replace("/[^a-z,'()\s]/", '', $layout);
-    $layout = trim($layout);
+    require_once __DIR__ . '/abandoncastle/src/Tiles.php';
+    $allowed = \Shinobi\Modules\AbandonCastle\Tiles::letters();
 
-    preg_match_all("/'([a-z])'/", $layout, $matches);
-    $letters = $matches[1] ?? [];
-
-    if (empty($letters)) {
+    preg_match_all("/'([a-z]?)'/", strtolower($layout), $matches);
+    $letters = [];
+    foreach ($matches[1] ?? [] as $letter) {
+        // An empty room is solid rock, not a gap that shifts every room after it.
+        $letters[] = in_array($letter, $allowed, true) ? $letter : \Shinobi\Modules\AbandonCastle\Tiles::SOLID;
+    }
+    if ($letters === []) {
         return 'array();';
     }
 
     return "array('" . implode("','", $letters) . "');";
 }
 
+/**
+ * Whether a sanitized layout has a passage on the entrance, the room every
+ * player starts in.
+ */
+function abandoncastleeditor_entrance_is_passage(string $layout): bool
+{
+    require_once __DIR__ . '/abandoncastle/src/Tiles.php';
+    preg_match_all("/'([a-z])'/", $layout, $matches);
+    $letter = $matches[1][\Shinobi\Modules\AbandonCastle\Tiles::ENTRANCE_INDEX] ?? '';
+    return \Shinobi\Modules\AbandonCastle\Tiles::isPassage($letter);
+}
 
+/**
+ * The editor page: a palette of named tiles, the 11 by 13 grid, and the
+ * controls. Every tile is a button with a spoken name, the grid is walked with
+ * the arrow keys, and messages go to a status line instead of alert boxes.
+ */
+function abandoncastleeditor_render(): void
+{
+    $tiles = \Shinobi\Modules\AbandonCastle\Tiles::class;
+    $t = static fn (string $text): string => (string) translate_inline($text, 'abandoncastleeditor');
+    $esc = static fn (string $text): string => htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+    $describe = static function (string $letter) use ($tiles, $t): string {
+        $label = $t($tiles::kind($letter));
+        $directions = $tiles::directionNames($tiles::exits($letter));
+        if ($directions !== []) {
+            $label .= ', ' . $t('passages') . ' ' . implode(', ', array_map($t, $directions));
+        }
+        return $label;
+    };
+
+    $groups = ['Passages' => [], 'Traps' => [], 'Special' => []];
+    $catalog = [];
+    foreach ($tiles::letters() as $letter) {
+        $group = $tiles::isPassage($letter) ? 'Passages' : ($tiles::isTrap($letter) ? 'Traps' : 'Special');
+        $groups[$group][] = $letter;
+        $catalog[$letter] = ['label' => $describe($letter), 'svg' => $tiles::svg($letter), 'passage' => $tiles::isPassage($letter)];
+    }
+
+    rawoutput('<link href="modules/abandoncastle/abandoncastle.css" rel="stylesheet">');
+    rawoutput('<p>' . $esc($t('Pick a tile, then click a room or move to it with the arrow keys and press Enter. Delete empties a room. The entrance is room F1 at the bottom; it needs a passage, and its south side is always closed.')) . '</p>');
+    rawoutput('<div class="ac-editor">');
+
+    // Palette
+    rawoutput('<div class="ac-palette">');
+    foreach ($groups as $group => $letters) {
+        rawoutput('<fieldset><legend>' . $esc($t($group)) . '</legend><div class="ac-palette-tiles">');
+        foreach ($letters as $letter) {
+            rawoutput(sprintf(
+                '<button type="button" class="ac-palette-tile" data-letter="%s" aria-pressed="false" aria-label="%s" title="%2$s">%s</button>',
+                $letter,
+                $esc($catalog[$letter]['label']),
+                $catalog[$letter]['svg']
+            ));
+        }
+        rawoutput('</div></fieldset>');
+    }
+    rawoutput('</div>');
+
+    // Grid, north at the top
+    $entrance = $tiles::ENTRANCE_INDEX;
+    rawoutput('<div class="ac-grid"><table role="grid" aria-label="' . $esc($t('Maze grid, north at the top')) . '"><tbody>');
+    for ($y = $tiles::HEIGHT - 1; $y >= 0; $y--) {
+        rawoutput('<tr role="row">');
+        for ($x = 0; $x < $tiles::WIDTH; $x++) {
+            $index = $y * $tiles::WIDTH + $x;
+            $class = 'ac-grid-cell' . ($index === $entrance ? ' ac-entrance' : '');
+            rawoutput(sprintf(
+                '<td role="gridcell"><button type="button" class="%s" data-index="%d" tabindex="%d"></button></td>',
+                $class,
+                $index,
+                $index === $entrance ? 0 : -1
+            ));
+        }
+        rawoutput('</tr>');
+    }
+    rawoutput('</tbody></table></div>');
+    rawoutput('</div>');
+
+    // Controls, status and export
+    rawoutput('<div class="ac-editor-controls">'
+        . '<button type="button" class="button" id="ac-fill">' . $esc($t('Fill empty rooms')) . '</button>'
+        . '<button type="button" class="button" id="ac-clear">' . $esc($t('Clear')) . '</button>'
+        . '<button type="button" class="button" id="ac-export">' . $esc($t('Export')) . '</button>'
+        . '</div>');
+    rawoutput('<p class="ac-editor-status" role="status" id="ac-status"></p>');
+    rawoutput('<div id="ac-export-box" hidden>'
+        . '<label for="ac-export-text">' . $esc($t('Maze layout')) . '</label>'
+        . '<textarea id="ac-export-text" class="ac-editor-export" readonly></textarea>'
+        . '<p><label for="ac-title">' . $esc($t('Title')) . '</label> <input type="text" id="ac-title" maxlength="32"> '
+        . '<button type="button" class="button" id="ac-save">' . $esc($t('Save to file')) . '</button></p>'
+        . '</div>');
+
+    $token = class_exists(Csrf::class) ? Csrf::token('module:abandoncastleeditor') : '';
+    $config = [
+        'width' => $tiles::WIDTH,
+        'height' => $tiles::HEIGHT,
+        'entrance' => $entrance,
+        'exit' => $tiles::EXIT,
+        'solid' => $tiles::SOLID,
+        'tiles' => $catalog,
+        'exits' => array_combine($tiles::letters(), array_map([$tiles, 'exits'], $tiles::letters())),
+        'token' => $token,
+        'tokenField' => class_exists(Csrf::class) ? Csrf::FIELD : 'csrf_token',
+        'saveUrl' => 'runmodule.php?module=abandoncastleeditor&op=save',
+        'text' => [
+            'empty' => $t('empty'),
+            'entrance' => $t('entrance'),
+            'pickFirst' => $t('Pick a tile first.'),
+            'entranceNeedsPassage' => $t('The entrance needs a passage tile.'),
+            'placed' => $t('%1$s placed in %2$s.'),
+            'emptied' => $t('%s emptied.'),
+            'filled' => $t('%1$s empty rooms filled with %2$s.'),
+            'nothingToFill' => $t('There are no empty rooms to fill.'),
+            'cleared' => $t('The grid is empty.'),
+            'noExit' => $t('The maze has no exit yet.'),
+            'unreachable' => $t('Warning: no exit can be reached from the entrance.'),
+            'exported' => $t('Layout exported below.'),
+            'needTitle' => $t('Enter a title first.'),
+            'saving' => $t('Saving...'),
+            'saveFailed' => $t('The maze could not be saved.'),
+        ],
+    ];
+    $json = json_encode($config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    rawoutput('<script>window.abandonCastleEditor = ' . $json . ';</script>');
+    rawoutput('<script src="modules/abandoncastle/editor.js" defer></script>');
+}

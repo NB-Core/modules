@@ -23,7 +23,7 @@ class AbandonCastle
                 'pqtemp' => 'Temporary Information,viewonly',
                 'enteredtoday' => 'User has entered the castle today,bool|0',
                 'super' => 'Superuser Features,bool|0',
-                'mode' => 'Game mode,enum,hardcore,normal|hardcore',
+                'mode' => 'Game mode,enum,hardcore,normal,extreme|hardcore',
                 'mapdata' => 'Serialized map data|',
             ],
             'settings' => [

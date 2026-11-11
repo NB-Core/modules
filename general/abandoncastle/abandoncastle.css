@@ -1,4 +1,5 @@
-/* Abandoned Castle text sizing */
+/* Abandoned Castle: room, map, legend and the maze editor. */
+
 .ac-text-small {
     font-size: 0.8em;
 }
@@ -7,3 +8,239 @@
     font-size: 1.7em;
 }
 
+/* Text for screen readers only. */
+.ac-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Tiles are drawn from above: dark stone, lit floor. */
+.ac-tile {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.ac-stone { fill: #2b2622; }
+.ac-floor { fill: #cbb68b; }
+.ac-mark-exit { fill: #3f9b4f; }
+.ac-mark-trap { stroke: #b3261e; stroke-width: 1.2; stroke-linecap: round; fill: none; }
+.ac-mark-entrance { fill: #3b6fb6; }
+.ac-mark-trap-fill { fill: #b3261e; }
+.ac-mark-water { stroke: #3b8fd6; stroke-width: 0.8; stroke-linecap: round; fill: none; }
+
+.ac-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25em;
+    align-items: flex-start;
+    margin: 0.75em 0;
+}
+
+.ac-room {
+    flex: 0 0 auto;
+    width: min(9em, 40vw);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.ac-room-text {
+    flex: 1 1 14em;
+    margin: 0;
+}
+
+.ac-map-wrap {
+    flex: 1 1 18em;
+    max-width: 26em;
+}
+
+.ac-map-summary {
+    margin: 0 0 0.5em;
+}
+
+.ac-map {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #1b1815;
+    border: 2px solid #1b1815;
+    border-radius: 4px;
+}
+
+.ac-map td {
+    position: relative;
+    padding: 0;
+    border: 1px solid #1b1815;
+}
+
+/* Table cells ignore aspect-ratio; the box inside keeps every room square. */
+.ac-box {
+    position: relative;
+    aspect-ratio: 1 / 1;
+}
+
+.ac-map td.ac-unknown {
+    background: #3a3530;
+}
+
+.ac-map td.ac-entrance {
+    box-shadow: inset 0 0 0 2px #3b6fb6;
+}
+
+.ac-map td.ac-exit {
+    box-shadow: inset 0 0 0 2px #3f9b4f;
+}
+
+.ac-map td.ac-current {
+    outline: 2px solid #4fd1e6;
+    outline-offset: -2px;
+    z-index: 1;
+}
+
+.ac-you {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 45%;
+    height: 45%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: #4fd1e6;
+    box-shadow: 0 0 0 2px #1b1815;
+}
+
+.ac-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em 1em;
+    margin: 0.5em 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85em;
+}
+
+.ac-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+}
+
+.ac-swatch {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    border-radius: 2px;
+    border: 1px solid #1b1815;
+}
+.ac-swatch-you { background: #4fd1e6; border-radius: 50%; }
+.ac-swatch-entrance { background: #3b6fb6; }
+.ac-swatch-exit { background: #3f9b4f; }
+.ac-swatch-known { background: #cbb68b; }
+.ac-swatch-unknown { background: #3a3530; }
+
+/* Maze editor */
+.ac-editor {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25em;
+    align-items: flex-start;
+}
+
+.ac-palette {
+    flex: 0 1 16em;
+}
+
+.ac-palette fieldset {
+    margin: 0 0 0.75em;
+    padding: 0.5em;
+    border: 1px solid #6b6259;
+    border-radius: 4px;
+}
+
+.ac-palette legend {
+    padding: 0 0.3em;
+    font-weight: bold;
+}
+
+.ac-palette-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 2.6em);
+    gap: 0.35em;
+}
+
+.ac-palette-tile,
+.ac-grid-cell {
+    display: block;
+    padding: 0;
+    border: 2px solid transparent;
+    background: #1b1815;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.ac-palette-tile {
+    width: 2.6em;
+    height: 2.6em;
+}
+
+.ac-palette-tile[aria-pressed="true"] {
+    border-color: #4fd1e6;
+}
+
+.ac-palette-tile:focus-visible,
+.ac-grid-cell:focus-visible {
+    outline: 3px solid #f5c542;
+    outline-offset: 1px;
+}
+
+.ac-grid {
+    flex: 1 1 22em;
+    max-width: 32em;
+}
+
+.ac-grid table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #1b1815;
+}
+
+.ac-grid td {
+    padding: 0;
+    border: 1px solid #1b1815;
+}
+
+.ac-grid-cell {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #3a3530;
+}
+
+.ac-grid-cell.ac-entrance {
+    box-shadow: inset 0 0 0 2px #3b6fb6;
+}
+
+.ac-editor-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin: 0.75em 0;
+}
+
+.ac-editor-status {
+    min-height: 1.4em;
+    margin: 0.25em 0;
+}
+
+.ac-editor-export {
+    width: 100%;
+    min-height: 6em;
+    font-family: monospace;
+}

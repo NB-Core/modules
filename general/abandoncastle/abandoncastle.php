@@ -2,17 +2,19 @@
 use Shinobi\Modules\AbandonCastle\MapService;
 use Shinobi\Modules\AbandonCastle\FightController;
 use Shinobi\Modules\AbandonCastle\MazeRepository;
+use Shinobi\Modules\AbandonCastle\Tiles;
 
 require_once 'modules/abandoncastle/src/MapService.php';
 require_once 'modules/abandoncastle/src/FightController.php';
 require_once 'modules/abandoncastle/src/MazeRepository.php';
+require_once 'modules/abandoncastle/src/Tiles.php';
         global $session;
         global $badguy;
          $op = (string) httpget('op');
          $locale = (string) httpget('loc');
          $skill = (string) httpget('skill');
         $modeparam = (string) httpget('mode');
-        if ($modeparam !== '' && in_array($modeparam, ['hardcore', 'normal'], true)) {
+        if ($modeparam !== '' && in_array($modeparam, ['hardcore', 'normal', 'extreme'], true)) {
                 set_module_pref('mode', $modeparam);
         }
         $session['abandoncastle']['mode'] = get_module_pref('mode');
@@ -93,7 +95,10 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
                         }
                 } elseif ($session['user']['dragonkills'] >= get_module_setting('dkenter')) {
                         output("`2You stand before the Abandoned Castle. Choose your mode before entering.`n");
-			output("`n`vHardcore will provide twice the rewards, but you will have no automap... so pick wisely. You cannot leave once you enter...");
+			output("`n`vNormal shows a map of the rooms you have explored, with the exit marked.");
+			output("`nHardcore gives twice the rewards: no map of the rooms, only where you and the exit are.");
+			output("`nExtra Hardcore gives three times the rewards: you only see the room you stand in.");
+			output("`nPick wisely. You cannot leave once you enter...");
 			addnav("Navigation");
                         if (get_module_setting("forestvil") == 1){
                                 addnav("Back to the Forest","forest.php");
@@ -103,6 +108,7 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
 			addnav("Be brave");
                         addnav("Enter the Castle (Hardcore)","runmodule.php?module=abandoncastle&op=enter&mode=hardcore");
                         addnav("Enter the Castle (Normal)","runmodule.php?module=abandoncastle&op=enter&mode=normal");
+                        addnav("Enter the Castle (Extra Hardcore)","runmodule.php?module=abandoncastle&op=enter&mode=extreme");
 			
                 } else {
 			addnav("Navigation");
@@ -117,17 +123,9 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
         }
 
 	//now let's navigate the maze
+        // The map is part of every room now; an old Check Map link leads back to the room.
         if ($op === 'checkmap') {
-                $maze = explode(',', $umaze);
-                if ($session['abandoncastle']['mode'] === 'normal') {
-                        $mapService->markVisited((int) $locale);
-                        set_module_pref('mapdata', $mapService->serialize());
-                }
-                output("`c`b`&Explored Map`0`b`c`n");
-                output_notl($mapService->render($maze, (int) $locale), true);
-                addnav("Return", "runmodule.php?module=abandoncastle&loc=$locale");
-                page_footer();
-                return;
+                redirect("runmodule.php?module=abandoncastle&loc=" . (int) $locale);
         }
 
         if ($op <> ""){
@@ -271,7 +269,7 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
 					case 79:
 					case 80:
 						output("Lucky Day! You find %s gold!",200);
-						$session['user']['gold']+ 0;
+						$session['user']['gold']+=200;
 						break;
 					case 81:
 					case 82:
@@ -786,106 +784,50 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
 					$session['user']['gold']=0;
 					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
 				}
+				$mode = (string) $session['abandoncastle']['mode'];
+				$index = (int) $locale - 1;
 				if ($session['user']['hitpoints'] > 0){
-					if (get_module_pref('mode') == 'hardcore') {
+					if ($mode === MapService::MODE_HARDCORE) {
 						output("`b`\$Hardcore Mode`0`b`n");
-					}
-					addnav("Directions");
-					if ($locale=="6"){
-						output("`nYou are at the entrance with Passages to the");
-					}else{
-						output("`nYou are in a Dark Corridor with Passages to the");
+					} elseif ($mode === MapService::MODE_EXTREME) {
+						output("`b`\$Extra Hardcore Mode`0`b`n");
 					}
 					$umazeturn++;
 					set_module_pref('mazeturn', $umazeturn);
-                                        if ($navigate=="a" or $navigate=="b" or $navigate=="e" or $navigate=="f" or $navigate=="g" or $navigate=="j" or $navigate=="k" or $navigate=="l"){
-                                                addnav("North","runmodule.php?module=abandoncastle&op=n&loc=$locale");
-                                                $directions.=" ".translate_inline("North");
-                                                $navcount++;
-                                        }
-                                        if ($navigate=="a" or $navigate=="c" or $navigate=="e" or $navigate=="f" or $navigate=="g" or $navigate=="h" or $navigate=="i" or $navigate=="m"){
-                                                if ($locale <> 6){
-                                                        addnav("South","runmodule.php?module=abandoncastle&op=s&loc=$locale");
-                                                        $navcount++;
-                                                        if ($navcount > 1) $directions.=",";
-                                                        $directions.=" ".translate_inline("South");
-                                                }
-                                        }
-                                        if ($navigate=="a" or $navigate=="b" or $navigate=="c" or $navigate=="d" or $navigate=="e" or $navigate=="h" or $navigate=="k" or $navigate=="n"){
-                                                addnav("West","runmodule.php?module=abandoncastle&op=w&loc=$locale");
-                                                $navcount++;
-                                                if ($navcount > 1) $directions.=",";
-                                                $directions.=" ".translate_inline("West");
-                                        }
-                                        if ($navigate=="a" or $navigate=="b" or $navigate=="c" or $navigate=="d" or $navigate=="f" or $navigate=="i" or $navigate=="j" or $navigate=="o"){
-                                                addnav("East","runmodule.php?module=abandoncastle&op=e&loc=$locale");
-                                                $navcount++;
-                                                if ($navcount > 1) $directions.=",";
-                                                $directions.=" ".translate_inline("East");
-                                        }
-					if (get_module_pref('mode') == 'normal') {
-						addnav("Other");
-						addnav("Check Map","runmodule.php?module=abandoncastle&op=checkmap&loc=$locale");
+					addnav("Directions");
+					$names = ['N' => 'North', 'S' => 'South', 'W' => 'West', 'E' => 'East'];
+					$steps = ['N' => 'n', 'S' => 's', 'W' => 'w', 'E' => 'e'];
+					$exits = Tiles::exits($navigate, $index);
+					$directions = [];
+					foreach (str_split($exits) as $direction) {
+						addnav($names[$direction], "runmodule.php?module=abandoncastle&op={$steps[$direction]}&loc=$locale");
+						$directions[] = translate_inline($names[$direction]);
 					}
-                                        output_notl(" %s.`n",$directions);
-                                }else{
-                                        set_module_pref('mapdata', '');
-                                        addnav("Continue","shades.php");
-                                }
-                                if ($navigate === MazeRepository::START_TILE) {
-                                        $mazemap = 'mgreen.gif';
-                                } else {
-                                        $mazemap = $navigate . 'maze.gif';
-                                }
-                                output_notl("<img src=\"./modules/abandoncastle/images/%s\" alt=\"Maze map\">\n", $mazemap, true);
-                                output_notl("`n");
-                                $legend = "`n";
-                                $legend .= "<span class='ac-text-small'>`7" . translate_inline("You") . " = </span><img src=\"./modules/abandoncastle/images/mcyan.gif\" alt=\"" . translate_inline("You") . "\" style=\"width: 5px; height: 5px;\">`7, ";
-                                $legend .= "<span class='ac-text-small'>" . translate_inline("Entrance") . " = </span><img src=\"./modules/abandoncastle/images/mgreen.gif\" alt=\"" . translate_inline("Entrance") . "\" style=\"width: 5px; height: 5px;\">`7, ";
-                                $legend .= "<span class='ac-text-small'>" . translate_inline("Exit") . " = </span><img src=\"./modules/abandoncastle/images/mred.gif\" alt=\"" . translate_inline("Exit") . "\" style=\"width: 5px; height: 5px;\">";
-                                output_notl($legend, true);
-                                $mapkey2="<table style=\"height: 130px; width: 110px; text-align: left;\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\"><tbody><tr><td style=\"vertical-align: top;\">";
-                                for ($i=0;$i<143;$i++){
-                                        if ($i == $locale - 1) {
-                                                $mapkey .= "<img src=\"./modules/abandoncastle/images/mcyan.gif\" alt=\"" . translate_inline("You") . "\" style=\"width: 10px; height: 10px;\">";
-                                        } else {
-                                                if ($i == 5) {
-                                                        $mapkey .= "<img src=\"./modules/abandoncastle/images/mgreen.gif\" alt=\"" . translate_inline("Entrance") . "\" style=\"width: 10px; height: 10px;\">";
-                                                } else {
-                                                        if (ltrim($maze[$i]) == "z") {
-                                                                $exit = $i + 1;
-                                                                $mapkey .= "<img src=\"./modules/abandoncastle/images/mred.gif\" alt=\"" . translate_inline("Exit") . "\" style=\"width: 10px; height: 10px;\">";
-                                                        } else {
-                                                                $mapkey .= "<img src=\"./modules/abandoncastle/images/mblack.gif\" alt=\"" . translate_inline("Path") . "\" style=\"width: 10px; height: 10px;\">";
-                                                        }
-                                                }
-                                        }
-					if ($i==10 or $i==21 or $i==32 or $i==43 or $i==54 or $i==65 or $i==76 or $i==87 or $i==98 or $i==109 or $i==120 or $i==131 or $i==142){
-						$mapkey="`n".$mapkey;
-						$mapkey2=$mapkey.$mapkey2;
-						$mapkey="";
+					if ($index === Tiles::ENTRANCE_INDEX) {
+						$where = translate_inline("You are at the entrance");
+					} else {
+						$where = sprintf(translate_inline("You are in a dark room (%s)"), translate_inline(Tiles::kind($navigate)));
 					}
+					$roomText = $directions === []
+						? sprintf(translate_inline("%s. There is no way on."), $where)
+						: sprintf(translate_inline("%s with passages to the %s."), $where, implode(', ', $directions));
+					rawoutput("<div class='ac-view'>" . MapService::renderRoom($navigate, $index)
+						. "<p class='ac-room-text'>" . htmlspecialchars($roomText, ENT_QUOTES, 'UTF-8') . "</p>"
+						. $mapService->render($maze, (int) $locale, $mode)
+						. "</div>");
+				}else{
+					set_module_pref('mapdata', '');
+					addnav("Continue","shades.php");
+					rawoutput("<div class='ac-view'>" . MapService::renderRoom($navigate, $index) . "</div>");
 				}
-				$mapkey2.="</td></tr></tbody></table>";
-				output_notl("%s",$mapkey2,true);
 				if (get_module_pref('super')){
-					output("Superuser Map`n");
-					$mapkey2="";
-					$mapkey="";
-					for ($i=0;$i<143;$i++){
-						$keymap=ltrim($maze[$i]);
-						$mazemap=$keymap;
-						$mazemap.="maze.gif";
-                                                $mapkey .= "<img src=\"./modules/abandoncastle/images/$mazemap\" alt=\"" . translate_inline("Map tile") . "\" style=\"width: 20px; height: 20px;\">";
-						if ($i==10 or $i==21 or $i==32 or $i==43 or $i==54 or $i==65 or $i==76 or $i==87 or $i==98 or $i==109 or $i==120 or $i==131 or $i==142){
-							$mapkey="`n".$mapkey;
-							$mapkey2=$mapkey.$mapkey2;
-							$mapkey="";
-						}
+					output("`nSuperuser Map`n");
+					rawoutput($mapService->render($maze, (int) $locale, MapService::MODE_NORMAL, true));
+					$exit = array_search(Tiles::EXIT, array_map('ltrim', $maze), true);
+					if ($exit !== false) {
+						addnav("Superuser Exit", "runmodule.php?module=abandoncastle&loc=" . ($exit + 1));
 					}
-					output_notl("%s",$mapkey2,true);
 				}
-				if (get_module_pref('super')) addnav("Superuser Exit","runmodule.php?module=abandoncastle&loc=$exit");
 			}else{
 				if ($session['user']['hashorse']>0){
 					global $playermount;
@@ -903,10 +845,9 @@ require_once 'modules/abandoncastle/src/MazeRepository.php';
                                 if ($umazeturn < 51) $gemreward = 3;
                                 if ($umazeturn < 26) $gemreward = 4;
                                 $mode = $session['abandoncastle']['mode'];
-                                if ($mode === 'hardcore') {
-                                        $reward *= 2;
-                                        $gemreward *= 2;
-                                }
+                                $multiplier = ['hardcore' => 2, 'extreme' => 3][$mode] ?? 1;
+                                $reward *= $multiplier;
+                                $gemreward *= $multiplier;
                                 output("`2You finished the maze in %s turns.`n",$umazeturn);
                                 output("`2You find a treasure of %s gold and %s gems.`n`n",$reward,$gemreward);
                                 if (get_module_setting("forestvil") == 1){
