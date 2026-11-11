@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Shinobi\Modules\AbandonCastle;
 
+require_once __DIR__ . '/Narration.php';
+
 /**
  * Handles combat interactions inside the Abandoned Castle.
  *
@@ -85,6 +87,7 @@ class FightController
         $badguy['creaturedefense']+= ($userdefense * 2);
         $session['user']['badguy'] = \createstring($badguy);
 
+        \output(Narration::MONSTERS['ghost1']);
         $this->fight();
     }
 
@@ -121,6 +124,7 @@ class FightController
         $badguy['creaturedefense']+= ($userdefense * 1.5);
         $session['user']['badguy'] = \createstring($badguy);
 
+        \output(Narration::MONSTERS['ghost2']);
         $this->fight();
     }
 
@@ -137,7 +141,7 @@ class FightController
         $badguy = [
             'creaturename'   => \translate_inline('`@Bat`0'),
             'creaturelevel'  => 1,
-            'creatureweapon' => \translate_inline('Sharp Fangs'),
+            'creatureweapon' => \translate_inline('leathery claws and needle teeth'),
             'creatureattack' => 1,
             'creaturedefense'=> 2,
             'creaturehealth' => 1,
@@ -157,6 +161,7 @@ class FightController
         $badguy['creaturedefense']+= ($userdefense * 0.5);
         $session['user']['badguy'] = \createstring($badguy);
 
+        \output(Narration::MONSTERS['bat']);
         $this->fight();
     }
 
@@ -193,6 +198,7 @@ class FightController
         $badguy['creaturedefense']+= \round($userdefense * 0.75);
         $session['user']['badguy'] = \createstring($badguy);
 
+        \output(Narration::MONSTERS['rat']);
         $this->fight();
     }
 
@@ -209,7 +215,7 @@ class FightController
         $badguy = [
             'creaturename'   => \translate_inline('`@Minotaur`0'),
             'creaturelevel'  => 1,
-            'creatureweapon' => \translate_inline('Sharp Fangs'),
+            'creatureweapon' => \translate_inline('a great double-bladed axe'),
             'creatureattack' => 1,
             'creaturedefense'=> 30,
             'creaturehealth' => 1000,
@@ -229,6 +235,7 @@ class FightController
         $badguy['creaturedefense']+= $userdefense;
         $session['user']['badguy'] = \createstring($badguy);
 
+        \output(Narration::MONSTERS['minotaur']);
         $this->fight();
     }
 
@@ -257,7 +264,7 @@ class FightController
             require_once 'battle.php';
 
             if ($victory) {
-                \output("`b`4You have slain `^%s`4.`b`n", $badguy['creaturename']);
+                \output(Narration::VICTORY, $badguy['creaturename']);
                 $badguy = [];
                 $session['user']['badguy'] = '';
                 $gold = \e_rand(50, 250);
@@ -269,7 +276,7 @@ class FightController
                 $session['user']['specialinc'] = '';
                 \addnav('Continue', 'runmodule.php?module=abandoncastle&loc=' . \get_module_pref('pqtemp'));
             } elseif ($defeat) {
-                \output('As you hit the ground `^%s runs away.', $badguy['creaturename']);
+                \output(Narration::DEFEAT, $badguy['creaturename']);
                 \addnews('`% %s`5 has been slain when %s encountered a %s in the Abandoned Castle.', $session['user']['name'], ($session['user']['sex'] ? \translate_inline('she') : \translate_inline('he')), $badguy['creaturename']);
                 $badguy = [];
                 $session['user']['badguy'] = '';
