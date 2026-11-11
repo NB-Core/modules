@@ -79,7 +79,8 @@ class AbandonCastle
         global $session;
 	addnav("Navigation");
         if (!\get_module_pref('wasfound') && \get_module_setting('forestvil') == 1) {
-            \output("`n`2While walking in the Forest, you have found a path that leads to an `bAbandoned Castle`b, which is very old.`n`nA sign near the castle says:`n\"`#Beware, only the bravest warrior should enter the Castle. If you decide to enter,your chance to die is pretty high.");
+            require_once __DIR__ . '/Narration.php';
+            \output(Narration::FOREST_FIND);
             \addnews("%s has found a path to the Abandoned Castle.", $session['user']['name']);
             \debuglog("found the Abandoned Castle");
             \addnav("Back to the Forest", "forest.php");

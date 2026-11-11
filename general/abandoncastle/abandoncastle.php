@@ -3,11 +3,13 @@ use Shinobi\Modules\AbandonCastle\MapService;
 use Shinobi\Modules\AbandonCastle\FightController;
 use Shinobi\Modules\AbandonCastle\MazeRepository;
 use Shinobi\Modules\AbandonCastle\Tiles;
+use Shinobi\Modules\AbandonCastle\Narration;
 
 require_once 'modules/abandoncastle/src/MapService.php';
 require_once 'modules/abandoncastle/src/FightController.php';
 require_once 'modules/abandoncastle/src/MazeRepository.php';
 require_once 'modules/abandoncastle/src/Tiles.php';
+require_once 'modules/abandoncastle/src/Narration.php';
         global $session;
         global $badguy;
          $op = (string) httpget('op');
@@ -53,18 +55,14 @@ require_once 'modules/abandoncastle/src/Tiles.php';
                 $op = '';
         }
         if ($op === 'enter') {
-                output("`2You enter the Abandoned Castle, as you do the door slams behind you.");
-                output("Try as you may the door won't budge!  Looks like you are going to have to find ");
-                output("another way out of this place!`n");
-                output("You look around, and in the dim light you see that the castle's narrow passage is ");
-                output("littered with junk and remains of past visitors.`n");
+                output(Narration::ENTER);
                 if ($session['user']['hashorse']>0){
                         global $playermount;
-                        output("Too bad your %s couldn't come in with you, now you are all alone.`n",$playermount['mountname']);
+                        output(Narration::MOUNT_LEFT, $playermount['mountname']);
                 }
                 $skill="";
                 require_once("lib/battle-skills.php");
-                suspend_buffs('allowintrain',"This place feels strange... it's draining any buffs you have ... they are unusable.`n`n");
+                suspend_buffs('allowintrain', Narration::BUFFS_SUSPENDED);
                 $locale=6;
                 $umazeturn = 0;
                 set_module_pref("mazeturn", 0);
@@ -86,7 +84,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 		addnav("Navigation");
                 output("`c`b`&Abandoned Castle`0`b`c`n`n");
                 if (get_module_pref('enteredtoday')) {
-                        output("`2You tug on the door, however you cannot get it to open.`n`2(`3You can only enter the castle once per day`2)`0");
+                        output(Narration::ENTERED_TODAY);
 			addnav("Navigation");
                         if (get_module_setting("forestvil") == 1){
                                 addnav("Continue","forest.php");
@@ -94,11 +92,8 @@ require_once 'modules/abandoncastle/src/Tiles.php';
                                 villagenav();
                         }
                 } elseif ($session['user']['dragonkills'] >= get_module_setting('dkenter')) {
-                        output("`2You stand before the Abandoned Castle. Choose your mode before entering.`n");
-			output("`n`vNormal shows a map of the rooms you have explored, with the exit marked.");
-			output("`nHardcore gives twice the rewards: no map of the rooms, only where you and the exit are.");
-			output("`nExtra Hardcore gives three times the rewards: you only see the room you stand in.");
-			output("`nPick wisely. You cannot leave once you enter...");
+                        output(Narration::BEFORE_THE_DOOR);
+			output(Narration::MODES);
 			addnav("Navigation");
                         if (get_module_setting("forestvil") == 1){
                                 addnav("Back to the Forest","forest.php");
@@ -112,8 +107,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 			
                 } else {
 			addnav("Navigation");
-                        output("You tug on the door, however you cannot get it to open.`n");
-                        output("Come back when you are a stronger and more experienced warrior.`n");
+                        output(Narration::TOO_WEAK);
                         if (get_module_setting("forestvil") == 1){
                                 addnav("Continue","forest.php");
                         }else{
@@ -177,7 +171,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 8:
 					case 9:
 					case 10:
-						output("Lucky Day!  You find a Gem!");
+						output(Narration::pick(Narration::GEM));
 						$session['user']['gems']+=1;
 						break;
 					case 11:
@@ -190,7 +184,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 18:
 					case 19:
 					case 20:
-						output("Lucky Day! You find %s gold!",500);
+						output(Narration::pick(Narration::GOLD), 500);
 						$session['user']['gold']+=500;
 						break;
 					case 21:
@@ -203,7 +197,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 28:
 					case 29:
 					case 30:
-						output("Lucky Day! You find %s gold!",450);
+						output(Narration::pick(Narration::GOLD), 450);
 						$session['user']['gold']+=450;
 						break;
 					case 31:
@@ -216,7 +210,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 38:
 					case 39:
 					case 40:
-						output("Lucky Day! You find %s gold!",400);
+						output(Narration::pick(Narration::GOLD), 400);
 						$session['user']['gold']+=400;
 						break;
 					case 41:
@@ -229,7 +223,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 48:
 					case 49:
 					case 50:
-						output("Lucky Day! You find %s gold!",350);
+						output(Narration::pick(Narration::GOLD), 350);
 						$session['user']['gold']+=350;
 						break;
 					case 51:
@@ -242,7 +236,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 58:
 					case 59:
 					case 60:
-						output("Lucky Day! You find %s gold!",300);
+						output(Narration::pick(Narration::GOLD), 300);
 						$session['user']['gold']+=300;
 						break;
 					case 61:
@@ -255,7 +249,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 68:
 					case 69:
 					case 70:
-						output("Lucky Day! You find %s gold!",250);
+						output(Narration::pick(Narration::GOLD), 250);
 						$session['user']['gold']+=250;
 						break;
 					case 71:
@@ -268,7 +262,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 78:
 					case 79:
 					case 80:
-						output("Lucky Day! You find %s gold!",200);
+						output(Narration::pick(Narration::GOLD), 200);
 						$session['user']['gold']+=200;
 						break;
 					case 81:
@@ -281,7 +275,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 88:
 					case 89:
 					case 90:
-						output("Lucky Day! You find %s gold!",150);
+						output(Narration::pick(Narration::GOLD), 150);
 						$session['user']['gold']+=150;
 						break;
 					case 91:
@@ -294,7 +288,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 98:
 					case 99:
 					case 100:
-						output("Lucky Day! You find %s gold!",100);
+						output(Narration::pick(Narration::GOLD), 100);
 						$session['user']['gold']+=100;
 						break;
 					case 101:
@@ -307,7 +301,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 108:
 					case 109:
 					case 110:
-						output("Lucky Day! You find %s gold!",50);
+						output(Narration::pick(Narration::GOLD), 50);
 						$session['user']['gold']+=50;
 						break;
 					case 111:
@@ -320,7 +314,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 118:
 					case 119:
 					case 120:
-						output("Lucky Day! You find %s gold!",25);
+						output(Narration::pick(Narration::GOLD), 25);
 						$session['user']['gold']+=25;
 						break;
 					case 121:
@@ -328,7 +322,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 						if (is_module_active('potions')) {
 							$upotion = get_module_pref('potion', 'potions');
 							if ($upotion<5){
-								output("Lucky Day! You find a Healing Potion!");
+								output(Narration::POTION);
 								set_module_pref('potion', ++$upotion, 'potions');
 							}
 						}
@@ -344,7 +338,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 							if ($userchow<5){
 								switch(e_rand(1,7)){
 									case 1:
-										output("`^Fortune smiles on you and you find a slice of bread!`0");
+										output(Narration::FOOD, translate_inline("a slice of bread"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -355,7 +349,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 										}
 										break;
 									case 2:
-										output("`^Fortune smiles on you and you find a Pork Chop!`0");
+										output(Narration::FOOD, translate_inline("a Pork Chop"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -366,7 +360,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 										}
 										break;
 									case 3:
-										output("`^Fortune smiles on you and you find a Ham Steak!`0");
+										output(Narration::FOOD, translate_inline("a Ham Steak"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -377,7 +371,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 										}
 										break;
 									case 4:
-										output("`^Fortune smiles on you and you find a Steak!`0");
+										output(Narration::FOOD, translate_inline("a Steak"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -388,7 +382,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 										}
 										break;
 									case 5:
-										output("`^Fortune smiles on you and you find a Whole Chicken!`0");
+										output(Narration::FOOD, translate_inline("a Whole Chicken"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -399,7 +393,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 										}
 										break;
 									case 6:
-										output("`^Fortune smiles on you and you find a bottle of milk!`0");
+										output(Narration::FOOD, translate_inline("a bottle of milk"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -410,7 +404,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 										}
 										break;
 									case 7:
-										output("`^Fortune smiles on you and you find a bottle of Water!`0");
+										output(Narration::FOOD, translate_inline("a bottle of Water"));
 										for ($i=0;$i<6;$i+=1){
 											$chow[$i]=substr(strval($uchow),$i,1);
 											if ($chow[$i]=="0" and $done < 1){
@@ -431,7 +425,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					case 128:
 					case 129:
 					case 130:
-						output("Lucky Day! You find %s gold!",10);
+						output(Narration::pick(Narration::GOLD), 10);
 						$session['user']['gold']+=10;
 						break;
 					case 131:
@@ -461,7 +455,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2328:
 				case 2329:
 				case 2330:
-					output("You hear a strange and eerie growling sound coming from somewhere.");
+					output(Narration::GROWL_FAR);
 					break;
 				case 2331:
 				case 2332:
@@ -473,7 +467,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2338:
 				case 2339:
 				case 2340:
-					output("You hear a blood curling scream coming from somewhere.");
+					output(Narration::SCREAM);
 					break;
 				case 2341:
 				case 2342:
@@ -485,9 +479,9 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2348:
 				case 2349:
 				case 2350:
-					output("You encounter a putrid smell.  ");
+					output(Narration::SMELL);
 					if (is_module_active('odor')){
-					output("Some of that smell lingers with you.");
+					output(Narration::SMELL_LINGERS);
 					set_module_pref('odor',(get_module_pref('odor','odor') - 1),'odor');
 					}
 					break;
@@ -501,7 +495,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2358:
 				case 2359:
 				case 2360:
-					output("There is a skeleton laying in the corner.  Poor fellow didn't find his way out.");
+					output(Narration::SKELETON);
 					break;
 				case 2361:
 				case 2362:
@@ -513,7 +507,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2368:
 				case 2369:
 				case 2370:
-					output("You see a rat chewing on what looks like a hand.");
+					output(Narration::RAT_HAND);
 					break;
 				case 2371:
 				case 2372:
@@ -525,7 +519,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2378:
 				case 2379:
 				case 2380:
-					output("You hear a growl from somewhere very close.");
+					output(Narration::GROWL_NEAR);
 					break;
 				case 2381:
 				case 2382:
@@ -537,7 +531,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2388:
 				case 2389:
 				case 2390:
-					output("A cold chill comes over you.");
+					output(Narration::CHILL);
 					break;
 				case 2391:
 				case 2392:
@@ -549,7 +543,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2398:
 				case 2399:
 				case 2400:
-					output("You hear screams for help coming from somewhere.");
+					output(Narration::HELP_FAR);
 					break;
 				case 2401:
 				case 2402:
@@ -561,7 +555,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2408:
 				case 2409:
 				case 2410:
-					output("You hear screams for help coming from somewhere close.");
+					output(Narration::HELP_NEAR);
 					break;
 				case 2411:
 				case 2412:
@@ -573,7 +567,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2418:
 				case 2419:
 				case 2420:
-					output("You hear screams for help coming from somewhere.  Abruptly the Screaming Stops.");
+					output(Narration::HELP_STOPS);
 					break;
 				case 2421:
 				case 2422:
@@ -585,7 +579,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2428:
 				case 2429:
 				case 2430:
-					output("Ouch! You stepped on something sharp!");
+					output(Narration::HURT_SHARP);
 					$session['user']['hitpoints']-=1;
 					if ($session['user']['hitpoints']<1) $session['user']['hitpoints']=1;
 					break;
@@ -599,7 +593,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2438:
 				case 2439:
 				case 2440:
-					output("Ouch! You were bit by a spider");
+					output(Narration::HURT_SPIDER);
 					$session['user']['hitpoints']-=2;
 					if ($session['user']['hitpoints']<1) $session['user']['hitpoints']=1;
 					break;
@@ -613,7 +607,7 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2448:
 				case 2449:
 				case 2450:
-					output("Ouch! You were bit by a rat.  The rat scurries away.");
+					output(Narration::HURT_RAT);
 					$session['user']['hitpoints']-=3;
 					if ($session['user']['hitpoints']<1) $session['user']['hitpoints']=1;
 					break;
@@ -627,24 +621,24 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 				case 2458:
 				case 2459:
 				case 2460:
-					output("Ouch! You were bit by a big rat.  The rat scurries away.");
+					output(Narration::HURT_BIG_RAT);
 					$session['user']['hitpoints']-=4;
 					if ($session['user']['hitpoints']<1) $session['user']['hitpoints']=1;
 					break;
 				case 2461:
 				case 2462:
 				case 2463:
-                                        output("<span class='ac-text-large'>`4Wham!</span>`n", true);
-					output("`3As the world goes dim... you see that large spikes have erupted from the floor and impaled you.`n");
+                                        output(Narration::WHAM, true);
+					output(Narration::SPIKES_FLOOR);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Killed by spikes in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['spikes']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 					break;
 				case 2464:
 				case 2465:
@@ -690,107 +684,103 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 					break;
 				case 2497:
 				case 2498:
-                                        output("<span class='ac-text-large'>`4Wham!</span>`n", true);
-					output("`3As the world goes dim... you see that large spikes have erupted from the wall and impaled you.`n");
+                                        output(Narration::WHAM, true);
+					output(Narration::SPIKES_WALL);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Killed by spikes in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['spikes']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 					break;
 				case 2499:
 				case 2500:
-                                        output("<span class='ac-text-large'>`4Shoop!</span>`n", true);
-					output("`3As the world goes dim... you see your body fall to the floor level where your head is laying.`n");
+                                        output(Narration::SHOOP, true);
+					output(Narration::BEHEADED);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Beheaded in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['beheaded']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 					break;
 				}
 			}
 			output("`7");
 			if ($navigate<>"z"){
 				if ($navigate=="x"){
-					output("You fell off of the end of the world!");
+					output(Narration::TRAP_EDGE);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Died in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['edge']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 				}
 				if ($navigate=="p"){
-					output("You fall into a pit filled with spikes, you see the dim light way above you fade, just as your life is fading.`n");
+					output(Narration::TRAP_PIT);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Killed by spikes in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['spikes']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 				}
 				if ($navigate=="q"){
-					output("You step on something on the floor you feel it shift and hear the rush of water.");
-					output("The passage quickly fills with water, the world fades as your lungs burn for air.`n");
+					output(Narration::TRAP_WATER);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Drowned in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['drowned']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 				}
 				if ($navigate=="r"){
-					output("You hear a slam come from behind you, when you turn around you see that a door has blocked you into ");
-					output("a small section of passageway.  The walls start to rumble and close in on you.  Soon you find out what ");
-					output("it is like for a bug under your foot.");
+					output(Narration::TRAP_WALLS);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Squished in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['crushed']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 				}
 				if ($navigate=="s"){
-					output("Out of nowhere a blade swings horizontally across your path.");
-					output("The world goes dim as the top half of your body slides away from the bottom.`n");
+					output(Narration::TRAP_BLADE);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
 					if (is_module_active("morgue")){
-						$diedhow = translate_inline(" - Sliced in half in the abandonded castle");
+						$diedhow = translate_inline(Narration::MORGUE['sliced']);
 						set_module_pref("died",$diedhow,"morgue");
 						set_module_pref("killdate",date("Y-m-D h:m:s"),"morgue");
 					}
 					$session['user']['gold']=0;
-					addnews("`% %s `5 went into the Abandoned Castle and never came out.",$session['user']['name']);
+					addnews(Narration::NEWS_LOST, $session['user']['name']);
 				}
 				$mode = (string) $session['abandoncastle']['mode'];
 				$index = (int) $locale - 1;
 				if ($session['user']['hitpoints'] > 0){
 					if ($mode === MapService::MODE_HARDCORE) {
-						output("`b`\$Hardcore Mode`0`b`n");
+						output(Narration::MODE_HARDCORE);
 					} elseif ($mode === MapService::MODE_EXTREME) {
-						output("`b`\$Extra Hardcore Mode`0`b`n");
+						output(Narration::MODE_EXTREME);
 					}
 					$umazeturn++;
 					set_module_pref('mazeturn', $umazeturn);
@@ -803,14 +793,15 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 						addnav($names[$direction], "runmodule.php?module=abandoncastle&op={$steps[$direction]}&loc=$locale");
 						$directions[] = translate_inline($names[$direction]);
 					}
-					if ($index === Tiles::ENTRANCE_INDEX) {
-						$where = translate_inline("You are at the entrance");
-					} else {
-						$where = sprintf(translate_inline("You are in a dark room (%s)"), translate_inline(Tiles::kind($navigate)));
-					}
-					$roomText = $directions === []
-						? sprintf(translate_inline("%s. There is no way on."), $where)
-						: sprintf(translate_inline("%s with passages to the %s."), $where, implode(', ', $directions));
+					$roomText = translate_inline(Narration::room(Tiles::kind($navigate), $index === Tiles::ENTRANCE_INDEX)) . ' '
+						. ($directions === []
+							? translate_inline("There is no way on.")
+							: sprintf(
+								translate_inline("You can go %s."),
+								count($directions) > 1
+									? implode(', ', array_slice($directions, 0, -1)) . ' ' . translate_inline('or') . ' ' . end($directions)
+									: $directions[0]
+							));
 					rawoutput("<div class='ac-view'>" . MapService::renderRoom($navigate, $index)
 						. "<p class='ac-room-text'>" . htmlspecialchars($roomText, ENT_QUOTES, 'UTF-8') . "</p>"
 						. $mapService->render($maze, (int) $locale, $mode)
@@ -831,12 +822,12 @@ require_once 'modules/abandoncastle/src/Tiles.php';
 			}else{
 				if ($session['user']['hashorse']>0){
 					global $playermount;
-					output("Your %s happily greets you at the exit.`n",$playermount['mountname']);
+					output(Narration::MOUNT_AT_EXIT, $playermount['mountname']);
 				}
-				output("You have found your way out!`n");
+				output(Narration::ESCAPED);
 				require_once("lib/battle-skills.php");
-				unsuspend_buffs('allowintrain',"Leaving this place you feel your buffs coming back to you.`n`n");
-				addnews("`% %s `5 made it out of the Abandoned Castle alive! In %s moves!",$session['user']['name'],$umazeturn);
+				unsuspend_buffs('allowintrain', Narration::BUFFS_RETURN);
+				addnews(Narration::NEWS_ESCAPED, $session['user']['name'], $umazeturn);
 				$reward = 1000 - ($umazeturn*10);
 				if ($reward < 0) $reward = 0;
                                 $gemreward = 0;
@@ -848,8 +839,8 @@ require_once 'modules/abandoncastle/src/Tiles.php';
                                 $multiplier = ['hardcore' => 2, 'extreme' => 3][$mode] ?? 1;
                                 $reward *= $multiplier;
                                 $gemreward *= $multiplier;
-                                output("`2You finished the maze in %s turns.`n",$umazeturn);
-                                output("`2You find a treasure of %s gold and %s gems.`n`n",$reward,$gemreward);
+                                output(Narration::FINISHED, $umazeturn);
+                                output(Narration::TREASURE, $reward, $gemreward);
                                 if (get_module_setting("forestvil") == 1){
                                         addnav("Continue","forest.php");
                                 }else{
