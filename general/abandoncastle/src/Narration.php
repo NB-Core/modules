@@ -126,6 +126,11 @@ final class Narration
 
     /** Normal mode only: giving up and climbing out costs the rest of the day's forest fights. */
     public const ROPE_NAV = "Climb out on the escape rope";
+    public const ROPE_CONFIRM = "`2You run your fingers over the coil of rope at your belt. Somewhere above, a thin grey thread of daylight seeps through a crack in the vaulted ceiling.`n`n"
+        . "`2If you climb out now, you give up for good: `\$the castle's treasure stays behind, the maze is lost, and the climb will leave you too drained to fight in the forest again today`2.`n`n"
+        . "`2Do you really want to give up?`n";
+    public const ROPE_CONFIRM_YES = "Yes, climb out and give up";
+    public const ROPE_CONFIRM_NO = "No, stay in the castle";
     public const ROPE_ESCAPE = "`2You have had enough. With shaking fingers you knot your escape rope around a rusted torch bracket and look for a way up. "
         . "High above, a crack in the vaulted ceiling lets in a thin grey thread of daylight.`n`n"
         . "The climb is long and miserable. The stones are slick with damp, the rope bites into your palms, and twice your boots slip and you hang there, "

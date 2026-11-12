@@ -125,6 +125,17 @@ require_once 'modules/abandoncastle/src/Narration.php';
         }
 
         // Normal mode only: give up and climb out, without a reward and without the rest of today's forest fights.
+        // First a second screen that asks whether the player really wants to give up.
+        if ($op === 'rope' && httpget('confirm') !== '1'
+                && $session['abandoncastle']['mode'] === MapService::MODE_NORMAL && $umaze !== '') {
+                $back = (int) $locale;
+                output(Narration::ROPE_CONFIRM);
+                addnav("Give up?");
+                addnav(Narration::ROPE_CONFIRM_YES, "runmodule.php?module=abandoncastle&op=rope&confirm=1&loc=$back");
+                addnav(Narration::ROPE_CONFIRM_NO, "runmodule.php?module=abandoncastle&loc=$back");
+                page_footer();
+                return;
+        }
         if ($op === 'rope') {
                 if ($session['abandoncastle']['mode'] === MapService::MODE_NORMAL && $umaze !== '') {
                         if ($session['user']['hashorse'] > 0) {
