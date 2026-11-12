@@ -122,6 +122,33 @@ require_once 'modules/abandoncastle/src/Narration.php';
                 redirect("runmodule.php?module=abandoncastle&loc=" . (int) $locale);
         }
 
+        // Normal mode only: give up and climb out, without a reward and without the rest of today's forest fights.
+        if ($op === 'rope') {
+                if ($session['abandoncastle']['mode'] === MapService::MODE_NORMAL && $umaze !== '') {
+                        if ($session['user']['hashorse'] > 0) {
+                                global $playermount;
+                                output(Narration::MOUNT_AT_EXIT, $playermount['mountname']);
+                        }
+                        output(Narration::ROPE_ESCAPE);
+                        require_once("lib/battle-skills.php");
+                        unsuspend_buffs('allowintrain', Narration::BUFFS_RETURN);
+                        addnews(Narration::NEWS_ROPE, $session['user']['name']);
+                        $session['user']['turns'] = 0;
+                        set_module_pref('maze', "");
+                        set_module_pref('mazeturn', 0);
+                        set_module_pref('pqtemp', "");
+                        set_module_pref('mapdata', '');
+                        if (get_module_setting("forestvil") == 1) {
+                                addnav("Continue", "forest.php");
+                        } else {
+                                villagenav();
+                        }
+                        page_footer();
+                        return;
+                }
+                $op = '';
+        }
+
         if ($op <> ""){
                 if ($op == "n") {
                         $locale+=11;
@@ -792,6 +819,10 @@ require_once 'modules/abandoncastle/src/Narration.php';
 					foreach (str_split($exits) as $direction) {
 						addnav($names[$direction], "runmodule.php?module=abandoncastle&op={$steps[$direction]}&loc=$locale");
 						$directions[] = translate_inline($names[$direction]);
+					}
+					if ($mode === MapService::MODE_NORMAL) {
+						addnav("Give up");
+						addnav(Narration::ROPE_NAV, "runmodule.php?module=abandoncastle&op=rope&loc=$locale");
 					}
 					$roomText = translate_inline(Narration::room(Tiles::kind($navigate), $index === Tiles::ENTRANCE_INDEX)) . ' '
 						. ($directions === []

@@ -45,7 +45,7 @@ final class Narration
         . "as if it has been waiting for you. Once you step through, there is no turning back.`n";
 
     public const MODES = "`n`vChoose how you dare to enter:`n"
-        . "`n`^Normal`v: you keep a map of every room you have explored, and you know where the exit lies."
+        . "`n`^Normal`v: you keep a map of every room you have explored, and you know where the exit lies. You also carry an escape rope: if you give up, you can climb out, but you leave without treasure and too tired to fight in the forest again today."
         . "`n`^Hardcore`v (twice the treasure): no map of the rooms, only a sense of where you stand and where the exit is."
         . "`n`^Extra Hardcore`v (three times the treasure): no map, no sense of direction. Only the room you stand in, and your wits."
         . "`n`nChoose wisely. Once the door closes, it does not open again...";
@@ -123,6 +123,17 @@ final class Narration
     public const NEWS_ESCAPED = "`% %s `5made it out of the Abandoned Castle alive, in %s moves!";
     public const FINISHED = "`2You found your way through the maze in `^%s`2 moves.`n";
     public const TREASURE = "`2Just inside the gate lies the treasure of the castle's last lord: `6%s gold`2 and `%%s gems`2. It is yours now.`n`n";
+
+    /** Normal mode only: giving up and climbing out costs the rest of the day's forest fights. */
+    public const ROPE_NAV = "Climb out on the escape rope";
+    public const ROPE_ESCAPE = "`2You have had enough. With shaking fingers you knot your escape rope around a rusted torch bracket and look for a way up. "
+        . "High above, a crack in the vaulted ceiling lets in a thin grey thread of daylight.`n`n"
+        . "The climb is long and miserable. The stones are slick with damp, the rope bites into your palms, and twice your boots slip and you hang there, "
+        . "swinging over the dark, listening to something below that has noticed you leaving. At last you haul yourself through the crack and roll out "
+        . "onto the wet grass outside the walls.`n`n"
+        . "`2You are alive, and that is all you take with you. The castle's treasure stays behind, and the climb has left you so drained that "
+        . "`\$you will not fight in the forest again today`2.`n`n";
+    public const NEWS_ROPE = "`% %s `5climbed out of the Abandoned Castle on a rope, empty-handed but alive.";
 
     public const MODE_HARDCORE = "`b`\$Hardcore Mode`0`b`n";
     public const MODE_EXTREME = "`b`\$Extra Hardcore Mode`0`b`n";

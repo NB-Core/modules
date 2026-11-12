@@ -10,7 +10,7 @@ class AbandonCastle
     {
         $info = [
             'name' => 'Abandoned Castle Maze',
-            'version' => '2.13',
+            'version' => '2.14',
             'author' => '`#Lonny Luberts modified by `2Oliver Brendel',
             'category' => 'PQcomp',
             'download' => 'http://www.pqcomp.com/modules/mydownloads/visit.php?cid=3&lid=28',
