@@ -128,7 +128,11 @@ require_once 'modules/abandoncastle/src/Narration.php';
         // First a second screen that asks whether the player really wants to give up.
         if ($op === 'rope' && httpget('confirm') !== '1'
                 && $session['abandoncastle']['mode'] === MapService::MODE_NORMAL && $umaze !== '') {
-                $back = (int) $locale;
+                // Back to the room the player stands in; the saved room covers a link without one.
+                $back = (int) ($locale !== '' ? $locale : $upqtemp);
+                if ($back < 1 || $back > Tiles::WIDTH * Tiles::HEIGHT) {
+                        $back = Tiles::ENTRANCE_INDEX + 1;
+                }
                 output(Narration::ROPE_CONFIRM);
                 addnav("Give up?");
                 addnav(Narration::ROPE_CONFIRM_YES, "runmodule.php?module=abandoncastle&op=rope&confirm=1&loc=$back");
