@@ -16,9 +16,6 @@ require_once 'modules/abandoncastle/src/Narration.php';
          $locale = (string) httpget('loc');
          $skill = (string) httpget('skill');
         $modeparam = (string) httpget('mode');
-        if ($modeparam !== '' && in_array($modeparam, ['hardcore', 'normal', 'extreme'], true)) {
-                set_module_pref('mode', $modeparam);
-        }
         $session['abandoncastle']['mode'] = get_module_pref('mode');
          if (is_module_active('potions')) {
                 set_module_pref('restrict', true, 'potions');
@@ -55,6 +52,11 @@ require_once 'modules/abandoncastle/src/Narration.php';
                 $op = '';
         }
         if ($op === 'enter') {
+                // The mode is chosen at the door and fixed for the whole run; a mode in any other link is ignored.
+                if (in_array($modeparam, ['hardcore', 'normal', 'extreme'], true)) {
+                        set_module_pref('mode', $modeparam);
+                        $session['abandoncastle']['mode'] = $modeparam;
+                }
                 output(Narration::ENTER);
                 if ($session['user']['hashorse']>0){
                         global $playermount;
