@@ -98,6 +98,19 @@
     box-shadow: inset 0 0 0 2px #3f9b4f;
 }
 
+/* A landmark the player has found: a small gold mark in the corner. */
+.ac-map td.ac-landmark .ac-box::after {
+    content: "";
+    position: absolute;
+    top: 8%;
+    right: 8%;
+    width: 22%;
+    height: 22%;
+    border-radius: 50%;
+    background: #e0b13a;
+    box-shadow: 0 0 0 1px #1b1815;
+}
+
 .ac-map td.ac-current {
     outline: 2px solid #4fd1e6;
     outline-offset: -2px;
@@ -144,6 +157,7 @@
 .ac-swatch-exit { background: #3f9b4f; }
 .ac-swatch-known { background: #cbb68b; }
 .ac-swatch-unknown { background: #3a3530; }
+.ac-swatch-landmark { background: #e0b13a; border-radius: 50%; }
 
 /* Maze editor */
 .ac-editor {

@@ -91,8 +91,9 @@ class MapService
      *
      * @param array<int, string> $maze
      * @param bool $revealAll Show every room, for the superuser map.
+     * @param array<int, string> $landmarks English landmark names by room index, named on known rooms.
      */
-    public function render(array $maze, int $currentLocale, string $mode = self::MODE_NORMAL, bool $revealAll = false): string
+    public function render(array $maze, int $currentLocale, string $mode = self::MODE_NORMAL, bool $revealAll = false, array $landmarks = []): string
     {
         if (!$revealAll && !self::hasMap($mode)) {
             return '';
@@ -110,7 +111,7 @@ class MapService
             $html .= '<tr>';
             for ($x = 0; $x < self::WIDTH; $x++) {
                 $index = $y * self::WIDTH + $x;
-                $html .= $this->cell($maze, $index, $current, $exits, $showRooms, $revealAll);
+                $html .= $this->cell($maze, $index, $current, $exits, $showRooms, $revealAll, $landmarks[$index] ?? null);
             }
             $html .= '</tr>';
         }
@@ -124,7 +125,7 @@ class MapService
      * @param array<int, string> $maze
      * @param list<int> $exits
      */
-    private function cell(array $maze, int $index, int $current, array $exits, bool $showRooms, bool $revealAll): string
+    private function cell(array $maze, int $index, int $current, array $exits, bool $showRooms, bool $revealAll, ?string $landmark = null): string
     {
         $letter = ltrim((string) ($maze[$index] ?? ''));
         $isCurrent = $index === $current;
@@ -139,6 +140,10 @@ class MapService
             $classes[] = 'ac-known';
             $content = Tiles::svg($letter, $index);
             $labels[] = self::t(Tiles::kind($letter));
+            if ($landmark !== null) {
+                $labels[] = self::t($landmark);
+                $classes[] = 'ac-landmark';
+            }
             $directions = Tiles::directionNames(Tiles::exits($letter, $index));
             if ($directions !== []) {
                 $labels[] = self::t('passages') . ' ' . implode(', ', array_map([self::class, 't'], $directions));
@@ -161,7 +166,8 @@ class MapService
             $content .= '<span class="ac-you" aria-hidden="true"></span>';
         }
 
-        return '<td class="' . implode(' ', $classes) . '"' . ($isCurrent ? ' aria-current="location"' : '') . '>'
+        $title = ($known && $landmark !== null) ? ' title="' . self::attr(self::t($landmark)) . '"' : '';
+        return '<td class="' . implode(' ', $classes) . '"' . $title . ($isCurrent ? ' aria-current="location"' : '') . '>'
             . '<div class="ac-box">' . $content . '</div>'
             . '<span class="ac-sr">' . self::esc(implode(', ', $labels)) . '</span></td>';
     }
@@ -207,6 +213,7 @@ class MapService
         ];
         if ($showRooms) {
             $items[] = ['ac-swatch ac-swatch-known', 'Explored room'];
+            $items[] = ['ac-swatch ac-swatch-landmark', 'Landmark'];
         }
         $items[] = ['ac-swatch ac-swatch-unknown', 'Unexplored'];
         $html = '<ul class="ac-legend" aria-label="' . self::attr(self::t('Legend')) . '">';

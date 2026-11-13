@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Shinobi\Modules\AbandonCastle;
 
 require_once __DIR__ . '/Narration.php';
+require_once __DIR__ . '/Scenery.php';
+require_once __DIR__ . '/Labyrinth.php';
+require_once __DIR__ . '/Bones.php';
 
 /**
  * Handles combat interactions inside the Abandoned Castle.
@@ -23,6 +26,11 @@ class FightController
     public function dispatch(string $op): void
     {
         \page_header('Maze Monster');
+
+        // Remember what the player is fighting, for the Minotaur's death and the bones left behind.
+        if (\in_array($op, ['ghost1', 'ghost2', 'bat', 'rat', 'minotaur'], true)) {
+            \set_module_pref('foe', $op);
+        }
 
         switch ($op) {
             case 'ghost1':
@@ -265,6 +273,10 @@ class FightController
 
             if ($victory) {
                 \output(Narration::VICTORY, $badguy['creaturename']);
+                if (\get_module_pref('foe') === 'minotaur') {
+                    \set_module_pref('minotaur', Labyrinth::NO_HUNTER);
+                    \output(Scenery::HUNT_SLAIN);
+                }
                 $badguy = [];
                 $session['user']['badguy'] = '';
                 $gold = \e_rand(50, 250);
@@ -277,6 +289,12 @@ class FightController
                 \addnav('Continue', 'runmodule.php?module=abandoncastle&loc=' . \get_module_pref('pqtemp'));
             } elseif ($defeat) {
                 \output(Narration::DEFEAT, $badguy['creaturename']);
+                $maze = explode(',', (string) \get_module_pref('maze'));
+                $room = (int) \get_module_pref('pqtemp') - 1;
+                if (\count($maze) === Tiles::WIDTH * Tiles::HEIGHT && $room >= 0 && $room < \count($maze)) {
+                    Bones::record(Labyrinth::key($maze), $room, $session['user']['name'],
+                        \get_module_pref('foe') === 'minotaur' ? 'minotaur' : 'monster');
+                }
                 \addnews('`% %s`5 has been slain when %s encountered a %s in the Abandoned Castle.', $session['user']['name'], ($session['user']['sex'] ? \translate_inline('she') : \translate_inline('he')), $badguy['creaturename']);
                 $badguy = [];
                 $session['user']['badguy'] = '';
