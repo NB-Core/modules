@@ -266,16 +266,17 @@ final class Labyrinth
     }
 
     /**
-     * Walking distance to the nearest exit, or null if none can be reached.
+     * The nearest exit that can be walked to, with its walking distance, or null if none can.
      *
      * @param list<string> $maze
+     * @return array{0:int,1:int}|null [exit room index, distance]
      */
-    public static function exitDistance(array $maze, int $from): ?int
+    public static function nearestExit(array $maze, int $from): ?array
     {
         $best = null;
         foreach (self::distances($maze, $from) as $index => $distance) {
-            if (Tiles::isExit(ltrim((string) $maze[$index])) && ($best === null || $distance < $best)) {
-                $best = $distance;
+            if (Tiles::isExit(ltrim((string) $maze[$index])) && ($best === null || $distance < $best[1])) {
+                $best = [$index, $distance];
             }
         }
         return $best;

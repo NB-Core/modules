@@ -117,13 +117,13 @@ final class Choices
                 }
                 $user['gems']--;
                 $index = $locale - 1;
-                $distance = Labyrinth::exitDistance($maze, $index);
-                $exit = array_search(Tiles::EXIT, array_map('ltrim', $maze), true);
-                if ($distance === null || $exit === false) {
+                // Bearing and distance both to the nearest exit that can actually be walked to.
+                $exit = Labyrinth::nearestExit($maze, $index);
+                if ($exit === null) {
                     \output(Scenery::SHRINE_LOST);
                     break;
                 }
-                \output(Scenery::SHRINE_ANSWER, \translate_inline(MapService::bearing($index, (int) $exit)), $distance);
+                \output(Scenery::SHRINE_ANSWER, \translate_inline(MapService::bearing($index, $exit[0])), $exit[1]);
                 break;
             case 'riddle':
                 if (!preg_match('/^answer([0-9])$/', $pick, $match)) {
