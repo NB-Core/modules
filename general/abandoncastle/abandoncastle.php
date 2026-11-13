@@ -4,12 +4,20 @@ use Shinobi\Modules\AbandonCastle\FightController;
 use Shinobi\Modules\AbandonCastle\MazeRepository;
 use Shinobi\Modules\AbandonCastle\Tiles;
 use Shinobi\Modules\AbandonCastle\Narration;
+use Shinobi\Modules\AbandonCastle\Scenery;
+use Shinobi\Modules\AbandonCastle\Labyrinth;
+use Shinobi\Modules\AbandonCastle\Bones;
+use Shinobi\Modules\AbandonCastle\Choices;
 
 require_once 'modules/abandoncastle/src/MapService.php';
 require_once 'modules/abandoncastle/src/FightController.php';
 require_once 'modules/abandoncastle/src/MazeRepository.php';
 require_once 'modules/abandoncastle/src/Tiles.php';
 require_once 'modules/abandoncastle/src/Narration.php';
+require_once 'modules/abandoncastle/src/Scenery.php';
+require_once 'modules/abandoncastle/src/Labyrinth.php';
+require_once 'modules/abandoncastle/src/Bones.php';
+require_once 'modules/abandoncastle/src/Choices.php';
         global $session;
         global $badguy;
          $op = (string) httpget('op');
@@ -75,6 +83,8 @@ require_once 'modules/abandoncastle/src/Narration.php';
                         $maze = $mazes[array_rand($mazes)];
                         $umaze = implode(",",$maze);
                         set_module_pref("maze", $umaze);
+                        set_module_pref('minotaur', Labyrinth::hunterStart(array_values($maze), e_rand(0, 9999)));
+                        set_module_pref('choice', '');
                         if (!get_module_pref('super')){
                         set_module_pref("enteredtoday", true);
                         }
@@ -152,6 +162,8 @@ require_once 'modules/abandoncastle/src/Narration.php';
                         addnews(Narration::NEWS_ROPE, $session['user']['name']);
                         $session['user']['turns'] = 0;
                         set_module_pref('maze', "");
+                        set_module_pref('minotaur', Labyrinth::NO_HUNTER);
+                        set_module_pref('choice', '');
                         set_module_pref('mazeturn', 0);
                         set_module_pref('pqtemp', "");
                         set_module_pref('mapdata', '');
@@ -163,6 +175,13 @@ require_once 'modules/abandoncastle/src/Narration.php';
                         page_footer();
                         return;
                 }
+                $op = '';
+        }
+
+        // The answer to a choice the castle offered in this room.
+        $quietVisit = false;
+        if ($op === 'choice') {
+                $quietVisit = Choices::resolve((string) httpget('pick'), (int) $locale, explode(",", $umaze));
                 $op = '';
         }
 
@@ -203,8 +222,38 @@ require_once 'modules/abandoncastle/src/Narration.php';
 			}
 			$navigate=ltrim($maze[$i]);
 			output("`4");
-			if ($navigate <> "z"){
-				switch(e_rand($umazeturn,2500)){
+			$index = (int) $locale - 1;
+			$mazeKey = Labyrinth::key($maze);
+			$hunter = get_module_pref('minotaur');
+			$hunter = $hunter === '' ? Labyrinth::NO_HUNTER : (int) $hunter;
+			if (Tiles::isPassage($navigate)) {
+				// What the room looks like: a landmark, light, smell, a detail, and what you hear right now.
+				$scenery = array_map('translate_inline', Labyrinth::scenery($maze, $index, Labyrinth::sound($index, e_rand(0, 7))));
+				output_notl("%s`n`n", implode(' ', $scenery));
+				foreach (Bones::in($mazeKey, $index) as $bone) {
+					output(Scenery::BONES, $bone['n'], translate_inline(Scenery::BONES_HOW[$bone['h']] ?? Scenery::BONES_HOW['monster']));
+					output_notl("`n`n");
+				}
+				// The Minotaur hunts: walking into it, or it into you, means a fight.
+				if (!$quietVisit && $hunter >= 0) {
+					// It is slower than you: about one move in three it stands and listens instead.
+					if ($hunter !== $index && e_rand(0, 2) > 0) {
+						$hunter = Labyrinth::hunterStep($maze, $hunter, $index, e_rand(0, 99), e_rand(0, 99));
+						set_module_pref('minotaur', $hunter);
+					}
+					if ($hunter === $index) {
+						$umazeturn++;
+						set_module_pref('mazeturn', $umazeturn);
+						redirect("runmodule.php?module=abandoncastle&op=minotaur");
+					}
+				}
+			}
+			$roll = $quietVisit ? 0 : e_rand($umazeturn, 2500);
+			if ($navigate <> "z" && $roll >= 1001 && $roll <= 1100 && Tiles::isPassage($navigate)) {
+				// A choice instead of something simply happening.
+				Choices::offer(Choices::KINDS[intdiv($roll - 1001, 25)], (int) $locale);
+			} elseif ($navigate <> "z" && !$quietVisit){
+				switch($roll){
 					case 1:
 					case 2:
 					case 3:
@@ -676,6 +725,7 @@ require_once 'modules/abandoncastle/src/Narration.php';
 					output(Narration::SPIKES_FLOOR);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
+					Bones::record($mazeKey, $index, $session['user']['name'], 'spikes');
 					if (is_module_active("morgue")){
 						$diedhow = translate_inline(Narration::MORGUE['spikes']);
 						set_module_pref("died",$diedhow,"morgue");
@@ -724,7 +774,15 @@ require_once 'modules/abandoncastle/src/Narration.php';
 					break;
 				case 2495:
 				case 2496:
-					redirect("runmodule.php?module=abandoncastle&op=minotaur");
+					// The hunter catches your scent and comes running; if it is dead, only an echo remains.
+					$adjacent = array_values(array_filter(Labyrinth::neighbours($maze, $index), static fn (int $next): bool => Tiles::isPassage(ltrim($maze[$next]))));
+					if ($hunter >= 0 && $adjacent !== []) {
+						$hunter = $adjacent[e_rand(0, count($adjacent) - 1)];
+						set_module_pref('minotaur', $hunter);
+						output(Scenery::HUNT_SCENT);
+					} else {
+						output(Narration::GROWL_FAR);
+					}
 					break;
 				case 2497:
 				case 2498:
@@ -732,6 +790,7 @@ require_once 'modules/abandoncastle/src/Narration.php';
 					output(Narration::SPIKES_WALL);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
+					Bones::record($mazeKey, $index, $session['user']['name'], 'spikes');
 					if (is_module_active("morgue")){
 						$diedhow = translate_inline(Narration::MORGUE['spikes']);
 						set_module_pref("died",$diedhow,"morgue");
@@ -746,6 +805,7 @@ require_once 'modules/abandoncastle/src/Narration.php';
 					output(Narration::BEHEADED);
 					$session['user']['hitpoints']=0;
 					$session['user']['alive']=false;
+					Bones::record($mazeKey, $index, $session['user']['name'], 'beheaded');
 					if (is_module_active("morgue")){
 						$diedhow = translate_inline(Narration::MORGUE['beheaded']);
 						set_module_pref("died",$diedhow,"morgue");
@@ -754,6 +814,21 @@ require_once 'modules/abandoncastle/src/Narration.php';
 					$session['user']['gold']=0;
 					addnews(Narration::NEWS_LOST, $session['user']['name']);
 					break;
+				}
+			}
+			if (!$quietVisit && $hunter >= 0 && Tiles::isPassage($navigate) && $session['user']['hitpoints'] > 0) {
+				$bearing = Labyrinth::hunterBearing($maze, $hunter, $index);
+				if ($bearing !== null) {
+					[$distance, $way] = $bearing;
+					$wayName = translate_inline(['N' => 'north', 'S' => 'south', 'W' => 'west', 'E' => 'east'][$way] ?? 'dark');
+					output_notl("`n");
+					if ($distance === 1) {
+						output(Narration::pick(Scenery::HUNT_ADJACENT), $wayName);
+					} elseif ($distance <= 3) {
+						output(Narration::pick(Scenery::HUNT_NEAR), $wayName);
+					} elseif ($distance <= 6 && e_rand(0, 1)) {
+						output(Narration::pick(Scenery::HUNT_FAR));
+					}
 				}
 			}
 			output("`7");
@@ -841,7 +916,7 @@ require_once 'modules/abandoncastle/src/Narration.php';
 						addnav("Give up");
 						addnav(Narration::ROPE_NAV, "runmodule.php?module=abandoncastle&op=rope&loc=$locale");
 					}
-					$roomText = translate_inline(Narration::room(Tiles::kind($navigate), $index === Tiles::ENTRANCE_INDEX)) . ' '
+					$roomText = translate_inline(Labyrinth::kindSentence($maze, $index, Tiles::kind($navigate))) . ' '
 						. ($directions === []
 							? translate_inline("There is no way on.")
 							: sprintf(
@@ -852,7 +927,7 @@ require_once 'modules/abandoncastle/src/Narration.php';
 							));
 					rawoutput("<div class='ac-view'>" . MapService::renderRoom($navigate, $index)
 						. "<p class='ac-room-text'>" . htmlspecialchars($roomText, ENT_QUOTES, 'UTF-8') . "</p>"
-						. $mapService->render($maze, (int) $locale, $mode)
+						. $mapService->render($maze, (int) $locale, $mode, false, array_map(static fn (int $l): string => Scenery::LANDMARKS[$l][0], Labyrinth::landmarks($maze)))
 						. "</div>");
 				}else{
 					set_module_pref('mapdata', '');
@@ -861,6 +936,7 @@ require_once 'modules/abandoncastle/src/Narration.php';
 				}
 				if (get_module_pref('super')){
 					output("`nSuperuser Map`n");
+					output_notl("Minotaur: %s`n", $hunter >= 0 ? MapService::coordinateName($hunter) : '-');
 					rawoutput($mapService->render($maze, (int) $locale, MapService::MODE_NORMAL, true));
 					$exit = array_search(Tiles::EXIT, array_map('ltrim', $maze), true);
 					if ($exit !== false) {
@@ -897,6 +973,8 @@ require_once 'modules/abandoncastle/src/Narration.php';
 				$session['user']['gold']+=$reward;
 				$session['user']['gems']+=$gemreward;
                                 set_module_pref('maze',"");
+                                set_module_pref('minotaur', Labyrinth::NO_HUNTER);
+                                set_module_pref('choice', '');
                                 set_module_pref('mazeturn', 0);
                                 set_module_pref('pqtemp',"");
                                 set_module_pref('mapdata', '');

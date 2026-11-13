@@ -10,7 +10,7 @@ class AbandonCastle
     {
         $info = [
             'name' => 'Abandoned Castle Maze',
-            'version' => '2.14',
+            'version' => '2.15',
             'author' => '`#Lonny Luberts modified by `2Oliver Brendel',
             'category' => 'PQcomp',
             'download' => 'http://www.pqcomp.com/modules/mydownloads/visit.php?cid=3&lid=28',
@@ -25,12 +25,16 @@ class AbandonCastle
                 'super' => 'Superuser Features,bool|0',
                 'mode' => 'Game mode,enum,hardcore,normal,extreme|hardcore',
                 'mapdata' => 'Serialized map data|',
+                'minotaur' => 'Room the Minotaur is in (-1: none),int|-1',
+                'choice' => 'Pending choice in the castle,viewonly|',
+                'foe' => 'Monster currently being fought,viewonly|',
             ],
             'settings' => [
                 'Abandoned Castle Settings,title',
                 'castleloc' => 'Where does the Abandonded Castle appear,location|' . \getsetting('villagename', \LOCATION_FIELDS),
                 'dkenter' => 'Minimum Number of Dragon Kills to Enter Castle,range,0,100,1|9',
                 'forestvil' => 'Yes = Forest Event No = Village Nav,bool|0',
+                'bones' => 'Bones of players who died in the castle (JSON),viewonly|',
             ],
         ];
 
