@@ -291,7 +291,7 @@ class FightController
                 \output(Narration::DEFEAT, $badguy['creaturename']);
                 $maze = explode(',', (string) \get_module_pref('maze'));
                 $room = (int) \get_module_pref('pqtemp') - 1;
-                if (\count($maze) === Tiles::WIDTH * Tiles::HEIGHT && $room >= 0) {
+                if (\count($maze) === Tiles::WIDTH * Tiles::HEIGHT && $room >= 0 && $room < \count($maze)) {
                     Bones::record(Labyrinth::key($maze), $room, $session['user']['name'],
                         \get_module_pref('foe') === 'minotaur' ? 'minotaur' : 'monster');
                 }
