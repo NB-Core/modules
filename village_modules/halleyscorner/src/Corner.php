@@ -119,11 +119,11 @@ final class Corner
     {
         \output(Texts::MENU_INTRO);
         if ($this->travelling()) {
-            \output(Texts::MENU_ROOTBEER, $this->setting('cost'), $this->setting('gain'));
+            \output(Texts::MENU_ROOTBEER, $this->halley, $this->setting('cost'), $this->setting('gain'));
             \output(Texts::MENU_BREW, $this->setting('brewcost'), $this->setting('brewgain'));
         }
         \output(Texts::MENU_TEA, $this->setting('teacost'));
-        \output(Texts::MENU_WATER);
+        \output(Texts::MENU_WATER, $this->halley);
         if ($this->travelling()) {
             \output(Texts::MENU_LIMIT, (int) \get_module_pref('drinkstoday', self::MODULE), $this->setting('dailylimit'));
         } else {
@@ -139,7 +139,7 @@ final class Corner
         \addnav(Texts::NAV_ORDERS);
         if ($this->travelling()) {
             if ($pvp >= $this->setting('cost')) {
-                \addnav([Texts::NAV_ROOTBEER, $this->setting('cost')], self::URL . '&op=rootbeer');
+                \addnav([Texts::NAV_ROOTBEER, $this->halley, $this->setting('cost')], self::URL . '&op=rootbeer');
             }
             if ($pvp >= $this->setting('brewcost') && !\get_module_pref('brewtoday', self::MODULE)) {
                 \addnav([Texts::NAV_BREW, $this->setting('brewcost')], self::URL . '&op=brew');
@@ -151,8 +151,8 @@ final class Corner
         \addnav(Texts::NAV_WATER, self::URL . '&op=water');
 
         \addnav(Texts::NAV_TALKS);
-        \addnav(Texts::NAV_GOSSIP, self::URL . '&op=gossip');
-        \addnav(Texts::NAV_PAST, self::URL . '&op=past');
+        \addnav([Texts::NAV_GOSSIP, $this->halley], self::URL . '&op=gossip');
+        \addnav([Texts::NAV_PAST, $this->halley], self::URL . '&op=past');
         \addnav(Texts::NAV_STORY, self::URL . '&op=story');
 
         \addnav(Texts::NAV_OTHER);
@@ -233,7 +233,7 @@ final class Corner
         \output(self::pick(Texts::TEA), $this->halley);
         \output(Texts::TEA_RESULT, $healed);
         $this->pvpLeft();
-        \debuglog("traded $cost pvp for Halley's tea, healed $healed");
+        \debuglog("traded $cost pvp for the Corner's tea, healed $healed");
     }
 
     /**
@@ -264,7 +264,7 @@ final class Corner
         global $session;
         $session['user']['playerfights'] -= $cost;
         \increment_module_pref('traveltoday', -$gain, 'cities');
-        \debuglog("traded $cost pvp for $gain travels at Halley's Corner");
+        \debuglog("traded $cost pvp for $gain travels at the Corner");
     }
 
     private function stamp(): void
@@ -274,7 +274,7 @@ final class Corner
             $bonus = $this->setting('cardbonus');
             \increment_module_pref('traveltoday', -$bonus, 'cities');
             \output(Texts::CARD_FULL, $this->halley, $bonus);
-            \debuglog("full stamp card at Halley's Corner, $bonus extra travels");
+            \debuglog("full stamp card at the Corner, $bonus extra travels");
             $stamps = 0;
         }
         \set_module_pref('stamps', $stamps, self::MODULE);
@@ -375,12 +375,12 @@ final class Corner
         $motifText = \translate_inline($motif);
         \systemmail(
             (int) $row['acctid'],
-            [Texts::POSTCARD_SUBJECT],
-            [Texts::POSTCARD_BODY, $session['user']['name'], $motifText, $text],
+            [Texts::POSTCARD_SUBJECT, $this->halley],
+            [Texts::POSTCARD_BODY, $session['user']['name'], $motifText, $text, $this->halley, (string) \get_module_setting('location', self::MODULE)],
             (int) $session['user']['acctid']
         );
         \output(Texts::POSTCARD_SENT, $this->halley, $row['name'], $motifText);
-        \debuglog("sent a postcard from Halley's Corner to {$row['acctid']} for $cost gold");
+        \debuglog("sent a postcard from the Corner to {$row['acctid']} for $cost gold");
     }
 
     private function postcardsLeft(): int

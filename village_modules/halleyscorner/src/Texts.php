@@ -29,11 +29,11 @@ final class Texts
             "`3Morning mist still clings to the village square when you push open the door of %s`3's Corner. Inside, a kettle sings on the stove, and someone has opened the back window so that the cool air carries in the sound of the market setting up: wooden stalls, shouted prices, a cart that needs oiling.",
         ],
         'day' => [
-            "`3%s`3's Corner is busy at this hour. Genin teams back from D-rank missions argue over who caught the cat, a merchant from the Land of Waves haggles over the price of a room, and the noon light falls warm through the paper screens. Over the hubbub you can hear the clink of glasses and Halley's laugh from behind the bar.",
+            "`3%1\$s`3's Corner is busy at this hour. Genin teams back from D-rank missions argue over who caught the cat, a merchant from the Land of Waves haggles over the price of a room, and the noon light falls warm through the paper screens. Over the hubbub you can hear the clink of glasses and %1\$s`3's laugh from behind the bar.",
             "`3The door swings shut behind you, and the heat and noise of the market fall away. %s`3's Corner is cool and dim at midday, with the windows shaded by bamboo blinds. A pair of shinobi from the Hidden Sand sit by the wall, still in their travelling cloaks, and the smell of sesame and ginger drifts out of the kitchen.",
         ],
         'evening' => [
-            "`3Paper lanterns glow in red and gold along the eaves of %s`3's Corner as evening settles over Konoha. Inside, someone is plucking a shamisen in the corner, not very well, and nobody minds. The tables are full of travellers telling each other where they have been, each story a little taller than the last.",
+            "`3Paper lanterns glow in red and gold along the eaves of %s`3's Corner as evening settles over the village. Inside, someone is plucking a shamisen in the corner, not very well, and nobody minds. The tables are full of travellers telling each other where they have been, each story a little taller than the last.",
             "`3By the time you step through the door, the lamps are lit and the Corner is warm with voices. Through the windows the Hokage Monument catches the last red light of the sun. %s`3 moves between the tables with a tray balanced on one hand, and somehow every glass is full before it is empty.",
         ],
         'night' => [
@@ -86,20 +86,19 @@ final class Texts
 
     // The drinks.
 
-    public const MENU_HEADER = "Halley's menu";
     public const MENU_INTRO = "`n`n`3A slate board above the bar lists the drinks of the house in neat, round handwriting:`n";
-    /** %s, %s: PvP cost, travels gained. */
-    public const MENU_ROOTBEER = "`n`t- `^Halley's Root Beer`t: costs `\$%s`t PvP, gives `@%s`t travel(s).";
+    /** %s, %s, %s: owner, PvP cost, travels gained. */
+    public const MENU_ROOTBEER = "`n`t- `^%s`^'s Root Beer`t: costs `\$%s`t PvP, gives `@%s`t travel(s).";
     /** %s, %s: PvP cost, travels gained. */
     public const MENU_BREW = "`n`t- `^Wanderer's Brew`t: costs `\$%s`t PvP, gives `@%s`t travels. Once a day.";
     /** %s: PvP cost. */
     public const MENU_TEA = "`n`t- `^Still Water Tea`t: costs `\$%s`t PvP, mends wounds and calms the mind. Once a day.";
-    public const MENU_WATER = "`n`t- `^Water`t: free. Halley's opinion of you: also free.";
+    public const MENU_WATER = "`n`t- `^Water`t: free. %s`t's opinion of you: also free.";
     /** %s, %s: drinks had today, daily limit. */
     public const MENU_LIMIT = "`n`n`7(You have had `&%s`7 of `&%s`7 travel drinks today.)";
     public const NO_CITIES = "`n`n`7The travel drinks are off the menu for now: nobody is travelling anywhere at the moment.";
 
-    public const NAV_ROOTBEER = "Order Halley's Root Beer (%s PvP)";
+    public const NAV_ROOTBEER = "Order %s`0's Root Beer (%s PvP)";
     public const NAV_BREW = "Order the Wanderer's Brew (%s PvP)";
     public const NAV_TEA = "Order Still Water Tea (%s PvP)";
     public const NAV_WATER = "Ask for a glass of water";
@@ -135,7 +134,7 @@ final class Texts
     public const TEA_DONE = "`3%s`3 smiles but does not reach for the pot. `#\"Calm is not something you can drink twice in one day. Come back tomorrow.\"";
     public const TEA_BUFF_NAME = "`2Still Water Calm";
     public const TEA_BUFF_ROUND = "`2Your mind is still, and you see the blow coming before it lands.";
-    public const TEA_BUFF_END = "`2The calm of Halley's tea slowly fades.";
+    public const TEA_BUFF_END = "`2The calm of the tea slowly fades.";
 
     /** @var list<string> */
     public const WATER = [
@@ -156,8 +155,8 @@ final class Texts
 
     // Talking to Halley.
 
-    public const NAV_GOSSIP = "Ask Halley for news";
-    public const NAV_PAST = "Ask Halley about herself";
+    public const NAV_GOSSIP = "Ask %s`0 for news";
+    public const NAV_PAST = "Ask %s`0 about herself";
     public const NAV_STORY = "Listen to the storyteller by the fire";
     public const NAV_TALK = "Converse with patrons";
     public const NAV_BOARD = "Read the travel board";
@@ -183,7 +182,7 @@ final class Texts
      * @var list<array{0:int,1:string}>
      */
     public const PAST = [
-        [1, "`3%s`3 laughs when you ask. `#\"Me? There is not much to tell. I pour drinks, I listen, I throw out anyone who draws a blade. That is all you need to know about Halley.\"`3 But something in the way she says it makes you think there is more."],
+        [1, "`3%s`3 laughs when you ask. `#\"Me? There is not much to tell. I pour drinks, I listen, I throw out anyone who draws a blade. That is all you need to know about me.\"`3 But something in the way she says it makes you think there is more."],
         [5, "`3%s`3 is quiet for a moment, turning a glass in her hands. `#\"I was a kunoichi once,\"`3 she says at last. `#\"Chuunin. Not a good one, not a bad one. I could throw a kunai through a keyhole at thirty paces. Does that surprise you?\"`3 She smiles. `#\"It surprises me too, these days.\""],
         [10, "`#\"I served in the Third Great Shinobi War,\"`3 %s`3 says, very softly so the other tables cannot hear. `#\"Three of us went out on a mission to the Land of Rain. One of us came back. After that, I could not hold a blade without my hands shaking. So I put it down, and I never picked it up again.\""],
         [20, "`#\"The root beer is my grandmother's recipe,\"`3 %s`3 tells you, nodding towards the old barrel with the Land of Tea stamp. `#\"She ran a teahouse on a mountain pass, where the couriers stopped. She used to say a person who wants to see the world does not want to destroy it. When I came home from the war, that was the only thing anybody said to me that made sense.\""],
@@ -207,7 +206,7 @@ final class Texts
         "`&\"In the Land of Waves,\"`7 the old man says, `&\"there was a bridge builder who would not stop building, even when a gang of thugs threatened to kill him. A little team of Leaf genin protected him. When the bridge was finished, the people named it after the loudest of those children. That is how you earn a bridge, young one. You refuse to give up.\"",
         "`&\"Tea ceremonies in the Land of Tea,\"`7 the old man says, `&\"used to take three days. Three days! The tea master would not even boil the water until everyone had stopped arguing. Some wars ended in those teahouses, because nobody could stay angry for three days without a single cup.\"",
         "`&\"They say the Hidden Mist was once called the Bloody Mist,\"`7 the old man says, lowering his voice. `&\"To graduate from their academy, the students had to fight each other. To the death. Then one year a boy who was not even a student walked in and killed every graduate. After that, they changed the rules.\"`7 He shrugs. `&\"Sometimes change comes from strange places.\"",
-        "`&\"Do you know why we call it the Will of Fire?\"`7 the old man asks. `&\"Because a fire does not care who lit it. It warms everyone who sits near it. That is what the First Hokage wanted for the village. Not a fortress. A hearth.\"`7 He nods at the fireplace, then at Halley behind the bar. `&\"Some people understand that better than others.\"",
+        "`&\"Do you know why we call it the Will of Fire?\"`7 the old man asks. `&\"Because a fire does not care who lit it. It warms everyone who sits near it. That is what the First Hokage wanted for the village. Not a fortress. A hearth.\"`7 He nods at the fireplace, then at the woman behind the bar. `&\"Some people understand that better than others.\"",
     ];
 
     // The travel board.
@@ -230,7 +229,7 @@ final class Texts
         'bridge' => 'the Great Naruto Bridge in morning fog',
         'mist' => 'the misty harbour of the Hidden Mist',
         'cloud' => 'the thunder peaks of the Land of Lightning',
-        'corner' => "Halley's Corner itself, with lanterns lit",
+        'corner' => 'the Corner itself, with its lanterns lit',
     ];
     public const POSTCARD_TO = "Who should receive it (character login name)?";
     public const POSTCARD_MOTIF = "Which picture?";
@@ -243,9 +242,10 @@ final class Texts
     public const POSTCARD_LIMIT = "`3%s`3 laughs. `#\"The post-hawk has carried enough of your letters for one day. He has a union, you know.\"";
     /** %s, %s, %s: Halley, recipient, motif. */
     public const POSTCARD_SENT = "`3You write your message, and %s`3 seals the card with a drop of wax shaped like a leaf. A sleek brown hawk takes it from her hand at the window and is gone over the rooftops. Your postcard to %s`3, with a picture of %s, is on its way.";
-    public const POSTCARD_SUBJECT = "`3A postcard from Halley's Corner";
-    /** %s, %s, %s: sender, motif, message. */
-    public const POSTCARD_BODY = "`3A post-hawk drops a hand-painted postcard on your windowsill. On the front: %2\$s. On the back, in a hurried hand:`n`n`&%3\$s`n`n`3- %1\$s`3, sent from Halley's Corner in Konoha.";
+    /** %s: owner. */
+    public const POSTCARD_SUBJECT = "`3A postcard from %s`3's Corner";
+    /** %s, %s, %s, %s, %s: sender, motif, message, owner, village. */
+    public const POSTCARD_BODY = "`3A post-hawk drops a hand-painted postcard on your windowsill. On the front: %2\$s. On the back, in a hurried hand:`n`n`&%3\$s`n`n`3- %1\$s`3, sent from %4\$s`3's Corner in %5\$s.";
 
     public const NAV_BACK = "Back to %s`0";
     public const NAV_ORDERS = "Drinks";
