@@ -368,6 +368,8 @@ final class Corner
             return;
         }
 
+        // systemmail() is not loaded by default.
+        require_once 'lib/systemmail.php';
         $session['user']['gold'] -= $cost;
         \increment_module_pref('postcardstoday', 1, self::MODULE);
         $motifText = \translate_inline($motif);
