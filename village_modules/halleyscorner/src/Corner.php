@@ -6,6 +6,7 @@ namespace Shinobi\Modules\HalleysCorner;
 
 require_once __DIR__ . '/Texts.php';
 
+use Lotgd\MySQL\Database;
 use Lotgd\Security\Csrf;
 
 /**
@@ -370,9 +371,10 @@ final class Corner
         $motif = Texts::MOTIFS[$motifKey] ?? array_values(Texts::MOTIFS)[0];
 
         $login = trim(stripslashes((string) \httppost('to')));
-        $sql = "SELECT acctid, name FROM " . \db_prefix('accounts')
-            . " WHERE login = '" . \db_real_escape_string($login) . "' LIMIT 1";
-        $row = $login === '' ? false : \db_fetch_assoc(\db_query($sql));
+        $row = $login === '' ? false : Database::getDoctrineConnection()->fetchAssociative(
+            'SELECT acctid, name FROM ' . Database::prefix('accounts') . ' WHERE login = :login LIMIT 1',
+            ['login' => $login]
+        );
         if (!$row) {
             \output(Texts::POSTCARD_NOT_FOUND, $this->halley);
             return;
