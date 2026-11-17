@@ -239,6 +239,7 @@ final class Texts
     public const POSTCARD_SELF = "`3%s`3 raises an eyebrow. `#\"Sending a postcard to yourself? I know you are lonely on the road, but really.\"";
     public const POSTCARD_EMPTY = "`3%s`3 turns the card over. `#\"You have not written anything. A blank postcard just says 'I forgot about you' very politely.\"";
     public const POSTCARD_GOLD = "`3You count your coins and come up short. %s`3 pats your hand. `#\"Another day.\"";
+    public const POSTCARD_EXPIRED = "`3%s`3 picks up the card, frowns at the smudged ink, and drops it back on the rack. `#\"This one has been lying around too long. Write it again and I will send it straight away.\"";
     public const POSTCARD_LIMIT = "`3%s`3 laughs. `#\"The post-hawk has carried enough of your letters for one day. He has a union, you know.\"";
     /** %s, %s, %s: Halley, recipient, motif. */
     public const POSTCARD_SENT = "`3You write your message, and %s`3 seals the card with a drop of wax shaped like a leaf. A sleek brown hawk takes it from her hand at the window and is gone over the rooftops. Your postcard to %s`3, with a picture of %s, is on its way.";

@@ -6,6 +6,8 @@ namespace Shinobi\Modules\HalleysCorner;
 
 require_once __DIR__ . '/Texts.php';
 
+use Lotgd\Security\Csrf;
+
 /**
  * Halley's Corner: a quiet tavern where travellers trade the urge to fight
  * for the urge to wander.
@@ -21,6 +23,7 @@ final class Corner
     private const URL = 'runmodule.php?module=halleyscorner';
     private const STAMPS_PER_CARD = 10;
     private const POSTCARD_LENGTH = 300;
+    private const CSRF_SCOPE = 'module:halleyscorner';
 
     /** Visits needed before Halley treats you as known, a regular, a friend. */
     private const TIERS = ['friend' => 40, 'regular' => 15, 'known' => 5, 'stranger' => 0];
@@ -317,7 +320,8 @@ final class Corner
         }
         $action = self::URL . '&op=postcard_send';
         \addnav('', $action);
-        \rawoutput("<form action='" . htmlspecialchars($action, ENT_QUOTES) . "' method='POST'>");
+        \rawoutput("<form action='" . htmlspecialchars($action, ENT_QUOTES) . "' method='POST'>"
+            . (class_exists(Csrf::class) ? Csrf::hiddenField(self::CSRF_SCOPE) : ''));
         \rawoutput("<p><label for='hc-to'>" . self::esc(\translate_inline(Texts::POSTCARD_TO)) . "</label><br>"
             . "<input id='hc-to' name='to' maxlength='50' required></p>");
         \rawoutput("<fieldset><legend>" . self::esc(\translate_inline(Texts::POSTCARD_MOTIF)) . "</legend>");
@@ -336,6 +340,16 @@ final class Corner
     private function postcardSend(): void
     {
         global $session;
+
+        // The form carries a token, so a postcard (and its gold) can only be sent from the Corner's own form.
+        // Lotgd\Security\Csrf came with the core of September 2026; an older core gets the POST check alone.
+        $valid = class_exists(Csrf::class)
+            ? Csrf::validatePostRequest(self::CSRF_SCOPE)
+            : ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
+        if (!$valid) {
+            \output(Texts::POSTCARD_EXPIRED, $this->halley);
+            return;
+        }
 
         if ($this->postcardsLeft() < 1) {
             \output(Texts::POSTCARD_LIMIT, $this->halley);
