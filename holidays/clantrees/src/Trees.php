@@ -72,7 +72,7 @@ final class Trees
         }
         $clanid = (int) $session['user']['clanid'];
         $detail = \httpget('detail');
-        if (\httpget('op') !== '' || ($detail && (int) $detail !== $clanid) || !self::isMember()) {
+        if ((string) \httpget('op') !== '' || ($detail && (int) $detail !== $clanid) || !self::isMember()) {
             return;
         }
         $hasTree = self::hasTree($clanid);
