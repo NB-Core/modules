@@ -8,7 +8,7 @@ function akatsuki_getmoduleinfo()
 	$info = array(
 	"name"=>"The Akatsuki - Swift and Sharp",
 	"author"=>"`2Oliver Brendel",
-	"version"=>"1.0",
+	"version"=>"1.1",
 	"category"=>"Travel Specials",
 	"download"=>"http://dragonprime.net/dls/akatsuki.zip",
 	"settings"=>array(
@@ -17,7 +17,9 @@ function akatsuki_getmoduleinfo()
 	"name"=>"Name (coloured) of the organization they are from,text|`4A`\$N`2B`4U",
 	"overwhelm"=>"1 in x chance they are really really strong,floatrange,2,25,1|6",
 	"chiefname"=>"Name of the overwhelming leader,text|`QK`^a`tk`Ea`)s`@h`%i",
-	"experienceloss"=>"Percentage: How many experience is lost after a fight,floatrange,1,100,1|10",
+	"experienceloss"=>"Percentage: How many experience is lost after a fight,floatrange,0,100,1|5",
+	"goldloss"=>"Percentage: How much of the carried gold is lost after a fight,floatrange,0,100,1|50",
+	"Name and leader come from the punishers module when it is active (Hunter-nin for Iwagakure and its evilvillages),note",
 	),
 	"prefs"=>array(
 		"The akatsuki,title",
@@ -63,12 +65,13 @@ function akatsuki_runevent($type,$link)
 	$op = httpget('op');
 	$akatsuki=get_module_setting("name");
 	$chief=get_module_setting("chiefname");
-	if ($city=='Iwagakure' && is_module_active('evil_punishers')) {
-		$akatsuki=get_module_setting("name","evil_punishers");
-		$chief=get_module_setting("chiefname","evil_punishers");
-	}elseif ($city!='Iwagakure' && is_module_active('punishers')) {
-		$akatsuki=get_module_setting("name","punishers");
-		$chief=get_module_setting("chiefname","punishers");
+	// The guards come from the punishers module: the Hunter-nin around Iwagakure
+	// and the villages in its evilvillages setting, the ANBU everywhere else.
+	$hunters = false;
+	if (is_module_active('punishers')) {
+		require_once("modules/punishers.php");
+		$hunters = ($city=='Iwagakure' || \Shinobi\Modules\Punishers\Patrol::isHunterVillage($city));
+		[$akatsuki, $chief] = \Shinobi\Modules\Punishers\Patrol::names($hunters);
 	}
 	switch ($op)
 	{
@@ -130,7 +133,7 @@ function akatsuki_runevent($type,$link)
 //			$extraatt=e_rand(10,$session['user']['dragonkills']+25);
 //			$extradef=e_rand(10,$session['user']['dragonkills']+25);
 			$badguy['creaturename']=$chief.translate_inline("`2 and ").$badguy['creaturename'];
-			if ($city!='Iwagakure') $badguy['creatureweapon']=translate_inline("One-eyed Mangekyou Sharingan and ").$badguy['creatureweapon'];
+			if (!$hunters) $badguy['creatureweapon']=translate_inline("One-eyed Mangekyou Sharingan and ").$badguy['creatureweapon'];
 				else $badguy['creatureweapon']=translate_inline("Two vicious whips and ").$badguy['creatureweapon'];
 
 		}
@@ -140,7 +143,8 @@ function akatsuki_runevent($type,$link)
 		$op = "combat";
 		httpset('op', $op);
 	case "combat": case "fight":
-		if (e_rand(1,3)) {
+		// Now and then a volley of kunai (it used to hit every single round).
+		if (!isset($session['bufflist']['punisher_kunais']) && e_rand(1,3)==1) {
 			apply_buff('punisher_kunais',
 				array(
 				"name"=>"`qKunais!",
@@ -166,12 +170,17 @@ function akatsuki_runevent($type,$link)
 			strip_buff('punisher_kunais');
 			$session['user']['badguy']="";
 	    }elseif ($defeat){ //but a loss of course if you die
-			$exploss = $session['user']['experience']*get_module_setting("experienceloss")/100;
-			output("`n`n`@You are dead... stroke down by %s`@ members`@.`n",$akatsuki);
-			if ($exploss>0) output(" You lose `^%s percent`@  of your experience and all of your gold.",get_module_setting("experienceloss"));
+			$exppercent = max(0, min(100, (int)get_module_setting("experienceloss")));
+			$goldpercent = max(0, min(100, (int)get_module_setting("goldloss")));
+			$exploss = (int)round($session['user']['experience']*$exppercent/100);
+			$goldloss = (int)floor($session['user']['gold']*$goldpercent/100);
+			output("`n`n`@You are dead... struck down by %s`@ members`@.`n",$akatsuki);
+			output(" You lose `^%s%%`@ of your experience and `^%s%%`@ of the gold you were carrying.",$exppercent,$goldpercent);
 			$session['user']['experience']-=$exploss;
-			$session['user']['gold']=0;
-			debuglog("lost $exploss experience and all gold due to the akatsuki $akatsuki.");
+			$session['user']['gold']-=$goldloss;
+			$session['user']['hitpoints']=0;
+			$session['user']['alive']=0;
+			debuglog("lost $exploss experience and $goldloss gold due to the akatsuki $akatsuki.");
 			strip_buff('punisher_kunais');
 			if (strstr($badguy['creaturename'],$chief)) {
 				addnews("%s`^ was killed by `^%s`^ while trying to enter %s`^.",$session['user']['name'],$badguy['creaturename'],$city);
