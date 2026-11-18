@@ -16,7 +16,7 @@ function stocking_getmoduleinfo(): array
     return [
         'name' => 'Christmas Stocking',
         'author' => 'Talisman and Robert`0, rewritten by `2Oliver Brendel',
-        'version' => '2.0',
+        'version' => '2.1',
         'category' => 'Holidays|Inn',
         'download' => 'core_module',
         'settings' => [
@@ -49,7 +49,7 @@ function stocking_uninstall(): bool
 function stocking_dohook(string $hookname, array $args): array
 {
     $days = Fireplace::daysToChristmas();
-    $season = $days < 30 && $days > -5;
+    $season = $days < 30 && $days >= -Fireplace::PICKUP_DAYS;
     switch ($hookname) {
         case 'newday':
             set_module_pref('gotbuff', 0);
@@ -61,7 +61,7 @@ function stocking_dohook(string $hookname, array $args): array
             output($season ? Texts::INN_DESC_SEASON : Texts::INN_DESC);
             break;
         case 'inn':
-            addnav($days < 10 && $days > -5 ? Texts::NAV_HEADER_SEASON : Texts::NAV_HEADER);
+            addnav($days < 10 && $days >= -Fireplace::PICKUP_DAYS ? Texts::NAV_HEADER_SEASON : Texts::NAV_HEADER);
             addnav(Texts::NAV_WALK, 'runmodule.php?module=stocking');
             break;
     }

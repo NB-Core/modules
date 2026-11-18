@@ -18,6 +18,9 @@ final class Fireplace
 {
     private const MODULE = 'stocking';
 
+    /** Days after Christmas the stocking can still be taken down (25.12. + 8 = 2.1.). */
+    public const PICKUP_DAYS = 8;
+
     public function run(): void
     {
         global $session;
@@ -44,9 +47,9 @@ final class Fireplace
         } elseif ($days === 1) {
             \output(Texts::EVE, $bard);
             $this->drink($barmaid);
-        } elseif ($days > -3 && $days < 1) {
+        } elseif ($days >= -self::PICKUP_DAYS && $days < 1) {
             $this->stocking();
-        } elseif ($days <= -3 && $days > -15) {
+        } elseif ($days < -self::PICKUP_DAYS && $days > -21) {
             \output(self::pick(Texts::AFTER), $barmaid, $bard);
         } else {
             \output(self::pick(Texts::ORDINARY), $barmaid, $bard);
@@ -84,7 +87,7 @@ final class Fireplace
     {
         global $session;
 
-        $year = (int) date('Y');
+        $year = self::christmasYear();
         if ((int) \get_module_pref('gotprez', self::MODULE) === $year) {
             \output(Texts::ALREADY_OPENED);
             \output(Texts::MERRY);
@@ -123,12 +126,33 @@ final class Fireplace
         \debuglog("received a Christmas stocking gift at the inn fireplace: $type $amount");
     }
 
-    /** Days until Christmas (the date setting), counted from now; 0 on the day itself, negative after. */
+    /**
+     * Days until Christmas (the date setting), counted from now; 0 on the day
+     * itself, negative after. After New Year it still counts from the
+     * Christmas that just passed, not from next winter's.
+     */
     public static function daysToChristmas(): int
     {
+        return self::christmas()[1];
+    }
+
+    /** Year of the Christmas that daysToChristmas() counts from. */
+    public static function christmasYear(): int
+    {
+        return self::christmas()[0];
+    }
+
+    /** @return array{0:int,1:int} Year of the Christmas, days until it. */
+    private static function christmas(): array
+    {
         [$month, $day] = array_map('intval', explode('-', (string) \get_module_setting('date', self::MODULE)) + [1 => 25]);
-        $holiday = mktime(0, 0, 0, $month ?: 12, $day ?: 25, (int) date('Y'));
-        return (int) ceil(($holiday - time()) / 86400);
+        $year = (int) date('Y');
+        $days = (int) ceil((mktime(0, 0, 0, $month ?: 12, $day ?: 25, $year) - time()) / 86400);
+        if ($days > 180) {
+            $year--;
+            $days = (int) ceil((mktime(0, 0, 0, $month ?: 12, $day ?: 25, $year) - time()) / 86400);
+        }
+        return [$year, $days];
     }
 
     /**

@@ -60,7 +60,7 @@ final class Texts
     // Christmas morning: the stockings.
 
     public const FIND_STOCKING = "`&You glance over the stockings hanging above the fireplace. Overnight, every single one of them has filled up, round and lumpy. You search the row for the one with %s`& stitched upon it. Ah! There it is!`n`n`^You reach inside and pull out your gift...`n`n";
-    public const ALREADY_OPENED = "`&You check your stocking, but it is as empty as you left it this morning, apart from a single, slightly squashed tangerine. You eat it anyway.";
+    public const ALREADY_OPENED = "`&You check your stocking, but it is as empty as you left it, apart from a single, slightly squashed tangerine. You eat it anyway.";
     public const MERRY = "`n`n`\$M`@e`\$r`@r`\$y `\$C`@h`\$r`@i`\$s`@t`\$m`@a`\$s`@!`0";
 
     /**
