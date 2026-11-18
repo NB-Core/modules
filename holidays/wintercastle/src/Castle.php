@@ -481,7 +481,9 @@ final class Castle
         }
         \increment_module_pref('riddlestoday', 1, self::MODULE);
 
-        if ((int) \httpget('a') === Texts::RIDDLES[$pending][2] && \httpget('a') !== '') {
+        // httpget() returns false for a missing answer; only a plain number counts.
+        $answer = (string) \httpget('a');
+        if (\ctype_digit($answer) && (int) $answer === Texts::RIDDLES[$pending][2]) {
             if (\e_rand(1, 5) === 1) {
                 $session['user']['gems']++;
                 \output(Texts::RIDDLE_GEM);
