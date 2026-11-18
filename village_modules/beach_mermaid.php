@@ -1,18 +1,14 @@
 <?php
-if (isset($_GET['op']) && $_GET['op']=="download"){ // this offers the module on every server for download
- $dl=join("",file("beach_mermaid.php"));
- echo $dl;
-}
 
 /* This module is partly based on the forest fairy written be Eric Stevens. Players can throw gems in a pond and have a 50% chance to get something good. Additionally a counter counts the donated gems, which will be used in e.g. the Water Dragon event.*/
 
 function beach_mermaid_getmoduleinfo(){
 	$info = array(
 		"name"=>"Mermaid's Rock  (Beach)",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"author"=>"eph",
 		"category"=>"Village|Beach",
-		"download"=>"modules/beach_mermaid.php?op=download",
+		"download"=>"core_module",
 		"settings"=>array(
 			"Mermaid Pond Settings,title",
 			"carrydk"=>"Do max hitpoints gained carry across DKs?,bool|1",
@@ -22,9 +18,9 @@ function beach_mermaid_getmoduleinfo(){
 		),
 		"prefs"=>array(
 			"Mermaid Pond User Preferences,title",
-			"extrahps"=>"How many extra hitpoints has the user gained?,int",
-			"gemstotal"=>"How many gems has the user donated overall?,int",
-			"tries"=>"How many gems has the user donated today?,int",
+			"extrahps"=>"How many extra hitpoints has the user gained?,int|0",
+			"gemstotal"=>"How many gems has the user donated overall?,int|0",
+			"tries"=>"How many gems has the user donated today?,int|0",
 		),
 	);
 	return $info;
@@ -55,9 +51,9 @@ function beach_mermaid_dohook($hookname,$args){
 		set_module_pref("tries",0);
 		break;
 	case "hprecalc":
-		$args['total'] -= get_module_pref("extrahps");
+		$args['total'] -= (int)get_module_pref("extrahps");
 		if (!get_module_setting("carrydk")) {
-			$args['extra'] -= get_module_pref("extrahps");
+			$args['extra'] -= (int)get_module_pref("extrahps");
 			set_module_pref("extrahps", 0);
 		}
 		break;
@@ -72,10 +68,10 @@ function beach_mermaid_run(){
 	output("`Q`c`bThe Mermaid`b`c`n");
 //	rawoutput("<img src='modules/images/eph/mermaid.png' align='left'>");
 
-	$perday=get_module_setting("perday");
-	$tries=get_module_pref("tries");
-	$gemstotal = get_module_pref("gemstotal");
-	$op=httpget('op');
+	$perday=(int)get_module_setting("perday");
+	$tries=(int)get_module_pref("tries");
+	$gemstotal = (int)get_module_pref("gemstotal");
+	$op=(string)httpget('op');
 	if ($op==""){
 		output("`^On a rock close to the shore sits a mermaid. Her fin casually splashes in the water as she plays a song on a harp. You stop to listen to the music, and from her song you understand that the water dragon has blessed this part of the ocean. From here she watches over the people of the land and grants them occasional favours.`n`n");
 		output("Since the dawn of time humans and other races made sacrifices to the mighty dragon here. They say she is especially fond of gems.`n`n");
@@ -98,11 +94,12 @@ function beach_mermaid_run(){
 			debuglog("gave 1 gem to the mermaid");
 			switch(e_rand(1,25)){
 			case 1: case 2: case 3:
-				$extra = get_module_setting("fftoaward");
+				$extra = (int)get_module_setting("fftoaward");
 				output("`^Just as you turn to leave the water begins to glow again and you are engulfed in fine silver mist. The dragon likes your gift and sends you a favour. `n`n");
 				if ($extra == 1) output("You receive an extra forest fight!");
 				else output("You receive %s extra forest fights!", $extra);
 				$session['user']['turns'] += $extra;
+				debuglog("gained $extra forest fights at the mermaid pond");
 				break;
 			case 4:
 				output("`^Just as you turn to leave the water begins to glow again and you are engulfed in fine golden mist. The dragon likes your gift and sends you a favour. `n`n");
@@ -119,6 +116,7 @@ function beach_mermaid_run(){
 			case 6:
 				output("`^A cool breeze from the sea plays around you and your skin tickles. When you look down you see the dragon has granted you a nice tan.`n`n You gain some charm!");
 				$session['user']['charm']++;
+				debuglog("gained 1 charm at the mermaid pond");
 				break;
 			case 7:
 				$hptype = "permanently";
@@ -128,7 +126,7 @@ function beach_mermaid_run(){
 					$hptype = "temporarily";
 				$hptype = translate_inline($hptype);
 
-				$extra = get_module_setting("hptoaward");
+				$extra = (int)get_module_setting("hptoaward");
 				output("`^Just as you turn to leave the water starts to bubble. The water dragon likes your gift and sends you a favour.`n`n");
 				output("Your maximum hitpoints are `b%s`b increased by %s!",
 						$hptype, $extra);
@@ -136,7 +134,8 @@ function beach_mermaid_run(){
 				$session['user']['maxhitpoints'] += $extra;
 				$session['user']['hitpoints'] += $extra;
 				set_module_pref("extrahps",
-						get_module_pref("extrahps")+$extra);
+						(int)get_module_pref("extrahps")+$extra);
+				debuglog("gained $extra max hitpoints at the mermaid pond");
 				break;
 			case 8:
 				output("`^As you turn to leave a blue mist rises from the sea and engulfes you. The water dragon likes your gift and grants you a favour.`n`n");
@@ -166,13 +165,14 @@ function beach_mermaid_run(){
 				$exp = $session['user']['level']*40;
 				output("You gain `#%s `^experience!`n",$exp);
 				$session['user']['experience']+=$exp;
+				debuglog("gained $exp experience at the mermaid pond");
 				break;
 			case 18: case 19: case 20: case 21: case 22: case 23: case 24: case 25:
 				output("`^A silent moan comes from the ground of the ocean, sending slight ripples over the water's surface. The mermaid looks at you.`n`n");
 				output("\"The water dragon received your gift and sends you her profundest thanks. Keep visiting this shrine and her favour will come to you one day.\"");
 				break;
 			}
-		}elseif ($session['user']['gems']==0)
+		}elseif ($session['user']['gems']<=0)
 		{
 			output("`^You rummage through your purse to give a gem to the sea goddess, but you discover that you have none.`n`n");
 			output("Disappointed you put away your purse and look at the mermaid.`n Obviously she acknowledges your effort, but her calm face shows no further emotion.`0`n`n");
@@ -185,6 +185,6 @@ function beach_mermaid_run(){
 		$session['user']['specialinc'] = "";
 	}
 
-page_footer();
+	page_footer();
 }
 ?>
