@@ -274,7 +274,7 @@ final class Hunters
         }
 
         if ($victory) {
-            $exp = (int) \min(\max(1, (int) $session['user']['dragonkills']) * 1000, \round($session['user']['experience'] / 10));
+            $exp = (int) \min((int) $session['user']['dragonkills'] * 1000, \round($session['user']['experience'] / 10));
             $session['user']['experience'] += $exp;
             \output(Texts::WIN, $exp);
             if ($target === 'bounty') {
