@@ -1,15 +1,11 @@
 <?php
-if (isset($_GET['op']) && $_GET['op']=="download"){ // this offers the module on every server for download
- $dl=join("",file("beach.php"));
- echo $dl;
-}
 function beach_getmoduleinfo(){
 	$info = array(
 		"name"=>"Beach Resort",
 		"author"=>"eph, based on Dark Alley by Spider",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"category"=>"Village|Beach",
-		"download"=>"modules/beach.php?op=download",
+		"download"=>"core_module",
 		"settings"=>array(
 			"specialchance"=>"Chance for Something Special at the beach,range,0,100,1|15",
 			"beachloc"=>"In what city is the beach?,location|".getsetting("villagename", LOCATION_FIELDS)

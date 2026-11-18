@@ -1,8 +1,4 @@
 <?php
-if (isset($_GET['op']) && $_GET['op']=="download"){ // this offers the module on every server for download
- $dl=join("",file("beach_sandcastle.php"));
- echo $dl;
-}
 
 // This module was based on Red Yates Pumpkin Carving Contest, with the texts
 // changed to sandcastle building. The location was moved from a city to the beach.
@@ -13,9 +9,9 @@ function beach_sandcastle_getmoduleinfo(){
 	$info = array(
 		"name"=>"Beach - Sandcastle Contest",
 		"author"=>"idea by eph, using code by Red Yates",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"category"=>"Village|Beach",
-		"download"=>"modules/beach_sandcastle.php?op=download",
+		"download"=>"core_module",
 		"settings"=>array(
 			"Sandcastle Module Settings, title",
 			"perday"=>"Tries at building per day, int|1",
@@ -59,13 +55,16 @@ function beach_sandcastle_dohook($hookname, $args){
 		set_module_pref("tramples",0);
 		break;
 	case "beach-desc":
-		$winner=get_module_setting("winner");
+		$winner=(int)get_module_setting("winner");
 		if ($winner>0){
-			$sql = "SELECT name FROM ". db_prefix("accounts") .
-				" WHERE acctid='$winner'";
-			$result = db_query_cached($sql, "beach_sandcastlewinner");
-			$row = db_fetch_assoc($result);
-			output("`n`QA lovely sandcastle with high towers and a moat sits between smaller sandcastles. It bears a tiny flag on its tower reading \"`&%s`^\".`n",$row['name']);
+			// Not cached: the cache kept showing the old winner after a new one won.
+			$name = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchOne(
+				"SELECT name FROM " . \Lotgd\MySQL\Database::prefix("accounts") . " WHERE acctid = :id",
+				['id' => $winner]
+			);
+			if ($name !== false) {
+				output("`n`QA lovely sandcastle with high towers and a moat sits between smaller sandcastles. It bears a tiny flag on its tower reading \"`&%s`^\".`n",$name);
+			}
 		}
 		break;
 	}
@@ -76,12 +75,12 @@ function beach_sandcastle_run(){
 	global $session;
 	page_header("Sandcastle Building Contest");
 
-	$cost=get_module_setting("cost");
-	$perday=get_module_setting("perday");
-	$tries=get_module_pref("tries");
-	$trampleperday=get_module_setting("trampleperday");
-	$tramples=get_module_pref("tramples");
-	$op=httpget('op');
+	$cost=max(0,(int)get_module_setting("cost"));
+	$perday=(int)get_module_setting("perday");
+	$tries=(int)get_module_pref("tries");
+	$trampleperday=(int)get_module_setting("trampleperday");
+	$tramples=(int)get_module_pref("tramples");
+	$op=(string)httpget('op');
 	if ($op==""){
 		if ($tries<$perday){
 			$title=translate_inline($session['user']['sex']?"babe":"dude");
@@ -104,6 +103,15 @@ function beach_sandcastle_run(){
 			output("`^You walk over to Guy to convince him to let you have a second entry in the contest, but he's busy flexing his muscles and doesn't notice you. So you give up and wander back to the beach.`n`n");
 		}
 		addnav("Back to the beach", "runmodule.php?module=beach");
+	}elseif ($op=="build" && ($tries>=$perday || $session['user']['gold']<$cost)){
+		// Checked again here: the daily limit and the price, before anything is paid.
+		addnav("Back to the beach", "runmodule.php?module=beach");
+		if ($tries>=$perday){
+			output("`^You walk over to Guy to convince him to let you have a second entry in the contest, but he's busy flexing his muscles and doesn't notice you. So you give up and wander back to the beach.`n`n");
+		}else{
+			output("`n`nToo bad you don't have that amount of gold with you.");
+			output("You head back to the public area of the beach.");
+		}
 	}elseif ($op=="build"){
 		$tries++;
 		set_module_pref("tries",$tries);
@@ -171,6 +179,7 @@ function beach_sandcastle_run(){
 			case"1":
 				output("Like an actor in a cheap dinosaur costume you mow through a sandcastle, until you are stopped by a glint in the corner of your eye.`n You examine the decoration of the ruined sandcastle closer and find a gem!`n`n Then you quickly make your way back to the beach before Guy can catch you.");
 				$session['user']['gems']+=1;
+				debuglog("found a gem trampling sandcastles");
 			break;
 			case"2": case"3":
 				output("Nobody dares to stop you on your rampage, and you stomp on each sandcastle with delight until none is left. This reminded you pleasantly of your childhood, when you used to dash through heaps of fallen leaves.`n`n");
@@ -186,7 +195,7 @@ function beach_sandcastle_run(){
 					$session['user']['name'] = $newname;
 					output("`n`nFor being such nasty person you have been awarded the title of Big Bad Meanie!`n");
 					}
-					else 					set_module_pref('alignment',(get_module_pref('alignment','alignment')-3),'alignment');
+					else set_module_pref('alignment',((int)get_module_pref('alignment','alignment')-3),'alignment');
 				}
 			break;
 			case"4": case"5": case"6": case"7": case"8":
