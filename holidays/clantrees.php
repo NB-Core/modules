@@ -17,13 +17,15 @@ function clantrees_getmoduleinfo(): array
 {
     return [
         'name' => 'Clan Christmas Trees',
-        'version' => '2.0',
+        'version' => '2.1',
         'author' => 'Sneakabout`0, rewritten by `2Oliver Brendel',
         'category' => 'Holidays|Christmas',
         'download' => 'core_module',
         'settings' => [
             'Clan Christmas Trees Settings,title',
-            'treebuy' => 'Can you buy a tree?,bool|0',
+            'treebuy' => 'Trees switched on at all (master switch)?,bool|1',
+            'start' => 'Trees from (mm-dd; empty: whenever the switch is on),text|12-1',
+            'end' => 'Trees until (mm-dd; empty: whenever the switch is on),text|1-6',
             'treereward' => 'How many turns do they get the buff for?,int|15',
             'besttree' => 'Clan ID with the best tree,viewonly',
             'bestseason' => 'Winter of the best tree,viewonly|0',
