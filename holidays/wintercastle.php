@@ -19,7 +19,7 @@ function wintercastle_getmoduleinfo(): array
 {
     return [
         'name' => 'Winter Castle (Frost Palace of the Land of Snow)',
-        'version' => '2.0',
+        'version' => '2.0.1',
         'author' => '`2Oliver Brendel`0, idea based on work by KainStrider',
         'category' => 'Holidays|Christmas',
         'download' => '',
