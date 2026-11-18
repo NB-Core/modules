@@ -42,7 +42,7 @@ final class Trees
 
     public static function village(): void
     {
-        if (!\get_module_setting('treebuy', self::MODULE)) {
+        if (!self::isActive()) {
             return;
         }
         \output(Texts::VILLAGE, \get_module_setting('salesman', self::MODULE));
@@ -67,7 +67,7 @@ final class Trees
     {
         global $session;
 
-        if (!\get_module_setting('treebuy', self::MODULE) || !$session['user']['alive']) {
+        if (!self::isActive() || !$session['user']['alive']) {
             return;
         }
         $clanid = (int) $session['user']['clanid'];
@@ -117,7 +117,7 @@ final class Trees
 
         $op = (string) \httpget('op');
         $clanid = (int) $session['user']['clanid'];
-        if (!\get_module_setting('treebuy', self::MODULE) || !$session['user']['alive'] || !self::isMember()) {
+        if (!self::isActive() || !$session['user']['alive'] || !self::isMember()) {
             \redirect('clan.php');
         }
         $hasTree = self::hasTree($clanid);
@@ -326,6 +326,35 @@ final class Trees
         \set_module_setting('besttree', $clanid, self::MODULE);
         \set_module_setting('bestseason', self::season(), self::MODULE);
         return $best !== $clanid;
+    }
+
+    /**
+     * Whether trees are on sale and shown: the treebuy switch is on and today
+     * lies between the start and end settings (mm-dd; empty means always).
+     */
+    public static function isActive(): bool
+    {
+        if (!\get_module_setting('treebuy', self::MODULE)) {
+            return false;
+        }
+        $start = (string) \get_module_setting('start', self::MODULE);
+        $end = (string) \get_module_setting('end', self::MODULE);
+        if ($start === '' || $end === '') {
+            return true;
+        }
+        if (\is_file('modules/datemanager.php')) {
+            require_once 'modules/datemanager.php';
+            if (\function_exists('datemanager_datecheck')) {
+                return \datemanager_datecheck($start, $end, 0) > 0;
+            }
+        }
+        $md = static function (string $date): string {
+            $parts = array_map('intval', explode('-', $date));
+            return sprintf('%02d-%02d', $parts[0] ?? 1, $parts[1] ?? 1);
+        };
+        $today = date('m-d');
+        [$from, $to] = [$md($start), $md($end)];
+        return $from <= $to ? ($today >= $from && $today <= $to) : ($today >= $from || $today <= $to);
     }
 
     /** The winter a date belongs to: from July on it counts to the coming December. */
