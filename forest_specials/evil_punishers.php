@@ -14,12 +14,12 @@ function evil_punishers_getmoduleinfo(): array
     return [
         'name' => 'The Evil Punishers (merged into The Punishers)',
         'author' => '`2Oliver Brendel',
-        'version' => '2.0',
+        'version' => '2.0.1',
         'category' => 'Forest Specials',
         'download' => 'core_module',
         'settings' => [
             'The Evil Punishers,title',
-            'Merged into the punishers module (settings there, under Hunter-nin). This module can be uninstalled.,note',
+            'Merged into the punishers module (its settings are there under Hunter-nin). This module can be uninstalled.,note',
         ],
     ];
 }
