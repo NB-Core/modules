@@ -44,6 +44,10 @@ function evil_punishers_dohook($hookname, $args)
 function evil_punishers_runevent($type, $link): void
 {
     global $session;
+    if (!is_module_active('punishers')) {
+        $session['user']['specialinc'] = '';
+        return;
+    }
     $session['user']['specialinc'] = 'module:punishers';
     require_once 'modules/punishers.php';
     punishers_runevent($type, $link);

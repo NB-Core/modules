@@ -79,6 +79,7 @@ final class Texts
     ];
     /** %s: gold lost. */
     public const SURRENDER = "`3You raise your hands slowly and kneel down in the damp leaves. They search you thoroughly, take `^%s`3 gold as a \"fine\", bind your hands, and march you a long way through the forest before they cut you loose again.`n`n`&\"Next time we won't be so kind.\"`3`n`nYou have lost a lot of time.";
+    public const SURRENDER_FREE = "`3You raise your hands slowly and kneel down in the damp leaves. They search you thoroughly, find nothing worth taking, bind your hands, and march you a long way through the forest before they cut you loose again.`n`n`&\"Next time we won't be so kind.\"`3`n`nYou have lost a lot of time.";
     public const SURRENDER_TURN = " `\$You lose one forest fight.`3";
 
     // Running.

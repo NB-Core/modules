@@ -103,24 +103,41 @@ final class Patrol
                 $this->surrender();
                 return true;
             case 'escape':
+            case 'hilfeichbineinadminholtmichhierraus': // the old staff escape
                 if ($session['user']['superuser'] & SU_DEVELOPER) {
                     \output(Texts::ESCAPE);
                     $this->clearFight();
                     $session['user']['specialinc'] = '';
                     return true;
                 }
-                return false;
+                return $this->noFight($name);
             case 'leave':
                 \output(Texts::LEAVE, $name);
                 $session['user']['specialinc'] = '';
                 return true;
             case 'combatready':
+                // Encounters from before 2.0 carried the leader in the link.
+                if ((string) \httpget('over') === '1') {
+                    \set_module_pref('chief', 1, self::MODULE);
+                }
                 $this->startFight($faction, $name, $chief);
                 return false;
             default:
-                // fight / combat: the battle goes on.
-                return false;
+                // fight / combat: the battle goes on, if there is one.
+                return $this->noFight($name);
         }
+    }
+
+    /** Ends the event when there is no fight to continue; false otherwise. */
+    private function noFight(string $name): bool
+    {
+        global $session;
+        if ((string) $session['user']['badguy'] !== '') {
+            return false;
+        }
+        \output(Texts::LEAVE, $name);
+        $session['user']['specialinc'] = '';
+        return true;
     }
 
     private function encounter(string $faction, string $name, string $chief): void
@@ -156,7 +173,9 @@ final class Patrol
     {
         \addnav(Texts::NAV_FIGHT, $this->link . 'op=combatready');
         if (!\get_module_pref('chief', self::MODULE)) {
-            \addnav([Texts::NAV_BRIBE, self::bribePrice()], $this->link . 'op=bribe');
+            if (self::bribePrice() > 0) {
+                \addnav([Texts::NAV_BRIBE, self::bribePrice()], $this->link . 'op=bribe');
+            }
             \addnav(Texts::NAV_TALK, $this->link . 'op=talk');
         }
         \addnav(Texts::NAV_SURRENDER, $this->link . 'op=surrender');
@@ -203,7 +222,7 @@ final class Patrol
             return;
         }
         $price = self::bribePrice();
-        if ($session['user']['gold'] < $price) {
+        if ($price <= 0 || $session['user']['gold'] < $price) {
             \output(Texts::BRIBE_POOR);
             \addnav(Texts::NAV_FIGHT, $this->link . 'op=combatready');
             \addnav(Texts::NAV_SURRENDER, $this->link . 'op=surrender');
@@ -233,7 +252,7 @@ final class Patrol
         global $session;
         $fine = (int) \floor($session['user']['gold'] * self::goldLossPercent() / 100);
         $session['user']['gold'] -= $fine;
-        \output(Texts::SURRENDER, $fine);
+        \output($fine > 0 ? Texts::SURRENDER : Texts::SURRENDER_FREE, $fine);
         if ($session['user']['turns'] > 0) {
             $session['user']['turns']--;
             \output(Texts::SURRENDER_TURN);
@@ -260,18 +279,17 @@ final class Patrol
             'diddamage' => 0,
         ];
         if (\get_module_pref('chief', self::MODULE)) {
-            // The leader fights harder the more experienced the player is.
-            $low = $level + 50;
-            $high = \max($low, (int) $session['user']['maxhitpoints'] - $level * 10);
-            $badguy['creaturehealth'] += \e_rand($low, $high);
-            $badguy['creatureattack'] += \e_rand(10, \max(10, $dks + 5)) - $extra;
-            $badguy['creaturedefense'] += \e_rand(10, \max(10, $dks + 5)) - $extra;
+            // The leader makes the group noticeably, not overwhelmingly, stronger.
+            $badguy['creaturehealth'] = (int) \round($badguy['creaturehealth'] * 1.5);
+            $badguy['creatureattack'] += 2;
+            $badguy['creaturedefense'] += 2;
             $badguy['creaturename'] = \sprintf(\translate_inline(Texts::CREATURE_CHIEF), $chief, \sprintf(\translate_inline(Texts::CREATURE), $name));
             $badguy['creatureweapon'] = \translate_inline(Texts::WEAPON_CHIEF[$faction]);
         }
         $session['user']['badguy'] = \createstring($badguy);
         \set_module_pref('faction', $faction, self::MODULE);
-        \httpset('op', 'fight');
+        // 'combat' (not 'fight'): the first page shows the encounter and rolls for surprise.
+        \httpset('op', 'combat');
     }
 
     /** Before each round: now and then a volley of kunai from the trees. */
@@ -349,6 +367,7 @@ final class Patrol
     {
         global $session;
         \strip_buff(self::BUFF);
+        \strip_buff('evil_punisher_kunais'); // from before 2.0
         $session['user']['badguy'] = '';
         \set_module_pref('chief', 0, self::MODULE);
     }

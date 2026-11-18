@@ -38,6 +38,7 @@ function punishers_getmoduleinfo(): array
             'evilvillages' => 'Villages where the Hunter-nin patrol instead (comma separated),text|Kirigakure',
             'evilname' => 'Name (coloured) of the organisation,text|`1Hunter`!-nin',
             'evilchief' => 'Name of their leader,text|`QM`^i`ts`Et`)r`2e`@ss `QK`^a`ty`El`)a',
+            'evilchief_migrated' => 'Leader name taken over from evil_punishers,viewonly|0',
         ],
         'prefs' => [
             'The Punishers - Preferences,title',
@@ -53,6 +54,12 @@ function punishers_getmoduleinfo(): array
 function punishers_install(): bool
 {
     module_addeventhook('forest', 'require_once("modules/punishers.php");return Shinobi\\Modules\\Punishers\\Patrol::chance();');
+    // 2.0 took over evil_punishers: keep a leader name that was customised there.
+    $oldChief = (string) get_module_setting('chiefname', 'evil_punishers');
+    if ($oldChief !== '' && get_module_setting('evilchief_migrated') != 1) {
+        set_module_setting('evilchief', $oldChief);
+        set_module_setting('evilchief_migrated', 1);
+    }
     return true;
 }
 
