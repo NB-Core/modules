@@ -964,7 +964,12 @@ require_once 'modules/abandoncastle/src/Choices.php';
                                 $reward *= $multiplier;
                                 $gemreward *= $multiplier;
                                 output(Narration::FINISHED, $umazeturn);
-                                output(Narration::TREASURE, $reward, $gemreward);
+                                // After about 100 moves there is nothing left; say so instead of "0 gold and 0 gems".
+                                if ($reward > 0 || $gemreward > 0) {
+                                        output(Narration::TREASURE, $reward, $gemreward);
+                                } else {
+                                        output(Narration::NO_TREASURE);
+                                }
                                 if (get_module_setting("forestvil") == 1){
                                         addnav("Continue","forest.php");
                                 }else{

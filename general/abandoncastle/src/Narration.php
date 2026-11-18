@@ -122,6 +122,10 @@ final class Narration
     public const BUFFS_RETURN = "`5As you leave the castle's shadow, the weight lifts from your chest, and your blessings return to you one by one.`n`n";
     public const NEWS_ESCAPED = "`% %s `5made it out of the Abandoned Castle alive, in %s moves!";
     public const FINISHED = "`2You found your way through the maze in `^%s`2 moves.`n";
+    /** When the run took so long that nothing is left (no gold and no gems). */
+    public const NO_TREASURE = "`2Just inside the gate stands the iron-bound chest of the castle's last lord, but its lid hangs open and it is empty. "
+        . "Fresh boot prints lead away from it into the grass: someone quicker than you found the way out first. "
+        . "`7You wandered the halls far too long, and the treasure did not wait for you. You leave with nothing but your life.`n`n";
     public const TREASURE = "`2Just inside the gate lies the treasure of the castle's last lord: `6%s gold`2 and `%%s gems`2. It is yours now.`n`n";
 
     /** Normal mode only: giving up and climbing out costs the rest of the day's forest fights. */
