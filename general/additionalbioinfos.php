@@ -104,7 +104,7 @@ function additionalbioinfos_dohook($hookname, $args){
 			}
 			if (get_module_setting("additional")) {
 				$bio=get_module_pref("user_additionalbioinfo","additionalbioinfos",$args['acctid']);
-				$bio=str_replace(chr(13),"`n",$bio);
+				$bio=str_replace(["\r\n", "\r", "\n"], "`n", $bio);
 				if (get_module_setting('killc')) $bio=additional_bioinfos_sanitize($bio);
 				output_notl("`^Bio: `@`n%s`@`n",stripslashes(stripslashes($bio)));
 			}
