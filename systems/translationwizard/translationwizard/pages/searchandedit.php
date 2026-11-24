@@ -70,8 +70,8 @@ switch ($mode)
 		$start=httpget('pageop');
 		if (!$start) $start=0;
 		$conn=\Lotgd\MySQL\Database::getDoctrineConnection();
-		$result=$conn->fetchAllAssociative($presql.";",$params);
-		$numberofallrows=count($result);
+		// Only the number of matches is needed here.
+		$numberofallrows=(int)$conn->fetchOne(preg_replace('/^Select \* from/i','SELECT COUNT(*) FROM',$presql).";",$params);
 		$sql.=":startrow,:rowlimit;";
 		$params['startrow']=(int)$start;
 		$params['rowlimit']=(int)round((float)$numberof);
@@ -163,6 +163,7 @@ switch ($mode)
 				$result=\Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative("SELECT * FROM ".\Lotgd\MySQL\Database::prefix("translations")." WHERE tid = ?;",array((int)httpget('tid')));
 				if (count($result)>1) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=3'); //back to the roots 
 				$row=$result[0] ?? false;
+				if ($row===false) redirect('runmodule.php?module=translationwizard&op=searchandedit&error=3'); //back to the roots, no such row
 				output("Please edit the following row. If you hit save, all values will be saved.");
 				output_notl(" ");
 				output("If you want to abort, just click abort (or any other navigation except 'save'.");

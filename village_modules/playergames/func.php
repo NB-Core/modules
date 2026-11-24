@@ -23,7 +23,7 @@ function getnames($nameplayers) {
 	$nameplayers=explode(",",$nameplayers);
 	$sql="SELECT acctid, name from ".db_prefix("accounts")." WHERE ";
 	foreach ($nameplayers as $key => $val) {
-		$sql.=" acctid=".$val." OR";
+		$sql.=" acctid=".(int)$val." OR";
 	}
 	$sql=substr($sql,0,strlen($sql)-3);
 	$result=db_query($sql);
