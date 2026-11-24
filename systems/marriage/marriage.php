@@ -1,5 +1,7 @@
 <?php
 
+use Lotgd\MySQL\Database;
+
 /*interface to make it compatible for old modules*/
 function marriage_getmoduleinfo() {
 	$class=new marriage;
@@ -62,7 +64,7 @@ class marriage implements module_base {
 	public function getmoduleinfo() {
 		$info= array(
 			"name"=>"Marriage",
-			"version"=>"1.1",
+			"version"=>"1.2",
 			"author"=>"`2Oliver Brendel",
 			"category"=>"Marriage",
 			"download"=>"",
@@ -173,9 +175,8 @@ class marriage implements module_base {
 	
 	private function hook_biostat($args) {
 		global $session;
-		$sql="SELECT marriedto FROM ".db_prefix('accounts')." WHERE acctid=".$args['acctid'].";";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT marriedto FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+		$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$args['acctid']));
 		$fiancee=(int)get_module_pref('fiancee','marriage',$args['acctid']);
 		if (((int)$row['marriedto'])!=0) {
 			if (!get_module_pref('user_spousesecret','marriage',$args['acctid'])) {
@@ -186,10 +187,10 @@ class marriage implements module_base {
 					$partner=get_partner(false);
 					$partner=translate_inline("`iSecret`i");
 				} else {
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=".$row['marriedto'].";";
-				$result=db_query_cached($sql,"spouse-".$row['marriedto']);
-				if (db_num_rows($result)>0) {
-					$row2=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				//direct query instead of db_query_cached (cache key "spouse-<id>" dropped)
+				$row2=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$row['marriedto']));
+				if ($row2!==false) {
 					$partner=$row2['name'];
 				} else {
 					$partner=translate_inline("`iLost in the annals`i");
@@ -201,10 +202,9 @@ class marriage implements module_base {
 			if (!get_module_pref('user_spousesecret','marriage',$args['acctid'])) {
 				$partner="`iSecret`i";
 			} else {
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=".get_module_pref('fiancee','marriage',$args['acctid']).";";
-				$result=db_query($sql);
-				if (db_num_rows($result)>0) {
-					$row2=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				$row2=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)get_module_pref('fiancee','marriage',$args['acctid'])));
+				if ($row2!==false) {
 					$fiancee=$row2['name'];
 				} else {
 					$fiancee=translate_inline("`iLost in the annals`i");
@@ -245,9 +245,9 @@ class marriage implements module_base {
 			$partner=get_partner(true);
 			setcharstat("Personal Info","Spouse","`^".$partner);
 		} elseif ($fiancee>0) {
-			$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$fiancee;";
-			$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
-			$row=db_fetch_assoc($result);
+			$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+			//direct query instead of db_query_cached (cache key "fiancee-".$session['user']['acctid'] dropped)
+			$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$fiancee));
 			setcharstat("Personal Info","Fiancée","`^".$row['name']);
 		}
 		return $args;
@@ -258,9 +258,8 @@ class marriage implements module_base {
 		
 		$acctid=$args['acctid'];
 		
-		$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$acctid LIMIT 1;";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT * FROM ".Database::prefix('accounts')." WHERE acctid=:id LIMIT 1";
+		$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$acctid));
 
 		if (!isset($row['acctid'])) {
 			//if, for some reason, the char has already been removed.
@@ -268,16 +267,17 @@ class marriage implements module_base {
 			return $args;
 		}
 		$min=0;
-		$sql="SELECT * FROM ".db_prefix('marriage_flirtpoints')." WHERE flirtpoints>$min AND receiver=$acctid OR initiator=$acctid";
+		//operator precedence fixed: the minimum applies to rows of both roles (was "flirtpoints>$min AND receiver=$acctid OR initiator=$acctid")
+		$sql="SELECT * FROM ".Database::prefix('marriage_flirtpoints')." WHERE flirtpoints > :min AND (receiver = :id OR initiator = :id)";
 		//select all above a certain level to notify of the tragic death of the player
-		$result=db_query($sql);
+		$flirtrows=Database::getDoctrineConnection()->fetchAllAssociative($sql,array('min'=>$min,'id'=>(int)$acctid));
 		$notify=array();
 		//add spouse
-		if ($row['marriedto']!=0 || $row['marriedto']!=INT_MAX) $notify[]=$row['marriedto'];
+		if ($row['marriedto']!=0 && $row['marriedto']!=INT_MAX) $notify[]=$row['marriedto'];
 		//add others
 		$fiancee=(int)get_module_pref('fiancee','marriage',$acctid);
 		if ($fiancee!=0) $notify[]=$fiancee;
-		while ($rowtwo=db_fetch_assoc($result)) {
+		foreach ($flirtrows as $rowtwo) {
 			if ($rowtwo['initiator']==$acctid) {
 				$notify[]=$rowtwo['receiver'];
 			} else $notify[]=$rowtwo['initiator'];
@@ -286,15 +286,15 @@ class marriage implements module_base {
 		$message=array(translate_inline("`4I am very sorry to notify you about tragic events that have occurred! %s`4 has last been seen entering the woods and has not been seen since! We have not given up hope, but we fear for the worst."),$row['name']);
 		require_once('lib/systemmail.php');
 		foreach ($notify as $to) {
-			$sql2="SELECT acctid FROM ".db_prefix('accounts')." WHERE acctid=$to LIMIT 1;";
-			$result2=db_query($sql2);
-			if (db_num_rows($result2)>0) //only send if those are not yet deleted themselves
+			$sql2="SELECT acctid FROM ".Database::prefix('accounts')." WHERE acctid=:id LIMIT 1";
+			if (Database::getDoctrineConnection()->fetchOne($sql2,array('id'=>(int)$to))!==false) //only send if those are not yet deleted themselves
 				systemmail($to,$subject,$message);
 		}
 		
 		/*set the user and spouse to "unmarried", he has to marry again, else we have problems... one married, the other not*/
-		$sql="UPDATE ".db_prefix('accounts')." SET marriedto=0 WHERE acctid={$row['marriedto']} OR acctid={$row['acctid']} LIMIT 1;";
-		db_query($sql);
+		//both rows: the former LIMIT 1 could leave the spouse married to the deleted account
+		$sql="UPDATE ".Database::prefix('accounts')." SET marriedto=0 WHERE acctid=:spouse OR acctid=:id";
+		Database::getDoctrineConnection()->executeStatement($sql,array('spouse'=>(int)$row['marriedto'],'id'=>(int)$row['acctid']));
 		
 		/*kill possible fiancee*/
 		if ($fiancee!=0) {
@@ -303,26 +303,19 @@ class marriage implements module_base {
 		}
 		
 		/*restore info*/
-		$sql="SELECT * FROM ".db_prefix('marriage_actions')." WHERE initiator=$acctid OR receiver=$acctid";
-		$result=db_query($sql);
-		$save='';
-		$fields='';
-		while ($row=db_fetch_assoc($result)) {
-			if ($fields=='') $fields=array_keys($row);
-			$save.="INSERT INTO ".db_prefix('marriage_actions')." (".implode(",",$fields)." VALUES ('".addslashes(implode("','",$row))."');";
-		}
+		//the former query + INSERT-string builder here was dead code (result only ever fed the commented-out pref below) and was removed during the DBAL conversion
 		/*was a good idea, but 4k per message and we only have 64kb ... runs full quickly, leading to undeletable accs... so sadly, love has to go on... */
 		//set_module_pref('restoresave',$save,'marriage',$args['acctid']);
 		/*save all flirt info except ignores*/
 
-		$sql="DELETE FROM ".db_prefix('marriage_optout')." WHERE acctid=$acctid";
-		db_query($sql);
-		$sql="DELETE FROM ".db_prefix('marriage_flirtpoints')." WHERE initiator=$acctid OR receiver=$acctid";
-		db_query($sql);
-		$sql="DELETE FROM ".db_prefix('marriage_actions')." WHERE initiator=$acctid OR receiver=$acctid";
-		db_query($sql);
-		$sql="DELETE FROM ".db_prefix('marriage_ignorelist')." WHERE target=$acctid OR player=$acctid";
-		db_query($sql);		
+		$sql="DELETE FROM ".Database::prefix('marriage_optout')." WHERE acctid=:id";
+		Database::getDoctrineConnection()->executeStatement($sql,array('id'=>(int)$acctid));
+		$sql="DELETE FROM ".Database::prefix('marriage_flirtpoints')." WHERE initiator=:id OR receiver=:id";
+		Database::getDoctrineConnection()->executeStatement($sql,array('id'=>(int)$acctid));
+		$sql="DELETE FROM ".Database::prefix('marriage_actions')." WHERE initiator=:id OR receiver=:id";
+		Database::getDoctrineConnection()->executeStatement($sql,array('id'=>(int)$acctid));
+		$sql="DELETE FROM ".Database::prefix('marriage_ignorelist')." WHERE target=:id OR player=:id";
+		Database::getDoctrineConnection()->executeStatement($sql,array('id'=>(int)$acctid));
 		
 		
 		
@@ -339,9 +332,9 @@ class marriage implements module_base {
 			//buff marriage
 			$this->applybuff(0,$partner);
 		} elseif ($fiancee>0) {
-			$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$fiancee;";
-			$result=db_query_cached($sql,"fiancee-".$fiancee."-".$session['user']['acctid']);
-			$row=db_fetch_assoc($result);
+			$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+			//direct query instead of db_query_cached (cache key "fiancee-".$fiancee."-".$session['user']['acctid'] dropped)
+			$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$fiancee));
 			//buff fiancee
 			$this->applybuff(1,$row['name']);
 		}		
@@ -423,9 +416,8 @@ class marriage implements module_base {
 		if ($user===false) {
 			$married=(int)$session['user']['marriedto'];
 		} else {
-			$sql="SELECT marriedto FROM ".db_prefix('accounts')." WHERE acctid=$user;";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
+			$sql="SELECT marriedto FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+			$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$user));
 			$married=(int)$row['marriedto'];
 		}
 		if ($married!=0) return $married;
@@ -488,12 +480,12 @@ class marriage implements module_base {
 	
 	private function flirtvalue($user) {
 		//list returns array with acctid, charname, points
-		$sql="SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver
+		$sql="SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator=:user AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver
 			UNION 
-			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver ORDER BY name ASC";
-		$result=db_query($sql);
+			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver=:user AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver ORDER BY name ASC";
+		$rows=Database::getDoctrineConnection()->fetchAllAssociative($sql,array('user'=>(int)$user));
 		$out=array();
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			$out[$row['acctid']]=array("name"=>$row['name'],"points"=>$row['med']);
 		}
 		return $out;
@@ -694,8 +686,8 @@ class marriage implements module_base {
 					$session['user']['gold']-=$gold;
 					$session['user']['gems']-=$gems;
 					$proposal=$this->mystrip(httppost('proposal'));
-					$sql="INSERT INTO ".db_prefix('marriage_proposals')." (initiator,proposed_to,ring,propose,date,response) VALUES ('$user','$target','$ring','".addslashes($proposal)."','".date("Y-m-d H:i:s")."','');";
-					db_query($sql);
+					$sql="INSERT INTO ".Database::prefix('marriage_proposals')." (initiator,proposed_to,ring,propose,date,response) VALUES (:initiator,:target,:ring,:propose,:date,'')";
+					Database::getDoctrineConnection()->executeStatement($sql,array('initiator'=>(int)$user,'target'=>$target,'ring'=>$ring,'propose'=>$proposal,'date'=>date("Y-m-d H:i:s")));
 					require_once("lib/systemmail.php");
 					systemmail($target,array("`R`bProposal!`b"),array("
 						%s`x has proposed to you! For details and your response visit the Meadows!",
@@ -751,9 +743,8 @@ class marriage implements module_base {
 					$efford=false;
 				}
 				addnav("Ops");
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
-				$result=db_query($sql);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$target));
 				if ($efford) {
 					addnav(array("Buy the ring for %s",$row['name']),"runmodule.php?module=marriage&op=max&subop=buyring&ring=$ring&target=$target");
 				}
@@ -761,9 +752,9 @@ class marriage implements module_base {
 				break;
 			case "ring":
 				$target=(int)httpget('target');
-				$sql="SELECT * FROM ".db_prefix('marriage_proposals')." WHERE ((initiator=$user AND proposed_to=$target) OR (initiator=$target AND proposed_to=$user)) AND responsedate='1970-01-01 00:00:00';";
-				$result=db_query($sql);
-				if (db_num_rows($result)>0) {
+				$sql="SELECT * FROM ".Database::prefix('marriage_proposals')." WHERE ((initiator=:user AND proposed_to=:target) OR (initiator=:target AND proposed_to=:user)) AND responsedate='1970-01-01 00:00:00'";
+				$rows=Database::getDoctrineConnection()->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target));
+				if (count($rows)>0) {
 					output("`4\"`yA ring? Yes, a ring and proposal between you two has been already done by me... please visit the meadows for more information.`4\"");
 					break;
 				}
@@ -813,9 +804,9 @@ class marriage implements module_base {
 			case "marry_no":
 				require_once("lib/systemmail.php");
 				$target=(int)$this->isengaged();
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
-				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				//direct query instead of db_query_cached (cache key "fiancee-".$session['user']['acctid'] dropped)
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$target));
 				$namefiancee=$row['name'];
 				
 				output("%s`xsays, \"`qAlright - I will send out a notice to %s that you think it is too early.`x\"`n`n\"`xIf you want to cancel the engagement, you can so do so separately`q.`x\"",$this->chapelwatcher,$namefiancee);
@@ -830,9 +821,8 @@ class marriage implements module_base {
 			case "marry_yes":
 				require_once("lib/systemmail.php");
 				$target=(int)$this->isengaged();
-				$sql="SELECT name,sex FROM ".db_prefix('accounts')." WHERE acctid=$target;";
-				$result=db_query($sql);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT name,sex FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$target));
 				$fianceename=$row['name'];
 				$fianceesex=$row['sex'];
 
@@ -855,8 +845,8 @@ class marriage implements module_base {
 				set_module_pref('marry',0,'marriage',$target);	
 			
 				$session['user']['marriedto']=$target;
-				$sql="UPDATE ".db_prefix('accounts')." SET marriedto=".$session['user']['acctid']." WHERE acctid=$target";
-				db_query($sql);
+				$sql="UPDATE ".Database::prefix('accounts')." SET marriedto=:marriedto WHERE acctid=:id";
+				Database::getDoctrineConnection()->executeStatement($sql,array('marriedto'=>(int)$session['user']['acctid'],'id'=>(int)$target));
 				
 				$fianceegender=translate_inline($fianceesex==SEX_FEMALE?"wife":"husband");
 				$gender=translate_inline($session['user']['sex']==SEX_FEMALE?"wife":"husband");
@@ -873,9 +863,9 @@ class marriage implements module_base {
 			case "marryconfirm":
 				require_once("lib/systemmail.php");
 				$target=(int)$this->isengaged();
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
-				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				//direct query instead of db_query_cached (cache key "fiancee-".$session['user']['acctid'] dropped)
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$target));
 				$namefiancee=$row['name'];
 				
 				output("%s`xsays, \"`qAlright - I will send out a notice right away and you will get notice from %s`q.`x\"`n`n\"Note that you `btoo`b need to visit the chapel and says `\$Yes`q...`x\"",$this->chapelwatcher,$namefiancee);
@@ -892,9 +882,9 @@ class marriage implements module_base {
 		
 			case "marry":
 				$target=(int)$this->isengaged();
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$target;";
-				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				//direct query instead of db_query_cached (cache key "fiancee-".$session['user']['acctid'] dropped)
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$target));
 				$namefiancee=$row['name'];
 				
 				if (get_module_pref('marry','marriage')==1) {
@@ -921,9 +911,9 @@ class marriage implements module_base {
 				break;
 			case "endengagement":
 				$fiancee=get_module_pref('fiancee');
-				$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=$fiancee;";
-				$result=db_query_cached($sql,"fiancee-".$session['user']['acctid']);
-				$row=db_fetch_assoc($result);
+				$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				//direct query instead of db_query_cached (cache key "fiancee-".$session['user']['acctid'] dropped)
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$fiancee));
 				$namefiancee=$row['name'];
 				$this->displaypicture('modules/marriage/pics/lonely.jpg');
 				output("%s`x asks you, \"`qYou really do want your engagement with %s to be cancelled? Well, I'll arrange the necessary things, send the ring back and so on... but be really sure about it, you won't be able to turn back.`x\"",$this->chapelwatcher,$namefiancee);
@@ -969,13 +959,12 @@ class marriage implements module_base {
 				addnav("`\$Really `0get divorced?","runmodule.php?module=marriage&op=chapel&subop=confirmdivorceplayer");				
 				break;
 			case "confirmdivorceplayer":
-				$sql= "SELECT acctid,name,login FROM ".db_prefix('accounts')." WHERE acctid=".$session['user']['marriedto'].";";
-				$result=db_query($sql);
-				if (db_num_rows($result)==0) {
+				$sql= "SELECT acctid,name,login FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+				$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$session['user']['marriedto']));
+				if ($row===false) {
 					output("Sorry, there was an error, please report to your admin.");
 					break;
 				}
-				$row=db_fetch_assoc($result);
 				$takegems=(int)($session['user']['gems']*0.2);
 				$gold=(int)($session['user']['gold']+$session['user']['goldinbank']);
 				output("%s`x says, \"`qOkay, the notice of divorce will be delivered to %s`q. `n`nThe %s gems and %s gold have been taken into the fund, sorry, but an ending love it only a matter of loss of feelings, but also a loss of ... assets... mostly.`x\"",$this->chapelwatcher,$row['name'],$takegems,$gold);
@@ -988,8 +977,8 @@ class marriage implements module_base {
 				debuglog("Lost $takegems and all gold ($gold) due to a divorce from player ".$row['login'],$row['acctid'],$session['user']['acctid']);
 				
 				//set
-				$sql= "UPDATE ".db_prefix('accounts')." SET marriedto=0 WHERE acctid=".$session['user']['marriedto'].";";
-				$result=db_query($sql);
+				$sql= "UPDATE ".Database::prefix('accounts')." SET marriedto=0 WHERE acctid=:id";
+				Database::getDoctrineConnection()->executeStatement($sql,array('id'=>(int)$session['user']['marriedto']));
 				$session['user']['marriedto']=0;
 				//set
 				
@@ -1031,16 +1020,14 @@ class marriage implements module_base {
 			if (is_array($quote)) $quote=call_user_func_array("sprintf",$quote);
 			output_notl($quote);
 			addnav("Chapel");
-			$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_proposals')." WHERE responsedate='1970-01-01 00:00:00' AND proposed_to=".$user.";";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
+			$sql="SELECT count(initiator) as counter FROM ".Database::prefix('marriage_proposals')." WHERE responsedate='1970-01-01 00:00:00' AND proposed_to=:user";
+			$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('user'=>(int)$user));
 			addnav(array("Proposal Overview (`4%s unresponded`0)",(int)$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=checkproposals");				
 			if ($this->isengaged()) {
 				if (get_module_pref('marry','marriage')==1) {
-					$sql="SELECT name FROM ".db_prefix('accounts')." WHERE acctid=".$this->isengaged();
-					$result=db_query($sql);
+					$sql="SELECT name FROM ".Database::prefix('accounts')." WHERE acctid=:id";
+					$row=Database::getDoctrineConnection()->fetchAssociative($sql,array('id'=>(int)$this->isengaged()));
 					invalidatedatacache("fiancee-".$session['user']['acctid']);
-					$row=db_fetch_assoc($result);
 					$fianceename=$row['name'];					
 					output("`n`n`)After you enter the chapel - all activities stop and %s`x approaches you, smiling bright like the sun.`n`n\"`qToday is your great day! I hope you are ready? Now is the `bLAST`b chance to think over, you cannot stop after we've walked in! %s`x is already waiting for you...`x\"",$this->chapelwatcher,$fianceename);
 					addnav("Marriage!");

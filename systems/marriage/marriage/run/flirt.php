@@ -1,5 +1,8 @@
 <?php	
+use Lotgd\MySQL\Database;
+
 $user=$session['user']['acctid'];
+$conn=Database::getDoctrineConnection();
 
 $subop=httpget('subop');
 page_header('Shadowy Meadows');
@@ -20,17 +23,21 @@ switch ($subop) {
 			$id=(int)httppost('id');
 			$successful=(int)httppost('successful');
 			$response=$this->mystrip($response);
-			$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE id=$id;";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
+			// Only the receiver of a flirt may answer it.
+			$sql="SELECT initiator FROM ".Database::prefix('marriage_actions')." WHERE id=:id AND receiver=:user";
+			$row=$conn->fetchAssociative($sql,array('id'=>$id,'user'=>(int)$user));
+			if ($row===false) {
+				output("Sorry, but this player is no longer with us... :(");
+				break;
+			}
 			
 			modulehook("marriage_flirtsend",array("sender"=>$user,"target"=>$row['initiator'],"message"=>$response));
 			require_once("lib/systemmail.php");
 			$re=$session['user']['name'].sprintf_translate(" answered to your flirt... `n`4Here the reponse:`0`n`n").$response;
 
 			systemmail($row['initiator'],array("`xSomebody answered your flirt..."),$re);
-			$sql="UPDATE ".db_prefix('marriage_actions')." SET response='".addslashes($response)."', successful=$successful,responsedate='".date("Y-m-d H:i:s")."' WHERE id=$id LIMIT 1;";
-			db_query($sql);debug($sql);
+			$sql="UPDATE ".Database::prefix('marriage_actions')." SET response=:response, successful=:successful,responsedate=:responsedate WHERE id=:id AND receiver=:user LIMIT 1";
+			$conn->executeStatement($sql,array('response'=>$response,'successful'=>$successful,'responsedate'=>date("Y-m-d H:i:s"),'id'=>$id,'user'=>(int)$user));debug($sql);
 			invalidatedatacache("marriage_flirtpartnerlist_".$user);
 			invalidatedatacache("marriage_flirtpartnerlist_".$row['initiator']);
 			output("`4Reponse delivered... once you both have enough positive flirts, you may even get married someday...`n`n");
@@ -46,9 +53,8 @@ switch ($subop) {
 			output_notl("`c".$this->mystrip($message)."`c`n`n");
 		} else $message = '';
 		$id=(int)httpget('id');
-		$sql="SELECT a.name,a.acctid FROM ".db_prefix('accounts')." AS a INNER JOIN ".db_prefix('marriage_actions')." AS b ON a.acctid=b.initiator WHERE b.id=$id LIMIT 1;";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT a.name,a.acctid FROM ".Database::prefix('accounts')." AS a INNER JOIN ".Database::prefix('marriage_actions')." AS b ON a.acctid=b.initiator WHERE b.id=:id AND b.receiver=:user LIMIT 1";
+		$row=$conn->fetchAssociative($sql,array('id'=>$id,'user'=>(int)$user));
 		if (!isset($row['name'])) {
 			// no account there anymore 
 			output("Sorry, but this player is no longer with us... :(");
@@ -80,13 +86,13 @@ switch ($subop) {
 		
 	case "response":
 		output("`RHere are the people who tried flirting with you (click to answer):`n`n");
-		$sql="SELECT a.name as name,b.id as id,b.message as message FROM ".db_prefix('marriage_actions')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON a.acctid=b.initiator WHERE responsedate='1970-01-01 00:00:00' AND receiver=".$user." ORDER BY initiator ASC;";
-		$result=db_query($sql);debug($sql);
+		$sql="SELECT a.name as name,b.id as id,b.message as message FROM ".Database::prefix('marriage_actions')." AS b INNER JOIN ".Database::prefix('accounts')." AS a ON a.acctid=b.initiator WHERE responsedate='1970-01-01 00:00:00' AND receiver=:user ORDER BY initiator ASC";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user));debug($sql);
 		$name=translate_inline("Name");
 		$message=translate_inline("Message");
 		rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td><td>$message</td></tr>");
 		$class='trlight';
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
 			output_notl("<a href='runmodule.php?module=marriage&op=flirt&subop=responseto&id=".$row['id']."'>".$row['name']."</a>",true);
@@ -110,9 +116,9 @@ switch ($subop) {
 		if (httppost('send')) {
 			$message=httppost('message');
 			$target=(int)httppost('target');
-			$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE initiator=".$user." AND receiver=$target AND responsedate='1970-01-01 00:00:00';";
-			$result=db_query($sql);debug($sql);
-			if (db_num_rows($result)>0) {
+			$sql="SELECT initiator FROM ".Database::prefix('marriage_actions')." WHERE initiator=:user AND receiver=:target AND responsedate='1970-01-01 00:00:00'";
+			$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target));debug($sql);
+			if (count($rows)>0) {
 				output("`xYou must be some kind of flirt maniac... wait for a response first...`n`n");
 				break;
 			}
@@ -123,8 +129,8 @@ switch ($subop) {
 			require_once("lib/systemmail.php");
 			$me=$session['user']['name'].translate_inline(" approached you... please respond to this in the meadows flirt section. `n`4Now the message:`0`n`n").$message;
 			systemmail($target,array("`RSomebody approached you..."),$me);
-			$sql="INSERT INTO ".db_prefix('marriage_actions')." (initiator,receiver,message,date,successful) VALUES (".$user.",$target,'".addslashes($message)."','".date("Y-m-d H:i:s")."',0);";
-			db_query($sql);
+			$sql="INSERT INTO ".Database::prefix('marriage_actions')." (initiator,receiver,message,date,successful) VALUES (:user,:target,:message,:date,0)";
+			$conn->executeStatement($sql,array('user'=>(int)$user,'target'=>$target,'message'=>$message,'date'=>date("Y-m-d H:i:s")));
 			output("`4Message delivered... you can only hope for a positive response... if you want to send flowers or a card, remember Tsubaki...`n`n");
 			increment_module_pref('flirts_today',1);
 			break;
@@ -144,34 +150,31 @@ switch ($subop) {
 			break;
 		}
 		//check if he/she is ignoring the users tries
-		$sql="SELECT * FROM ".db_prefix('marriage_ignorelist')." WHERE target='".$user."' AND player='$target';";
-		$result=db_query($sql);
-		$rows=db_num_rows($result);
+		$sql="SELECT * FROM ".Database::prefix('marriage_ignorelist')." WHERE target=:user AND player=:target";
+		$rows=count($conn->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target)));
 		if ($rows>0) {
 			output("`5Sorry, but your attempt is denied on the first try.`n`n`\$That person ignores all flirting initated by you.`n`n");
 			break;
 		}
 
 		//check if our flirter is ignoring that users tries
-		$sql="SELECT * FROM ".db_prefix('marriage_ignorelist')." WHERE player='".$user."' AND target='$target';";
-		$result=db_query($sql);
-		$rows=db_num_rows($result);
+		$sql="SELECT * FROM ".Database::prefix('marriage_ignorelist')." WHERE player=:user AND target=:target";
+		$rows=count($conn->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target)));
 		if ($rows>0) {
 			output("`5Sorry, but you do ignore that player. Please un-ignore first before trying to flirt!`n`n");
 			break;
 		}				
 		
 		//check if already a flirt is awaiting an answer
-		$sql="SELECT initiator FROM ".db_prefix('marriage_actions')." WHERE initiator=".$user." AND receiver=$target AND responsedate='1970-01-01 00:00:00';";
-		$result=db_query($sql);
-		if (db_num_rows($result)>0) {
+		$sql="SELECT initiator FROM ".Database::prefix('marriage_actions')." WHERE initiator=:user AND receiver=:target AND responsedate='1970-01-01 00:00:00'";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target));
+		if (count($rows)>0) {
 			output("`xYou must be some kind of flirt maniac... wait for a response first...`n`n");
 			break;
 		}				
 		
-		$sql="SELECT name,acctid FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1;";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT name,acctid FROM ".Database::prefix('accounts')." WHERE acctid=:target LIMIT 1";
+		$row=$conn->fetchAssociative($sql,array('target'=>$target));
 		rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=flirt' method='POST'><center>");
 		addnav("","runmodule.php?module=marriage&op=flirt&subop=flirt");
 		output("`RYou want to flirt with %s`R... please write something that would maybe even you find interesting as a flirt... if this is the 'first contact', keep in mind that the other person does not know you yet!`n`n`\$Flirting does not mean 'using vulgar language'. Stay romantic and talk nicely, if you abuse the flirting, you will be punished.`n`n",$row['name']);
@@ -191,11 +194,11 @@ switch ($subop) {
 	case "search":
 		$gender=httpget('gender');
 		output("`xAs you roam through the meadows, you catch some sentences from people who might be interesting...if you want more, just visit the meadows yourself...`n`n");
-		$sql="SELECT DISTINCT a.name as name,a.acctid as acctid,b.comment as comment,b.commentid, c.acctid as optout FROM ".db_prefix('commentary')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON a.acctid=b.author LEFT JOIN ".db_prefix('marriage_optout')." AS c ON b.author=c.acctid WHERE a.sex=$gender AND a.acctid!=".$user." AND b.section LIKE 'meadow-%' ORDER BY b.commentid DESC LIMIT $limit;";
+		$sql="SELECT DISTINCT a.name as name,a.acctid as acctid,b.comment as comment,b.commentid, c.acctid as optout FROM ".Database::prefix('commentary')." AS b INNER JOIN ".Database::prefix('accounts')." AS a ON a.acctid=b.author LEFT JOIN ".Database::prefix('marriage_optout')." AS c ON b.author=c.acctid WHERE a.sex=:gender AND a.acctid!=:user AND b.section LIKE 'meadow-%' ORDER BY b.commentid DESC LIMIT :limit";
 		//$result=db_query_cached($sql,"meadows-search-$gender",60);
-		$result=db_query($sql);
+		$rows=$conn->fetchAllAssociative($sql,array('gender'=>(int)$gender,'user'=>(int)$user,'limit'=>(int)$limit),array('limit'=>\Doctrine\DBAL\ParameterType::INTEGER));
 		$lastlines='';
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			if (((int)$row['optout'])>0) continue; //target not interested in flirting
 			$link="<a href='runmodule.php?module=marriage&op=flirt&subop=flirt&target=".$row['acctid']."'>".$row['name']."</a>";
 			addnav("","runmodule.php?module=marriage&op=flirt&subop=flirt&target=".$row['acctid']);
@@ -213,27 +216,27 @@ switch ($subop) {
 		output_notl($lastlines,true);
 		break;
 	case "selectprecisely":
-		$target=httppost('target');
-		$ta=addslashes($target);
+		// httppost() adds slashes; search with the real text and bind it.
+		$target=stripslashes((string)httppost('target'));
 		output("`c`b`tFind a flirt`0`b`c`n`n");
 		if ($target!='') {
-			$sql="SELECT a.name as name,a.acctid FROM ".db_prefix('accounts')." AS a WHERE (name LIKE '%$ta%' OR login LIKE '%$ta') AND a.acctid!=$user limit $limit;";
-			$result=db_query($sql);
-			if (db_num_rows($result)<1) {
+			$sql="SELECT a.name as name,a.acctid FROM ".Database::prefix('accounts')." AS a WHERE (name LIKE :ta1 OR login LIKE :ta2) AND a.acctid!=:user limit :limit";
+			$rows=$conn->fetchAllAssociative($sql,array('ta1'=>'%'.$target.'%','ta2'=>'%'.$target,'user'=>(int)$user,'limit'=>(int)$limit),array('limit'=>\Doctrine\DBAL\ParameterType::INTEGER));
+			if (count($rows)<1) {
 				$end=strlen($target);
 				$search='%';
 				for ($x=0;$x<$end;$x++){
 					$search .= substr($target,$x,1)."%";
 				}
-				$sql="SELECT a.name as name,a.acctid FROM ".db_prefix('accounts')." AS a WHERE name LIKE '$search' OR LOGIN LIKE '$search' LIMIT $limit;";
-				$result=db_query($sql);
+				$sql="SELECT a.name as name,a.acctid FROM ".Database::prefix('accounts')." AS a WHERE name LIKE :search1 OR LOGIN LIKE :search2 LIMIT :limit";
+				$rows=$conn->fetchAllAssociative($sql,array('search1'=>$search,'search2'=>$search,'limit'=>(int)$limit),array('limit'=>\Doctrine\DBAL\ParameterType::INTEGER));
 			}
-			if (db_num_rows($result)>0) {
+			if (count($rows)>0) {
 				$name=translate_inline("Name");
 				$message=translate_inline("Message");
 				rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td></tr>");//<td>$message</td></tr>");
 				$class='trlight';
-				while ($row=db_fetch_assoc($result)) {
+				foreach ($rows as $row) {
 					$class=($class=='trlight'?'trdark':'trlight');
 					rawoutput("<tr class='$class'><td>");
 					$link="<a href='runmodule.php?module=marriage&op=flirt&subop=flirt&target=".$row['acctid']."'>".$row['name']."</a>";
@@ -251,7 +254,7 @@ switch ($subop) {
 		output("`xWhom are you looking for?`n`4Try to enter the name without the title, or completely to narrow down the search (results limited to %s hits).`2`n`n",$limit);
 		rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=selectprecisely' method='POST'>");
 		addnav("","runmodule.php?module=marriage&op=flirt&subop=selectprecisely");
-		rawoutput("<input type='input' length='50' name='target' value='".addslashes($target)."'><br>");
+		rawoutput("<input type='input' length='50' name='target' value='".htmlspecialchars($target, ENT_QUOTES)."'><br>");
 		$submit=translate_inline("Search!");
 		rawoutput("<input type='submit' class='button' value='$submit'>");
 		rawoutput("</form>");
@@ -272,27 +275,26 @@ switch ($subop) {
 		rawoutput("</form>");
 		break;
 	case "ignoreprecisely":
-		$target=httppost('target');
-		$ta=addslashes($target);
+		$target=stripslashes((string)httppost('target'));
 		output("`c`b`tIgnore somebody`0`b`c`n`n");
 		if ($target!='') {
-			$sql="SELECT a.name as name,a.acctid FROM ".db_prefix('accounts')." AS a WHERE name LIKE '%$ta%' OR LOGIN LIKE '%$ta' limit $limit;";
-			$result=db_query($sql);
-			if (db_num_rows($result)<1) {
+			$sql="SELECT a.name as name,a.acctid FROM ".Database::prefix('accounts')." AS a WHERE name LIKE :ta1 OR LOGIN LIKE :ta2 limit :limit";
+			$rows=$conn->fetchAllAssociative($sql,array('ta1'=>'%'.$target.'%','ta2'=>'%'.$target,'limit'=>(int)$limit),array('limit'=>\Doctrine\DBAL\ParameterType::INTEGER));
+			if (count($rows)<1) {
 				$end=strlen($target);
 				$search='%';
 				for ($x=0;$x<$end;$x++){
 					$search .= substr($target,$x,1)."%";
 				}
-				$sql="SELECT a.name as name,a.acctid FROM ".db_prefix('accounts')." AS a WHERE name LIKE '$search' OR LOGIN LIKE '$search' LIMIT $limit;";
-				$result=db_query($sql);
+				$sql="SELECT a.name as name,a.acctid FROM ".Database::prefix('accounts')." AS a WHERE name LIKE :search1 OR LOGIN LIKE :search2 LIMIT :limit";
+				$rows=$conn->fetchAllAssociative($sql,array('search1'=>$search,'search2'=>$search,'limit'=>(int)$limit),array('limit'=>\Doctrine\DBAL\ParameterType::INTEGER));
 			}
-			if (db_num_rows($result)>0) {
+			if (count($rows)>0) {
 				$name=translate_inline("Name");
 				$message=translate_inline("Message");
 				$op=translate_inline("Ops");
 				rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td><td>$message</td><td>$op</td></tr>");
-				while ($row=db_fetch_assoc($result)) {
+				foreach ($rows as $row) {
 					$class=($class=='trlight'?'trdark':'trlight');
 					rawoutput("<tr class='$class'><td>");
 					output_notl($row['name']);
@@ -314,7 +316,7 @@ switch ($subop) {
 		output("`xWhom are you looking for?`n`4Try to enter the name without the title, or completely to narrow down the search (results limited to %s hits).`2`n`n",$limit);
 		rawoutput("<form action='runmodule.php?module=marriage&op=flirt&subop=ignoreprecisely' method='POST'>");
 		addnav("","runmodule.php?module=marriage&op=flirt&subop=ignoreprecisely");
-		rawoutput("<input type='input' length='50' name='target' value='".addslashes($target)."'><br>");
+		rawoutput("<input type='input' length='50' name='target' value='".htmlspecialchars($target, ENT_QUOTES)."'><br>");
 		$submit=translate_inline("Search!");
 		rawoutput("<input type='submit' class='button' value='$submit'>");
 		rawoutput("</form>");
@@ -322,37 +324,37 @@ switch ($subop) {
 	case "ignore_now":
 		$date=date("Y-m-d H:i:s");
 		$target=(int) httppost('target');
-		$reason=addslashes($this->mystrip(httppost('reason')));
-		$sql="SELECT * FROM ".db_prefix('marriage_ignorelist')." WHERE player='".$user."' AND target='$target';";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$reason=$this->mystrip(httppost('reason'));
+		$sql="SELECT * FROM ".Database::prefix('marriage_ignorelist')." WHERE player=:user AND target=:target";
+		$row=$conn->fetchAssociative($sql,array('user'=>(int)$user,'target'=>$target));
 		output("`c`b`tIgnore somebody`0`b`c`n`n");
-		if (db_num_rows($result)>0) {
+		if ($row!==false) {
 			$none=translate_inline("None given");
 			output("`xWell, you already ignored that person... your reason was: `n`n`5%s`n`n",($row['reason']!=''?$row['reason']:$none));
 		} else {
-			$sql="INSERT INTO ".db_prefix('marriage_ignorelist')." (player,target,reason,date) VALUES ('$user','$target','$reason','$date');";debug($sql);
-			db_query($sql);
+			$sql="INSERT INTO ".Database::prefix('marriage_ignorelist')." (player,target,reason,date) VALUES (:user,:target,:reason,:date)";debug($sql);
+			$conn->executeStatement($sql,array('user'=>(int)$user,'target'=>$target,'reason'=>$reason,'date'=>$date));
 			output("`xOkay, you ignored that person with the reason:`n`n`5%s`n`n",$reason);					
 		}
 		break;
 	case "unignore":
 		$target=(int)httppost('target');
-		$sql="DELETE FROM ".db_prefix('marriage_ignorelist')." WHERE player='$user' AND target='$target';";
-		$result=db_query($sql); debug($sql);
+		$sql="DELETE FROM ".Database::prefix('marriage_ignorelist')." WHERE player=:user AND target=:target";
+		$conn->executeStatement($sql,array('user'=>(int)$user,'target'=>$target)); debug($sql);
+		$result=true; //executeStatement throws on failure; zero affected rows was not an error before either
 		if ($result) output("`5Player unignored.");
 			else output("Error! Please notify the staff with precise 'what did you do' information");
 		break;
 	case "ignorelist":
-		$sql="SELECT a.name AS name,a.acctid AS acctid,b.reason AS reason,b.date AS date FROM ".db_prefix('marriage_ignorelist')." AS b INNER JOIN ".db_prefix('accounts')." AS a ON b.target=a.acctid WHERE b.player='$user' ORDER BY a.login ASC";
-		$result=db_query($sql);
+		$sql="SELECT a.name AS name,a.acctid AS acctid,b.reason AS reason,b.date AS date FROM ".Database::prefix('marriage_ignorelist')." AS b INNER JOIN ".Database::prefix('accounts')." AS a ON b.target=a.acctid WHERE b.player=:user ORDER BY a.login ASC";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user));
 		$name=translate_inline("Name");
 		$message=translate_inline("Message");
 		$date=translate_inline("Date");
 		$op=translate_inline("Ops");
 		rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td><td>$message</td><td>$date</td><td>$op</td></tr>");				
 		$class='';
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
 			output_notl($row['name']);
@@ -369,7 +371,7 @@ switch ($subop) {
 			rawoutput("</form>");
 			rawoutput("</td></tr>");
 		}
-		if (db_num_rows($result)==0) {
+		if (count($rows)==0) {
 			rawoutput("<tr><td colspan=4>");
 			output("`\$You have not ignored anybody.`0");
 			rawoutput("</td></tr>");
@@ -377,14 +379,15 @@ switch ($subop) {
 		rawoutput("</table></center>");
 		break;
 	case "flirtpartnerlist":
-/*				$sql="SELECT a.name AS name,a.acctid AS acctid FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' 
+/*				$sql="SELECT a.name AS name,a.acctid AS acctid FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator=:user 
 			UNION 
-			SELECT a.name AS name,a.acctid AS acctid FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' ORDER BY name ASC";
+			SELECT a.name AS name,a.acctid AS acctid FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver=:user ORDER BY name ASC";
 */	
-		$sql="SELECT name,acctid,sum(med) as medi,sum(counter) as counteri FROM (SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, b.receiver as party, count(b.date) as counter FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver
+		$sql="SELECT name,acctid,sum(med) as medi,sum(counter) as counteri FROM (SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, b.receiver as party, count(b.date) as counter FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator=:user AND responsedate!='1970-01-01 00:00:00' GROUP BY b.receiver
 			UNION ALL
-			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, b.initiator as party, count(b.date) as counter FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND responsedate!='1970-01-01 00:00:00' GROUP BY b.initiator ORDER BY name ASC) AS maintable GROUP BY name,acctid";
-		$result=db_query_cached($sql,"marriage_flirtpartnerlist_$user");debug($sql);
+			SELECT a.name AS name,a.acctid AS acctid,avg(b.successful) as med, b.initiator as party, count(b.date) as counter FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver=:user AND responsedate!='1970-01-01 00:00:00' GROUP BY b.initiator ORDER BY name ASC) AS maintable GROUP BY name,acctid";
+		//direct query instead of db_query_cached (cache key dropped; invalidatedatacache("marriage_flirtpartnerlist_...") calls kept)
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user));debug($sql);
 		$name=translate_inline("Name");
 		$view=translate_inline("View Flirt");
 		$flirt=translate_inline("Flirt!");
@@ -396,7 +399,7 @@ switch ($subop) {
 		$minflirts=get_module_setting('m_minflirts');
 		$averagerating=get_module_setting('m_pointsneeded');
 		$old=0;
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			if ($row['name']=='') $row['name']="Deleted User";
 			if ($row['acctid']==null) $row['acctid']=0;
 			$class=($class=='trlight'?'trdark':'trlight');
@@ -427,7 +430,7 @@ switch ($subop) {
 			} else rawoutput("<td></td>");
 			rawoutput("</tr>");
 		}
-		if (db_num_rows($result)==0) {
+		if (count($rows)==0) {
 			rawoutput("<tr><td colspan=5>");
 			output("`\$You have not flirted with anybody yet.`0");
 			rawoutput("</td></tr>");
@@ -435,10 +438,10 @@ switch ($subop) {
 		rawoutput("</table></center>");
 		break;				
 	case "flirtlist":
-		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND b.responsedate!='1970-01-01 00:00:00' 
+		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver=:user AND b.responsedate!='1970-01-01 00:00:00' 
 		UNION 
-		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND b.responsedate!='1970-01-01 00:00:00' ORDER BY name,date,responsedate ASC";
-		$result=db_query($sql);debug($sql);
+		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator=:user AND b.responsedate!='1970-01-01 00:00:00' ORDER BY name,date,responsedate ASC";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user));debug($sql);
 		$name=translate_inline("Name");
 		$date=translate_inline("Date");
 		$resdate=translate_inline("Date Of Response");
@@ -449,7 +452,7 @@ switch ($subop) {
 		rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td><td>$date</td><td>$resdate</td><td>$successful</td><td>$ops</td></tr>");				
 		$class='';
 		$old=0;
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
 			if ($old!=$row['acctid']) output_notl($row['name']);
@@ -469,7 +472,7 @@ switch ($subop) {
 			rawoutput("</form>");
 			rawoutput("</td></tr>");
 		}
-		if (db_num_rows($result)==0) {
+		if (count($rows)==0) {
 			rawoutput("<tr><td colspan=5>");
 			output("`\$You have not flirted with anybody yet.`0");
 			rawoutput("</td></tr>");
@@ -480,11 +483,11 @@ switch ($subop) {
 		output("`xHere are the details:`n`n");
 		$target=(int)httppost('target');
 		$active=httppost('active');
-		$sql="SELECT a.name AS name,a.acctid AS acctid,c.name AS receivername,c.acctid AS receiveracctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id,b.message AS message, b.response AS response FROM ".db_prefix('accounts')." AS c RIGHT JOIN ".db_prefix('marriage_actions')." AS b ON c.acctid=b.receiver LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE ((b.receiver='$user' AND b.initiator='$target') OR (b.initiator='$user' AND b.receiver='$target')) AND responsedate!='1970-01-01 00:00:00' ORDER BY b.date,b.responsedate ASC";
-		$result=db_query($sql);debug($sql);
+		$sql="SELECT a.name AS name,a.acctid AS acctid,c.name AS receivername,c.acctid AS receiveracctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id,b.message AS message, b.response AS response FROM ".Database::prefix('accounts')." AS c RIGHT JOIN ".Database::prefix('marriage_actions')." AS b ON c.acctid=b.receiver LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE ((b.receiver=:user AND b.initiator=:target) OR (b.initiator=:user AND b.receiver=:target)) AND responsedate!='1970-01-01 00:00:00' ORDER BY b.date,b.responsedate ASC";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target));debug($sql);
 		$none=translate_inline("No words spoken...");
 		$from=0;
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			output("`\$%s `4(%s)`2 flirted with `1%s `4(%s)`2 ... the flirt (",$row['name'],$row['date'],$row['receivername'],$row['responsedate']);
 			rawoutput("<img src='modules/marriage/smileys/smiley-".$row['successful'].".gif' alt='reaction'>");
 			output(") started with:`n");
@@ -507,10 +510,10 @@ switch ($subop) {
 				</form></td></tr>");				
 		break;
 	case "unrespondedstatus":
-		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver='$user' AND b.responsedate='1970-01-01 00:00:00' 
+		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.receiver=:user AND b.responsedate='1970-01-01 00:00:00' 
 		UNION 
-		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator='$user' AND b.responsedate='1970-01-01 00:00:00' ORDER BY name,date,responsedate ASC";
-		$result=db_query($sql);
+		SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.receiver=a.acctid WHERE b.initiator=:user AND b.responsedate='1970-01-01 00:00:00' ORDER BY name,date,responsedate ASC";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user));
 		$name=translate_inline("Name");
 		$date=translate_inline("Date");
 		$resdate=translate_inline("Date Of Response");
@@ -520,7 +523,7 @@ switch ($subop) {
 		rawoutput("<center><table cellpadding='3' cellspacing='0' border='0' ><tr class='trhead'><td>$name</td><td>$date</td><td>$resdate</td><td>$ops</td></tr>");				
 		$class='';
 		$old=0;
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			$class=($class=='trlight'?'trdark':'trlight');
 			rawoutput("<tr class='$class'><td>");
 			if ($old!=$row['acctid']) output_notl($row['name']);
@@ -539,7 +542,7 @@ switch ($subop) {
 			rawoutput("</form>");
 			rawoutput("</td></tr>");
 		}
-		if (db_num_rows($result)==0) {
+		if (count($rows)==0) {
 			rawoutput("<tr><td colspan=5>");
 			output("`\$You have not flirted with anybody yet.`0");
 			rawoutput("</td></tr>");
@@ -556,18 +559,19 @@ switch ($subop) {
 		if ($close) {
 			//close + view
 			$text=translate_inline('Closed by the Flirter');
-			$sql="UPDATE ".db_prefix('marriage_actions')." SET responsedate='".date('Y-m-d H:i:s')."',successful=0,response='".addslashes($text)."' WHERE id='".$id."';";
+			// Only the flirter may close their own flirt.
+			$sql="UPDATE ".Database::prefix('marriage_actions')." SET responsedate=:responsedate,successful=0,response=:response WHERE id=:id AND initiator=:user";
 			//debug($sql);
-			db_query($sql);
+			$conn->executeStatement($sql,array('responsedate'=>date('Y-m-d H:i:s'),'response'=>$text,'id'=>$id,'user'=>(int)$user));
 			output("`c`\$`bThis flirt has now been closed, this is what you sent.`b`0`c");
 		}
 		output("`xHere are the details:`n`n");
-		$sql="SELECT a.name AS name,a.acctid AS acctid,c.name AS receivername,c.acctid AS receiveracctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id,b.message AS message, b.response AS response FROM ".db_prefix('accounts')." AS c RIGHT JOIN ".db_prefix('marriage_actions')." AS b ON c.acctid=b.receiver LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.id='$id'";
-		$result=db_query($sql);
+		$sql="SELECT a.name AS name,a.acctid AS acctid,c.name AS receivername,c.acctid AS receiveracctid, b.date AS date,b.responsedate AS responsedate,b.successful AS successful,b.id AS id,b.message AS message, b.response AS response FROM ".Database::prefix('accounts')." AS c RIGHT JOIN ".Database::prefix('marriage_actions')." AS b ON c.acctid=b.receiver LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.id=:id AND (b.initiator=:user OR b.receiver=:user)";
+		$rows=$conn->fetchAllAssociative($sql,array('id'=>$id,'user'=>(int)$user));
 		$none=translate_inline("No words spoken...");
 		$targetted=0;
 		$deleted="Deleted User";
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			if ($row['receivername']=='') $row['receivername']=$deleted;
 			output("`\$%s `4(%s)`2 flirted with `1%s `4(%s)`2 ... the flirt (",$row['name'],$row['date'],$row['receivername'],($unresponded&&!$close)?translate_inline("no response yet"):$row['responsedate']);
 			if ($unresponded && !$close) {
@@ -606,12 +610,12 @@ switch ($subop) {
 			output("`RAlright, if you try to propose to a person who is married, it will most likely end with you getting beat up ... so back off.");
 			break;
 		}
-		$sql="SELECT SUM(CHAR_LENGTH(b.message)) as messagecount,SUM(CHAR_LENGTH(b.response)) as responsecount FROM ".db_prefix('marriage_actions')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE (b.receiver='$user' AND b.initiator='$target') OR (b.receiver='$target' AND b.initiator='$user') ";
-		$result=db_query($sql);debug($sql);
+		$sql="SELECT SUM(CHAR_LENGTH(b.message)) as messagecount,SUM(CHAR_LENGTH(b.response)) as responsecount FROM ".Database::prefix('marriage_actions')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE (b.receiver=:user AND b.initiator=:target) OR (b.receiver=:target AND b.initiator=:user) ";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user,'target'=>$target));debug($sql);
 		$needed=get_module_setting('m_wordcount');
 		$mc_needed=get_module_setting('mc_wordcount');
 		
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			$sum=$row['messagecount']+$row['responsecount'];
 
 			if ($sum>$mc_needed && $this->isengaged($target)==$session['user']['acctid'] && $this->isengaged($session['user']['acctid'])!= $session['user']['acctid']) {
@@ -632,8 +636,8 @@ switch ($subop) {
 		} 
 		break;
 	case "checkproposals":
-		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate FROM ".db_prefix('marriage_proposals')." AS b LEFT JOIN ".db_prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.proposed_to='$user' ORDER BY date DESC";
-		$result=db_query($sql);debug($sql);
+		$sql="SELECT a.name AS name,a.acctid AS acctid, b.date AS date,b.responsedate AS responsedate FROM ".Database::prefix('marriage_proposals')." AS b LEFT JOIN ".Database::prefix('accounts')." AS a ON b.initiator=a.acctid WHERE b.proposed_to=:user ORDER BY date DESC";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user));debug($sql);
 		$name=translate_inline("Name");
 		$date=translate_inline("Date");
 		$resdate=translate_inline("Date Of Response");
@@ -644,7 +648,7 @@ switch ($subop) {
 		$old=0;
 		$respond=translate_inline("Respond");				
 		$view=translate_inline("View");
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			// Normalize values to prevent null from reaching holiday text processing and keep display stable for missing account rows.
 			$proposerName = (string)($row['name'] ?? translate_inline('Unknown'));
 			$proposalDate = (string)($row['date'] ?? '');
@@ -675,7 +679,7 @@ switch ($subop) {
 			}
 			rawoutput("</td></tr>");
 		}
-		if (db_num_rows($result)==0) {
+		if (count($rows)==0) {
 			rawoutput("<tr><td colspan=4>");
 			output("`\$You have no incoming proposals.`0");
 			rawoutput("</td></tr>");
@@ -686,11 +690,11 @@ switch ($subop) {
 		output("`xHere are the details:`n`n");
 		$target=(int)httppost('target');
 		$date=httppost('date');
-		$sql="SELECT a.name AS name,a.acctid AS acctid,b.date AS date,b.responsedate AS responsedate, b.propose AS propose, b.response AS response FROM ".db_prefix('accounts')." AS a RIGHT JOIN ".db_prefix('marriage_proposals')." AS b ON a.acctid=b.initiator WHERE b.proposed_to=$user AND b.date='$date'";
-		$result=db_query($sql);debug($sql);
+		$sql="SELECT a.name AS name,a.acctid AS acctid,b.date AS date,b.responsedate AS responsedate, b.propose AS propose, b.response AS response FROM ".Database::prefix('accounts')." AS a RIGHT JOIN ".Database::prefix('marriage_proposals')." AS b ON a.acctid=b.initiator WHERE b.proposed_to=:user AND b.date=:date";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user,'date'=>$date));debug($sql);
 		$none=translate_inline("No words spoken...");
 		$targetted=0;
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			output("`\$%s `4(%s)`2 proposed to `1%s `2 ... `n`n",$row['name'],$row['date'],$user);
 			output_notl("`c`^".stripslashes($row['propose'])."`0`c`n`n");
 			output("`x... and the response was:`n");
@@ -710,9 +714,9 @@ switch ($subop) {
 			require_once("lib/systemmail.php");
 			$re=$session['user']['name'].sprintf_translate(" answered to your proposal... `n`4Here the reponse:`0`n`n").$response;
 			systemmail($target,array("`gA proposal has been answered..."),$re);
-			$sql="UPDATE ".db_prefix('marriage_proposals')." SET response='".addslashes($response)."', accepted=$accepted,responsedate='".date("Y-m-d H:i:s")."' WHERE date='$date' AND proposed_to=$user AND initiator=$target LIMIT 1;";
-			$result=db_query($sql);debug($sql);
-			if (db_affected_rows($result)<1) {
+			$sql="UPDATE ".Database::prefix('marriage_proposals')." SET response=:response, accepted=:accepted,responsedate=:responsedate WHERE date=:date AND proposed_to=:user AND initiator=:target LIMIT 1";
+			$affected=$conn->executeStatement($sql,array('response'=>$response,'accepted'=>$accepted,'responsedate'=>date("Y-m-d H:i:s"),'date'=>$date,'user'=>(int)$user,'target'=>$target));debug($sql);
+			if ($affected<1) {
 				output("`4Error! This proposal could not be found. Most likely an error, report to admin!`n");
 			} else {
 				output("`4Answer delivered!`n`n");
@@ -746,10 +750,10 @@ switch ($subop) {
 		output("`xHere are the details:`n`n");
 		$target=(int)httppost('target');
 		$date=httppost('date');
-		$sql="SELECT a.name AS name,a.acctid AS acctid,b.date AS date,b.responsedate AS responsedate, b.propose AS propose, b.response AS response FROM ".db_prefix('accounts')." AS a RIGHT JOIN ".db_prefix('marriage_proposals')." AS b ON a.acctid=b.initiator WHERE b.proposed_to=$user AND b.date='$date'";
-		$result=db_query($sql);debug($sql);
+		$sql="SELECT a.name AS name,a.acctid AS acctid,b.date AS date,b.responsedate AS responsedate, b.propose AS propose, b.response AS response FROM ".Database::prefix('accounts')." AS a RIGHT JOIN ".Database::prefix('marriage_proposals')." AS b ON a.acctid=b.initiator WHERE b.proposed_to=:user AND b.date=:date";
+		$rows=$conn->fetchAllAssociative($sql,array('user'=>(int)$user,'date'=>$date));debug($sql);
 		$targetted=0;
-		while ($row=db_fetch_assoc($result)) {
+		foreach ($rows as $row) {
 			output("`\$%s `4(%s)`2 proposed to `1%s `2 ... `n`n",$row['name'],$row['date'],$session['user']['name']);
 			output_notl("`c`^".stripslashes($row['propose'])."`c`0`n`n");
 		}
@@ -784,23 +788,20 @@ switch ($subop) {
 		addnav("Display Flirtpartners","runmodule.php?module=marriage&op=flirt&subop=flirtpartnerlist");				
 		
 		//fetch incoming and not responded flirts
-		$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_actions')." WHERE responsedate='1970-01-01 00:00:00' AND receiver=".$user.";";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT count(initiator) as counter FROM ".Database::prefix('marriage_actions')." WHERE responsedate='1970-01-01 00:00:00' AND receiver=:user";
+		$row=$conn->fetchAssociative($sql,array('user'=>(int)$user));
 		if ($row['counter']>0) {
 			addnav(array("Response to flirts (`4%s incoming`0)",$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=response");					
 		}
-		$sql="SELECT count(receiver) as counter FROM ".db_prefix('marriage_actions')." WHERE responsedate='1970-01-01 00:00:00' AND initiator=".$user.";";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT count(receiver) as counter FROM ".Database::prefix('marriage_actions')." WHERE responsedate='1970-01-01 00:00:00' AND initiator=:user";
+		$row=$conn->fetchAssociative($sql,array('user'=>(int)$user));
 		if ($row['counter']>0) {
 			addnav(array("Check unresponded flirts (`4%s outgoing`0)",$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=unrespondedstatus");					
 		}
 		//fetch incoming and not responded proposals
 		addnav("More Serious...");
-		$sql="SELECT count(initiator) as counter FROM ".db_prefix('marriage_proposals')." WHERE responsedate='1970-01-01 00:00:00' AND proposed_to=".$user.";";
-		$result=db_query($sql);
-		$row=db_fetch_assoc($result);
+		$sql="SELECT count(initiator) as counter FROM ".Database::prefix('marriage_proposals')." WHERE responsedate='1970-01-01 00:00:00' AND proposed_to=:user";
+		$row=$conn->fetchAssociative($sql,array('user'=>(int)$user));
 		addnav(array("Proposal Overview (`4%s unresponded`0)",(int)$row['counter']),"runmodule.php?module=marriage&op=flirt&subop=checkproposals");					
 		if ($this->isengaged()) {
 			addnav("Cancel Engagement...","runmodule.php?module=marriage&op=chapel&subop=endengagement");

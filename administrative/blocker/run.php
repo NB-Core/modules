@@ -33,10 +33,14 @@
 		
 			$email=rawurldecode(httppost('email'));
 			$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
-			$reason=addslashes(httppost('reason'));
-			$sql="INSERT INTO ".$table_emails." (emailaddress,reason) VALUES ('$email','$reason')";
-			$result=db_query($sql);
-			if (db_affected_rows($result)>0) {
+			// Bound as it was stored before (httppost() already adds slashes; the old
+			// extra addslashes() only undid itself in the SQL string).
+			$reason=(string)httppost('reason');
+			$affected=\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+				"INSERT INTO ".$table_emails." (emailaddress,reason) VALUES (:email,:reason)",
+				array('email'=>$email,'reason'=>$reason)
+			);
+			if ($affected>0) {
 				output("%s inserted...`n`n",$email);
 			} else {
 				output("`\$Error for %s, no row affected!",$email);
@@ -46,7 +50,7 @@
 		case "delsave":
 			$email=rawurldecode(httpget('email'));
 			$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
-			$reason=addslashes(httppost('reason'));
+			$reason=(string)httppost('reason');
 
 			if (httppost('delete')) {
 				$sql="DELETE FROM ".$table_emails." WHERE emailaddress='$email'";
@@ -60,9 +64,12 @@
 			}
 				
 		
-			$sql="UPDATE ".$table_emails." SET reason='$reason' WHERE emailaddress='$email'";
-			$result=db_query($sql);
-			if (db_affected_rows($result)>0) {
+			// Bound as it was stored before (httppost() already adds slashes).
+			$affected=\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+				"UPDATE ".$table_emails." SET reason=:reason WHERE emailaddress=:email",
+				array('reason'=>$reason,'email'=>$email)
+			);
+			if ($affected>0) {
 				output("%s has a new reason now...`n`n",$email);
 			} else {
 				output("`\$Error changing reason for %s, no row affected!",$email);
