@@ -48,8 +48,12 @@
 			break;
 	
 		case "delsave":
-			$email=rawurldecode(httpget('email'));
-			$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
+			// The list links to the stored (already salted and hashed) address; hashing
+			// it again never matched a row. A plain address is still hashed.
+			$email=rawurldecode((string)httpget('email'));
+			if (!preg_match('/^[0-9a-f]{128}$/', $email)) {
+				$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
+			}
 			$reason=(string)httppost('reason');
 
 			if (httppost('delete')) {
@@ -159,12 +163,12 @@
 			$i=!$i;
 			$class=($i?"trlight":"trdark");
 			rawoutput("<tr class='$class'><td>");
-			rawoutput($row['emailaddress']);
+			rawoutput(htmlspecialchars((string)$row['emailaddress'], ENT_QUOTES));
 			rawoutput("</td><td>");
 			rawoutput("<form action='runmodule.php?module=blocker&subop=delsave&email=".rawurlencode($row['emailaddress'])."' method='POST'>");
-			addnav("runmodule.php?module=blocker&subop=delsave&email=".rawurlencode($row['emailaddress']));
+			addnav("","runmodule.php?module=blocker&subop=delsave&email=".rawurlencode($row['emailaddress']));
 			rawoutput("<textarea name='reason' cols='40' rows='2'>");
-			rawoutput($row['reason']);
+			rawoutput(htmlspecialchars(stripslashes((string)$row['reason']), ENT_QUOTES));
 			rawoutput("</textarea><br/><input type='submit' name='delete' class='button' value='$delete'>&nbsp;&nbsp;&nbsp;<input type='submit' class='button' value='$submit'></form>");
 			rawoutput("</td></tr>");
 		}
