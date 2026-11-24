@@ -91,6 +91,23 @@ function claneditor_actionbutton($url, $label, $confirm = ""){
 		."<input type='submit' class='button' value='".htmlspecialchars($label, ENT_QUOTES)."'></form>";
 }
 
+/**
+ * Look up the display name of a clan MoTD/description author.
+ *
+ * @param \Doctrine\DBAL\Connection $conn
+ * @param string $accountsTable
+ * @param mixed $acctid
+ * @return mixed name or null when the account does not exist
+ */
+function claneditor_authorname($conn, $accountsTable, $acctid){
+	$row = $conn->fetchAssociative(
+		"SELECT name FROM {$accountsTable} WHERE acctid = :acctid",
+		['acctid' => (int)$acctid],
+		['acctid' => ParameterType::INTEGER]
+	);
+	return $row === false ? null : $row['name'];
+}
+
 function claneditor_run(){
 	global $session;
 	// The Grotto link is only offered to SU_EDIT_USERS; enforce the same here.
@@ -125,8 +142,8 @@ $ranks = translate_inline($args['ranks']);
 		page_header("Clan Listing");
 		rawoutput("<table border='0' padding='0'><tr><td>");
 		$sql = "SELECT MAX(" . db_prefix("clans") . ".clanid) AS clanid, MAX(clanname) AS clanname,count(" . db_prefix("accounts") . ".acctid) AS c FROM " . db_prefix("clans") . " LEFT JOIN " . db_prefix("accounts") . " ON " . db_prefix("clans") . ".clanid=" . db_prefix("accounts") . ".clanid AND clanrank>".CLAN_APPLICANT." GROUP BY " . db_prefix("clans") . ".clanid ORDER BY c DESC";
-		$result = db_query($sql);
-		if (db_num_rows($result)>0){
+		$clanrows = $conn->fetchAllAssociative($sql);
+		if (count($clanrows)>0){
 			output("`%Karissa`7 steps in as if by magic, listing the clans for you.`n");
 			output("`@`bList of Clans:`b`0`n`n");
 			$v = 0;
@@ -134,11 +151,14 @@ $ranks = translate_inline($args['ranks']);
 			$memb_1 = translate_inline("(%s member)");
 			rawoutput('<table cellspacing="0" cellpadding="2" align="left">');
 			output_notl("<tr class='trhead'><td>%s</td><td>%s</td></tr>",translate_inline("`b`&Name of Clan`b"),translate_inline("`&`iNumber of Members`i"),true);
-			for ($i=0;$i<db_num_rows($result);$i++){
-				$row = db_fetch_assoc($result);
+			for ($i=0;$i<count($clanrows);$i++){
+				$row = $clanrows[$i];
 				if ($row['c']==0){
-					$sql = "DELETE FROM " . db_prefix("clans") . " WHERE clanid={$row['clanid']}";
-					db_query($sql);
+					$conn->executeStatement(
+						"DELETE FROM {$clansTable} WHERE clanid = :clanid",
+						['clanid' => (int)$row['clanid']],
+						['clanid' => ParameterType::INTEGER]
+					);
 				}else{
 					rawoutput('<tr class="' . ($v%2?"trlight":"trdark").'"><td>', true);
 					if ($row['c'] == 1) {
@@ -259,15 +279,8 @@ $ranks = translate_inline($args['ranks']);
 			page_header("Clan Deletion");
 		}
 		if ($op=="mview"){
-			$sql = "SELECT name FROM " . db_prefix("accounts")  . " WHERE acctid={$claninfo['motdauthor']}";
-			$result = db_query($sql);
-			$row = db_fetch_assoc($result);
-			$motdauthname = $row['name'];
-
-			$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid={$claninfo['descauthor']}";
-			$result = db_query($sql);
-			$row = db_fetch_assoc($result);
-			$descauthname = $row['name'];
+			$motdauthname = claneditor_authorname($conn, $accountsTable, $claninfo['motdauthor']);
+			$descauthname = claneditor_authorname($conn, $accountsTable, $claninfo['descauthor']);
 			output("`&`bCurrent MoTD:`b `#by %s`2`n",$motdauthname);
 			output_notl(nltoappon($claninfo['clanmotd'])."`n`n");
 			$count=false;
@@ -309,13 +322,16 @@ $ranks = translate_inline($args['ranks']);
 			}
 			if ($count) output_notl("`b");			
 			modulehook("}collapse");
-			$sql = "SELECT count(acctid) AS c, clanrank FROM " . db_prefix("accounts") . " WHERE clanid={$claninfo['clanid']} GROUP BY clanrank ORDER BY clanrank DESC";
-			$result = db_query($sql);
+			$memberstats = $conn->fetchAllAssociative(
+				"SELECT count(acctid) AS c, clanrank FROM {$accountsTable} WHERE clanid = :clanid GROUP BY clanrank ORDER BY clanrank DESC",
+				['clanid' => (int)$claninfo['clanid']],
+				['clanid' => ParameterType::INTEGER]
+			);
 			// begin collapse
 			modulehook("collapse{", array("name"=>"clanmemberdet"));
 			output("`n`bMembership Details:`b`n");
 			$leaders = 0;
-			while ($row = db_fetch_assoc($result)){
+			foreach ($memberstats as $row){
 				output_notl($ranks[$row['clanrank']].": ".$row['c']."`n");
 				if ($row['clanrank']>=CLAN_LEADER) $leaders = $row['c'];
 			}
@@ -329,8 +345,11 @@ $ranks = translate_inline($args['ranks']);
 					['clanid' => (int)$dt],
 					['clanid' => ParameterType::INTEGER]
 				)->fetchAssociative();
-				$sql = "UPDATE " . db_prefix("accounts") . " SET clanrank=".CLAN_LEADER." WHERE acctid='".$row['acctid']."'";
-				db_query($sql);
+				$conn->executeStatement(
+					"UPDATE {$accountsTable} SET clanrank = :rank WHERE acctid = :acctid",
+					['rank' => (int)CLAN_LEADER, 'acctid' => (int)$row['acctid']],
+					['rank' => ParameterType::INTEGER, 'acctid' => ParameterType::INTEGER]
+				);
 				output_notl($noleader,$row['name']);
 			}
 			// end collapse
@@ -473,14 +492,8 @@ $ranks = translate_inline($args['ranks']);
 				invalidatedatacache("clandata-{$claninfo['clanid']}");
 				$claninfo['clanshort']=$clanshort;
 			}
-			$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid={$claninfo['motdauthor']}";
-			$result = db_query($sql);
-			$row = db_fetch_assoc($result);
-			$motdauthname = $row['name'];
-			$sql = "SELECT name FROM " . db_prefix("accounts") . " WHERE acctid={$claninfo['descauthor']}";
-			$result = db_query($sql);
-			$row = db_fetch_assoc($result);
-			$descauthname = $row['name'];
+			$motdauthname = claneditor_authorname($conn, $accountsTable, $claninfo['motdauthor']);
+			$descauthname = claneditor_authorname($conn, $accountsTable, $claninfo['descauthor']);
 			output("`&`bCurrent MoTD:`b `#by %s`2`n",$motdauthname);
 			output_notl(nltoappon($claninfo['clanmotd'])."`n");
 			output("`&`bCurrent Description:`b `#by %s`2`n",$descauthname);
@@ -508,9 +521,12 @@ $ranks = translate_inline($args['ranks']);
 				$claninfo['blockdesc']="";
 				$claninfo['descauthor']=4294967295;
 			}elseif ($posted && httppost('unblock')>""){
-				$sql = "UPDATE " . db_prefix("clans") . " SET descauthor=0, clandesc='' where clanid='".$claninfo['clanid']."'";
 				output("Unblocking public description`n");
-				db_query($sql);
+				$conn->executeStatement(
+					"UPDATE {$clansTable} SET descauthor=0, clandesc='' where clanid = :clanid",
+					['clanid' => (int)$claninfo['clanid']],
+					['clanid' => ParameterType::INTEGER]
+				);
 				invalidatedatacache("clandata-".$claninfo['clanid']."");
 				$claninfo['clandesc']="";
 				$claninfo['descauthor']=0;
@@ -568,8 +584,11 @@ $ranks = translate_inline($args['ranks']);
 					['subject' => ParameterType::STRING]
 				);
 			}
-			$sql = "SELECT name,login,clanrank,laston,clanjoindate,dragonkills,level FROM " . db_prefix("accounts") . " WHERE clanid={$claninfo['clanid']} ORDER BY clanrank DESC,clanjoindate";
-			$result = db_query($sql);
+			$memberrows = $conn->fetchAllAssociative(
+				"SELECT name,login,clanrank,laston,clanjoindate,dragonkills,level FROM {$accountsTable} WHERE clanid = :clanid ORDER BY clanrank DESC,clanjoindate",
+				['clanid' => (int)$claninfo['clanid']],
+				['clanid' => ParameterType::INTEGER]
+			);
 			rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
 			$rank = translate_inline("Rank");
 			$name = translate_inline("Name");
@@ -585,7 +604,7 @@ $ranks = translate_inline($args['ranks']);
 			rawoutput("<tr class='trhead'><td>$rank</td><td>$name</td><td>$lev</td><td>$dk</td><td>$jd</td><td>$lo</td><td>$ops</td></tr>",true);
 			$i=0;
 			$tot = 0;
-			while ($row=db_fetch_assoc($result)){
+			foreach ($memberrows as $row){
 				$i++;
 				$tot += $row['dragonkills'];
 				rawoutput("<tr class='".($i%2?"trlight":"trdark")."'>");

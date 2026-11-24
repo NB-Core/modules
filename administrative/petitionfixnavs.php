@@ -48,9 +48,12 @@ function petitionfixnavs_dohook($hookname, $args){
 		$id=httpget('id');
 		addnav("Fix this users navs","runmodule.php?module=petitionfixnavs&id=$id");
 		//query took from viewpetition.php
-		$nextsql="SELECT p2.author, p1.petitionid, p1.status FROM ".db_prefix("petitions")." AS p1, ".db_prefix("petitions")." AS p2 WHERE p1.petitionid>'$id' AND p2.petitionid='$id' AND p1.status=p2.status ORDER BY p1.petitionid ASC LIMIT 1";
-		$nextresult=db_query($nextsql);
-		$nextrow=db_fetch_assoc($nextresult);
+		$conn=\Lotgd\MySQL\Database::getDoctrineConnection();
+		// $id is a petition id; cast to int (httpget() returns a slashed string).
+		$nextrow=$conn->fetchAssociative(
+			"SELECT p2.author, p1.petitionid, p1.status FROM ".\Lotgd\MySQL\Database::prefix("petitions")." AS p1, ".\Lotgd\MySQL\Database::prefix("petitions")." AS p2 WHERE p1.petitionid > :id AND p2.petitionid = :id2 AND p1.status=p2.status ORDER BY p1.petitionid ASC LIMIT 1",
+			array('id'=>(int)$id,'id2'=>(int)$id)
+		);
 		if ($nextrow){
 			$nextid=$nextrow['petitionid'];
 //what does this do again? I don't get it what I wanted at that time
@@ -62,9 +65,10 @@ function petitionfixnavs_dohook($hookname, $args){
 		}
 		addnav("Notify done,close","runmodule.php?module=petitionfixnavs&op=ncnext&id=$id&nextid=0");
 		if (($session['user']['superuser'] & SU_EDIT_USERS)==SU_EDIT_USERS) {
-			$sql="SELECT author,petitionid FROM ".db_prefix('petitions')." WHERE petitionid='$id';";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
+			$row=$conn->fetchAssociative(
+				"SELECT author,petitionid FROM ".\Lotgd\MySQL\Database::prefix('petitions')." WHERE petitionid = :id",
+				array('id'=>(int)$id)
+			);
 			addnav("User Ops");
 			addnav("Display Debug Log","user.php?op=debuglog&userid=".$row['author']."&returnpetition=".$row['petitionid']);
 		}
@@ -78,19 +82,21 @@ function petitionfixnavs_run(){
 	page_header("Fixed Navs");
 	$id=httpget('id');
 	$op=httpget('op');
+	$conn=\Lotgd\MySQL\Database::getDoctrineConnection();
+	$petitions=\Lotgd\MySQL\Database::prefix("petitions");
+	$accountsTable=\Lotgd\MySQL\Database::prefix("accounts");
+	$closeparams=array('closeuserid'=>(int)$session['user']['acctid'],'closedate'=>date("Y-m-d H:i:s"),'id'=>(int)$id);
+	$closesql="UPDATE $petitions SET status=2,closeuserid = :closeuserid,closedate = :closedate WHERE petitionid = :id";
 	switch ($op) {
 		case "cnext":
 			$nextid=httpget('nextid');
-			$sql="UPDATE ".db_prefix("petitions")." SET status=2,closeuserid='{$session['user']['acctid']}',closedate='".date("Y-m-d H:i:s")."' WHERE petitionid='$id'";
-			db_query($sql);
+			$conn->executeStatement($closesql,$closeparams);
 			pt_insert(translate_inline("/me has closed the petition"));
 			invalidatedatacache("petition_counts");			
 			redirect("viewpetition.php?op=view&id=$nextid");
 			break;
 		case "ncnext":
-			$sql="SELECT author FROM ".db_prefix("petitions")." WHERE petitionid='$id'";
-			$result=db_query($sql);
-			$author=db_fetch_assoc($result);
+			$author=$conn->fetchAssociative("SELECT author FROM $petitions WHERE petitionid = :id",array('id'=>(int)$id));
 			debug($author);
 			if (!$author) {
 				output_notl("Error! Please give a detailed error report to the Petition Fixnavs Module Author!");
@@ -99,9 +105,8 @@ function petitionfixnavs_run(){
 			}
 			$author=$author['author'];
 			$nextid=(int)httpget('nextid');
-			$sql="UPDATE ".db_prefix("petitions")." SET status=2,closeuserid='{$session['user']['acctid']}',closedate='".date("Y-m-d H:i:s")."' WHERE petitionid='$id'";
 			pt_insert(translate_inline("/me has done the work and closed the petition"));
-			db_query($sql);
+			$conn->executeStatement($closesql,$closeparams);
 			require_once("lib/systemmail.php");
 			systemmail($author,"Your petition",sprintf_translate("Your request has been processed on and is now done. If not, please petition again. (This is an automatic message).`n`nRegards %s",$session['user']['name']));			
 			invalidatedatacache("petition_counts");
@@ -109,9 +114,7 @@ function petitionfixnavs_run(){
 				else redirect("viewpetition.php");
 			break;
 		case "cfnext":
-			$sql="SELECT author FROM ".db_prefix("petitions")." WHERE petitionid='$id'";
-			$result=db_query($sql);
-			$author=db_fetch_assoc($result);
+			$author=$conn->fetchAssociative("SELECT author FROM $petitions WHERE petitionid = :id",array('id'=>(int)$id));
 			debug($author);
 			if (!$author) {
 				output_notl("Error! Please give a detailed error report to the Petition Fixnavs Module Author!");
@@ -119,23 +122,18 @@ function petitionfixnavs_run(){
 				return;
 			}
 			$author=$author['author'];
-			$sql="UPDATE ".db_prefix("accounts")." SET allowednavs='',specialinc='' WHERE acctid=$author";
-			$result=db_query($sql);
-			$sql="DELETE FROM ".db_prefix("accounts_output")." WHERE acctid=$author";
-			$result=db_query($sql);		
+			$conn->executeStatement("UPDATE $accountsTable SET allowednavs='',specialinc='' WHERE acctid = :author",array('author'=>(int)$author));
+			$conn->executeStatement("DELETE FROM ".\Lotgd\MySQL\Database::prefix("accounts_output")." WHERE acctid = :author",array('author'=>(int)$author));		
 			$nextid=httpget('nextid');
-			$sql="UPDATE ".db_prefix("petitions")." SET status=2,closeuserid='{$session['user']['acctid']}',closedate='".date("Y-m-d H:i:s")."' WHERE petitionid='$id'";
 			pt_insert(translate_inline("/me has fixed navs and closed the petition"));
-			db_query($sql);
+			$conn->executeStatement($closesql,$closeparams);
 			require_once("lib/systemmail.php");
 			systemmail($author,array("Your petition"),array("Your navs have been fixed, you should be able to navigate from the stuck page now. If not, please petition again. (This is an automatic message).`n`nRegards %s",$session['user']['name']));			
 			invalidatedatacache("petition_counts");
 			redirect("viewpetition.php?op=view&id=$nextid");
 			break;			
 		default:
-			$sql="SELECT author FROM ".db_prefix("petitions")." WHERE petitionid='$id'";
-			$result=db_query($sql);
-			$author=db_fetch_assoc($result);
+			$author=$conn->fetchAssociative("SELECT author FROM $petitions WHERE petitionid = :id",array('id'=>(int)$id));
 			debug($author);
 			if (!$author) {
 				output_notl("Error! Could not find that user!!");
@@ -143,10 +141,8 @@ function petitionfixnavs_run(){
 				return;
 			}
 			$author=$author['author'];
-			$sql="UPDATE ".db_prefix("accounts")." SET allowednavs='',specialinc='' WHERE acctid=$author";
-			$result=db_query($sql);
-			$sql="DELETE FROM ".db_prefix("accounts_output")." WHERE acctid=$author";
-			$result=db_query($sql);
+			$conn->executeStatement("UPDATE $accountsTable SET allowednavs='',specialinc='' WHERE acctid = :author",array('author'=>(int)$author));
+			$conn->executeStatement("DELETE FROM ".\Lotgd\MySQL\Database::prefix("accounts_output")." WHERE acctid = :author",array('author'=>(int)$author));
 			pt_insert(translate_inline("/me has fixed this users navs"));
 			require_once("lib/systemmail.php");
 			systemmail($author,array("Your petition"),array("Your navs have been fixed, you should be able to navigate from the stuck page now. If not, please petition again. (This is an automatic message).`n`nRegards %s",$session['user']['name']));

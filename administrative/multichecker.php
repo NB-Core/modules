@@ -45,6 +45,7 @@ function multichecker_run(){
 	global $session;
 	$op = httpget('op');
 	$oldop=httpget('oldop');
+	$conn=\Lotgd\MySQL\Database::getDoctrineConnection();
 	require_once("lib/superusernav.php");
 	superusernav();
 	page_header("Multichecker");
@@ -81,14 +82,16 @@ function multichecker_run(){
 			$op=$oldop;
 			break;
 		case "derefer":
-			$acctid=httpget('acctid');
-			$victim=httpget('multi');
+			$acctid=(int)httpget('acctid');
+			$victim=(int)httpget('multi');
 			$subject=array(
 				"Self-referred Multichar"
 				);
-			$sql="SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid IN ($acctid,$victim);";
-			$result=db_query($sql);
-			while ($row=db_fetch_assoc($result)) {
+			$result=$conn->fetchAllAssociative(
+				"SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid IN (:acctid,:victim)",
+				array('acctid'=>$acctid,'victim'=>$victim)
+			);
+			foreach ($result as $row) {
 				if ($row['acctid']==$acctid)
 					$one=$row['name'];
 					else
@@ -102,8 +105,12 @@ function multichecker_run(){
 				);
 			require_once("lib/systemmail.php");
 			systemmail($acctid,$subject,$message);
-			$sql="UPDATE ".db_prefix('accounts')." SET referer=0 WHERE acctid=".$victim.";";
-			$result=db_query($sql); 
+			try {
+				$conn->executeStatement("UPDATE ".db_prefix('accounts')." SET referer=0 WHERE acctid = :victim",array('victim'=>$victim));
+				$result=true;
+			} catch (\Doctrine\DBAL\Exception $e) { // the page shows its own error text below
+				$result=false;
+			}
 			if ($result) {
 				output("`vThe user %s`v has been notified and the multi been derefered. If you want to ban etc, please use the normal ban editor.`0`n`n",$one);
 			} else {
@@ -114,14 +121,16 @@ function multichecker_run(){
 			$op=$oldop;
 		break;
 		case "fianceewarn":
-			$acctid=httpget('acctid');
-			$victim=httpget('multi');
+			$acctid=(int)httpget('acctid');
+			$victim=(int)httpget('multi');
 			$subject=array(
 				"`\$Multichar Marriage"
 				);
-			$sql="SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid IN ($acctid,$victim);";
-			$result=db_query($sql);
-			while ($row=db_fetch_assoc($result)) {
+			$result=$conn->fetchAllAssociative(
+				"SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid IN (:acctid,:victim)",
+				array('acctid'=>$acctid,'victim'=>$victim)
+			);
+			foreach ($result as $row) {
 				if ($row['acctid']==$acctid)
 					$one=$row['name'];
 					else
@@ -135,8 +144,15 @@ function multichecker_run(){
 				);
 			require_once("lib/systemmail.php");
 			systemmail($acctid,$subject,$message);
-			$sql="UPDATE ".db_prefix('module_userprefs')." SET value=0 WHERE modulename='marriage' AND setting='fiancee' AND userid IN ($acctid,$victim);";
-			$result=db_query($sql); 
+			try {
+				$conn->executeStatement(
+					"UPDATE ".db_prefix('module_userprefs')." SET value=0 WHERE modulename='marriage' AND setting='fiancee' AND userid IN (:acctid,:victim)",
+					array('acctid'=>$acctid,'victim'=>$victim)
+				);
+				$result=true;
+			} catch (\Doctrine\DBAL\Exception $e) { // the page shows its own error text below
+				$result=false;
+			}
 			if ($result) {
 				output("`vThe users %s`v and %s`v has been notified and the marriage been cancelled. If you want to ban etc, please use the normal ban editor.`0`n`n",$one,$two);
 			} else {
@@ -147,14 +163,16 @@ function multichecker_run(){
 			$op=$oldop;
 			break;
 		case "marriagewarn":
-			$acctid=httpget('acctid');
-			$victim=httpget('multi');
+			$acctid=(int)httpget('acctid');
+			$victim=(int)httpget('multi');
 			$subject=array(
 				"`\$Multichar Marriage"
 				);
-			$sql="SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid IN ($acctid,$victim);";
-			$result=db_query($sql);
-			while ($row=db_fetch_assoc($result)) {
+			$result=$conn->fetchAllAssociative(
+				"SELECT acctid,name FROM ".db_prefix('accounts')." WHERE acctid IN (:acctid,:victim)",
+				array('acctid'=>$acctid,'victim'=>$victim)
+			);
+			foreach ($result as $row) {
 				if ($row['acctid']==$acctid)
 					$one=$row['name'];
 					else
@@ -168,8 +186,15 @@ function multichecker_run(){
 				);
 			require_once("lib/systemmail.php");
 			systemmail($acctid,$subject,$message);
-			$sql="UPDATE ".db_prefix('accounts')." SET marriedto=0 WHERE acctid IN ($acctid,$victim);";
-			$result=db_query($sql); 
+			try {
+				$conn->executeStatement(
+					"UPDATE ".db_prefix('accounts')." SET marriedto=0 WHERE acctid IN (:acctid,:victim)",
+					array('acctid'=>$acctid,'victim'=>$victim)
+				);
+				$result=true;
+			} catch (\Doctrine\DBAL\Exception $e) { // the page shows its own error text below
+				$result=false;
+			}
 			if ($result) {
 				output("`vThe users %s`v and %s`v has been notified and the marriage been cancelled. If you want to ban etc, please use the normal ban editor.`0`n`n",$one,$two);
 			} else {
@@ -187,6 +212,8 @@ function multichecker_run(){
 		addnav("Whitelist");
 		addnav("This search without whitelisted players","");	
 	}
+	// The whitelist ids end up inlined into NOT IN (...); force every entry to int.
+	$implodedwhitelist=implode(",",array_map('intval',array_filter(explode(",",(string)$implodedwhitelist),'strlen')));
 	switch ($op) {
 
 		case "IP":
@@ -306,7 +333,7 @@ function multichecker_run(){
 			output("Please specify an action!");
 			page_footer();
 	}
-	$result=db_query($sql);
+	$result=$conn->fetchAllAssociative($sql);
 	$i=0;
 	rawoutput("<table border='0' cellpadding='2' cellspacing='0'>");
 	rawoutput("<tr class='trhead'><td>". translate_inline("Name A")."</td><td>".translate_inline("Acctid")."</td><td>". translate_inline("Name B")."</td><td nowrap>".translate_inline("Actions")."</td><td>".translate_inline("Acctid")."</td><td>".translate_inline("Referer")."</td><td>".translate_inline("IP/ID")."</td><td>".translate_inline("Email A")."</td><td>".translate_inline("Email B")."</td></tr>");
@@ -317,7 +344,7 @@ function multichecker_run(){
 	$addtowhitelist=translate_inline("Add to Whitelist");
 	$warn=translate_inline("Unmarry&Notify");
 	$previousaction=httpget('op');
-	while ($row=db_fetch_assoc($result)) {
+	foreach ($result as $row) {
 		if (!in_array($row['AcctidB'],$old)) {
 			$i++;
 			rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
