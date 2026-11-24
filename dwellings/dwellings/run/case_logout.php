@@ -65,9 +65,11 @@
             }
             $allowednavs[$row['restorepage']] = true;
             // Write back to database
-            $serialized = addslashes(serialize($allowednavs));
-            $sql = "UPDATE " . db_prefix('accounts') . " SET allowednavs = '" . $serialized . "'  WHERE acctid=" . $session['user']['acctid'];
-            db_query($sql);
+            $serialized = serialize($allowednavs);
+            \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+                "UPDATE " . \Lotgd\MySQL\Database::prefix('accounts') . " SET allowednavs = :navs WHERE acctid = :acctid",
+                ['navs' => $serialized, 'acctid' => (int)$session['user']['acctid']]
+            );
         }
 
 			invalidatedatacache("charlisthomepage");

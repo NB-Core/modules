@@ -115,8 +115,16 @@ function nextturn($number,$id=false) {
 }
 
 function setdata($number,$gamedata) {
-	$sql="UPDATE ".db_prefix("playergames")." SET gamedata='".addslashes(serialize($gamedata))."' WHERE number=".$number;
-	$result=db_query($sql);
+	// serialize() output is bound raw (addslashes() inside the old quoted literal was undone by MySQL).
+	try {
+		\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+			"UPDATE ".\Lotgd\MySQL\Database::prefix("playergames")." SET gamedata = :gamedata WHERE number = :number",
+			['gamedata' => serialize($gamedata), 'number' => (int)$number]
+		);
+		$result=1;
+	} catch (\Doctrine\DBAL\Exception $e) {
+		$result=false;
+	}
 	if ($result!=1) {
 		output("An error happened while getting the gamedata.");
 		return false;

@@ -49,8 +49,7 @@ class WizardService {
     /**
      * Insert a translation row.
      *
-     * Values are manually escaped because the db_query helper has no
-     * parameterized query support.
+     * Values are bound as named parameters.
      *
      * @param string $language Target language code
      * @param string $namespace Namespace/URI of the text
@@ -59,48 +58,47 @@ class WizardService {
      * @param string $author Saving author
      * @param string $version Game version
      *
-     * @return resource|bool Result of db_query()
+     * @return bool True when the statement executed
      */
-    public static function createTranslation(string $language, string $namespace, string $intext, string $outtext, string $author, string $version) {
-        // db_query() has no support for parameterized queries, so manually escape values
-        $language = addslashes($language);
-        $namespace = addslashes($namespace);
-        $intext = addslashes($intext);
-        $outtext = addslashes($outtext);
-        $author = addslashes($author);
-        $version = addslashes($version);
-        $sql = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" .
-               " ('$language','$namespace','$intext','$outtext','$author','$version')";
-        return db_query($sql);
+    public static function createTranslation(string $language, string $namespace, string $intext, string $outtext, string $author, string $version): bool {
+        $sql = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" .
+               " (:language,:uri,:intext,:outtext,:author,:version)";
+        \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+            'language' => $language,
+            'uri' => $namespace,
+            'intext' => $intext,
+            'outtext' => $outtext,
+            'author' => $author,
+            'version' => $version,
+        ]);
+        return true;
     }
 
     /**
      * Remove a row from the untranslated table.
      *
-     * Values are manually escaped because parameterized queries are not
-     * available.
+     * Values are bound as named parameters.
      *
      * @param string $language Target language code
      * @param string $namespace Namespace/URI of the text
      * @param string $intext Original untranslated text
      *
-     * @return resource|bool Result of db_query()
+     * @return bool True when the statement executed
      */
-    public static function deleteUntranslated(string $language, string $namespace, string $intext) {
-        // Inputs may originate from user data; escape to prevent SQL injection
-        // due to lack of parameterized query support
-        $language = addslashes($language);
-        $namespace = addslashes($namespace);
-        $intext = addslashes($intext);
-        $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
-        return db_query($sql);
+    public static function deleteUntranslated(string $language, string $namespace, string $intext): bool {
+        $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE intext = :intext AND language = :language AND namespace = :namespace";
+        \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+            'intext' => $intext,
+            'language' => $language,
+            'namespace' => $namespace,
+        ]);
+        return true;
     }
 
     /**
      * Convenience wrapper to insert a translation and remove the untranslated row.
      *
-     * Manual escaping occurs inside the called methods since no parameterized
-     * queries are available.
+     * Values are bound as parameters inside the called methods.
      *
      * @param string $language Target language code
      * @param string $namespace Namespace/URI of the text
@@ -121,8 +119,7 @@ class WizardService {
     /**
      * Copy untranslated texts directly to the translation table.
      *
-     * Manual escaping is performed before issuing SQL statements because no
-     * parameterized query mechanism is available.
+     * Values are bound as parameters by the called methods.
      *
      * @param string $language  Target language
      * @param string $namespace Namespace of the texts
@@ -135,6 +132,7 @@ class WizardService {
     public static function copyCheckedTranslations(string $language, string $namespace, array $texts, string $author, string $version): bool {
         $success = true;
         foreach ($texts as $text) {
+            // Kept as before: the escaped value is what createTranslation()/deleteUntranslated() receive and bind
             $intext = addslashes(rawurldecode($text));
             $insert = self::createTranslation($language, $namespace, $intext, $intext, $author, $version);
             $delete = self::deleteUntranslated($language, $namespace, $intext);
@@ -149,8 +147,7 @@ class WizardService {
     /**
      * Save multiple translations at once.
      *
-     * Manual escaping of values is required for the generated SQL queries
-     * because the project lacks support for parameterized statements.
+     * Values are bound as named parameters.
      *
      * @param string $language  Target language
      * @param string $namespace Default namespace if none is supplied per row
@@ -180,13 +177,15 @@ class WizardService {
                 $ns = $nameTexts[$key] ?? $namespace;
                 $out = $outTexts[$key];
                 if (!empty($ids[$key])) {
-                    // Manually escape because there is no parameterized query API
-                    $outEsc = addslashes($out);
-                    $authorEsc = addslashes($author);
-                    $versionEsc = addslashes($version);
-                    $sql = "UPDATE " . db_prefix("translations") .
-                           " SET outtext='$outEsc',author='$authorEsc',version='$versionEsc' WHERE tid={$ids[$key]};";
-                    $result1 = db_query($sql);
+                    $sql = "UPDATE " . \Lotgd\MySQL\Database::prefix("translations") .
+                           " SET outtext=:outtext,author=:author,version=:version WHERE tid=:tid";
+                    \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+                        'outtext' => $out,
+                        'author' => $author,
+                        'version' => $version,
+                        'tid' => (int) $ids[$key],
+                    ]);
+                    $result1 = true;
                 } else {
                     $result1 = self::createTranslation($language, $ns, $text, $out, $author, $version);
                 }
@@ -215,10 +214,14 @@ class WizardService {
     public static function deleteCheckedRows(string $language, string $namespace, array $texts): void {
         foreach ($texts as $text) {
             if ($text !== '') {
-                $intext = addslashes(rawurldecode($text));
-                $sql = "DELETE FROM " . db_prefix("untranslated") .
-                       " WHERE BINARY intext = '$intext' AND language = '$language' AND namespace = '$namespace'";
-                db_query($sql);
+                $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") .
+                       " WHERE BINARY intext = :intext AND language = :language AND namespace = :namespace";
+                // $namespace is the request value (slashed) that the old SQL used unescaped
+                \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+                    'intext' => rawurldecode($text),
+                    'language' => $language,
+                    'namespace' => stripslashes($namespace),
+                ]);
             }
         }
     }
@@ -239,22 +242,22 @@ class WizardService {
     /**
      * Retrieve rows without a namespace from the untranslated table.
      *
-     * @return resource|bool Result of db_query()
+     * @return array<int, array<string, mixed>> Result rows
      */
-    private static function getEmptyNamespaceRows() {
-        $sql = "SELECT BINARY intext AS intext, language FROM " . db_prefix('untranslated') .
+    private static function getEmptyNamespaceRows(): array {
+        $sql = "SELECT BINARY intext AS intext, language FROM " . \Lotgd\MySQL\Database::prefix('untranslated') .
                " WHERE namespace='' GROUP BY BINARY intext, language";
-        return db_query($sql);
+        return \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative($sql);
     }
 
     /**
      * Delete all rows without a namespace from the untranslated table.
      *
-     * @return resource|bool Result of db_query()
+     * @return int Number of deleted rows
      */
-    private static function deleteEmptyNamespaceRows() {
-        $sql = "DELETE FROM " . db_prefix('untranslated') . " WHERE namespace=''";
-        return db_query($sql);
+    private static function deleteEmptyNamespaceRows(): int {
+        $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix('untranslated') . " WHERE namespace=''";
+        return \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql);
     }
 
     /**
@@ -280,22 +283,26 @@ class WizardService {
             case 'del':
                 $intext = rawurldecode(httpget('intext'));
                 $language = httpget('deletelanguage');
-                $sql = "DELETE FROM " . db_prefix('untranslated') .
-                       " WHERE intext = '$intext' AND namespace='' AND language='$language'";
+                $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix('untranslated') .
+                       " WHERE intext = :intext AND namespace='' AND language = :language";
                 if ($intext !== '') {
-                    db_query($sql);
+                    // Request values (slashed) that the old SQL used unescaped
+                    \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+                        'intext' => stripslashes($intext),
+                        'language' => stripslashes($language),
+                    ]);
                 }
                 redirect("runmodule.php?module=translationwizard&op=deleteempty&mode=listing");
                 break;
 
             case 'delete':
-                $result = self::deleteEmptyNamespaceRows();
-                output("`bOperation commenced, %s rows found and deleted`b`n`n", db_affected_rows($result));
+                $affected = self::deleteEmptyNamespaceRows();
+                output("`bOperation commenced, %s rows found and deleted`b`n`n", $affected);
                 break;
 
             case 'listing':
-                $result = self::getEmptyNamespaceRows();
-                output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", db_num_rows($result));
+                $rows = self::getEmptyNamespaceRows();
+                output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", count($rows));
                 $i = 0;
                 output("`n`nFollowing rows have no namespace:");
                 tw_table_open([
@@ -304,7 +311,7 @@ class WizardService {
                     translate_inline('Original'),
                     translate_inline('Actions')
                 ]);
-                while ($row = db_fetch_assoc($result)) {
+                foreach ($rows as $row) {
                     $i++;
                     $delete = "<a href='runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language'] . "'>" . translate_inline('Delete') . "</a>";
                     addnav('', "runmodule.php?module=translationwizard&op=deleteempty&mode=del&intext=" . rawurlencode($row['intext']) . "&deletelanguage=" . $row['language']);
@@ -322,12 +329,12 @@ class WizardService {
                 break;
 
             default:
-                $result = self::getEmptyNamespaceRows();
+                $rows = self::getEmptyNamespaceRows();
                 tw_form_open('deleteempty&mode=delete');
                 addnav('', 'runmodule.php?module=translationwizard&op=deleteempty&mode=delete');
                 rawoutput("<input type='hidden' name='op' value='check'>");
-                output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", db_num_rows($result));
-                if (db_num_rows($result) == 0) {
+                output("`n`n %s rows have been found with no namespace in your untranslated table.`n`n", count($rows));
+                if (count($rows) == 0) {
                     output("Congratulations! Your untranslated table does not have any rows with an empty namespace!");
                     tw_form_close();
                     break;
@@ -354,25 +361,38 @@ class WizardService {
         switch ($mode) {
             case 'continue':
                 output('Commencing...');
-                $sql = "DELETE from " . db_prefix('temp_translations') .
-                       " using " . db_prefix('translations') .
-                       " inner join " . db_prefix('temp_translations') .
-                       " on  " . db_prefix('translations') . ".intext=" . db_prefix('temp_translations') . ".intext AND " .
-                       db_prefix('translations') . ".language=" . db_prefix('temp_translations') . ".language AND " .
-                       db_prefix('translations') . ".uri=" . db_prefix('temp_translations') . ".uri;";
-                $result = db_query($sql);
+                $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+                $tmpTable = \Lotgd\MySQL\Database::prefix('temp_translations');
+                $transTable = \Lotgd\MySQL\Database::prefix('translations');
+                $result = $conn->executeStatement(
+                    "DELETE from " . $tmpTable .
+                    " using " . $transTable .
+                    " inner join " . $tmpTable .
+                    " on  " . $transTable . ".intext=" . $tmpTable . ".intext AND " .
+                    $transTable . ".language=" . $tmpTable . ".language AND " .
+                    $transTable . ".uri=" . $tmpTable . ".uri;"
+                );
                 debug('Result for the delete:' . $result);
-                $sql = "Select language,uri,intext,outtext,author,version from " . db_prefix('temp_translations') . ";";
-                $result = db_query($sql);
-                if (db_num_rows($result) <> 0) {
-                    $copyrows = "INSERT INTO " . db_prefix('translations') . " (language, uri, intext, outtext, author, version) VALUES ";
-                    while ($row = db_fetch_assoc($result)) {
-                        $copyrows .= "('" . $row['language'] . "','" . $row['uri'] . "','" . addslashes($row['intext']) . "','" . addslashes($row['outtext']) . "','" . addslashes($row['author']) . "','" . $row['version'] . "'),";
-                    }
-                    $res = db_query(substr($copyrows, 0, -1) . ';');
+                $rows = $conn->fetchAllAssociative("Select language,uri,intext,outtext,author,version from " . $tmpTable . ";");
+                if (count($rows) <> 0) {
+                    $insertSql = "INSERT INTO " . $transTable . " (language, uri, intext, outtext, author, version)" .
+                                 " VALUES (:language, :uri, :intext, :outtext, :author, :version)";
+                    $conn->transactional(static function (\Doctrine\DBAL\Connection $c) use ($insertSql, $rows): void {
+                        foreach ($rows as $row) {
+                            $c->executeStatement($insertSql, [
+                                'language' => $row['language'],
+                                'uri' => $row['uri'],
+                                'intext' => $row['intext'],
+                                'outtext' => $row['outtext'],
+                                'author' => $row['author'],
+                                'version' => $row['version'],
+                            ]);
+                        }
+                    });
+                    $res = true;
                     invalidatedatacache('translations-' . $namespace . '-' . $language);
-                    db_query('TRUNCATE ' . db_prefix('temp_translations') . ';');
-                    output("%s rows have been inserted and the pulled translations table has been cleared.", db_num_rows($result));
+                    $conn->executeStatement('TRUNCATE ' . $tmpTable . ';');
+                    output("%s rows have been inserted and the pulled translations table has been cleared.", count($rows));
                     output_notl("`n`n");
                     output("The insert has been %s.", ($res == 1 ? translate_inline('successful') : translate_inline('`$ not successful`0')));
                     output_notl("`n");
@@ -387,10 +407,10 @@ class WizardService {
                 output_notl(' ');
                 output('This would be wise if you just installed the game and pulled a few translations down.');
                 output_notl('`n`n');
-                $sql = 'Select * from ' . db_prefix('temp_translations') . ';';
-                $result = db_query($sql);
-                if (db_num_rows($result)) {
-                    output('You have %s entries in your pulled translations table.', db_num_rows($result));
+                $sql = 'Select * from ' . \Lotgd\MySQL\Database::prefix('temp_translations') . ';';
+                $rows = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative($sql);
+                if (count($rows)) {
+                    output('You have %s entries in your pulled translations table.', count($rows));
                     output_notl('`n');
                     output('This may take some time.');
                     output_notl('`n`n');

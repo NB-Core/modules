@@ -60,7 +60,8 @@ function clanlog_dohook($hookname,$args){
 						$sql="SELECT name,login from ".db_prefix("accounts")." WHERE acctid=$whoacctid LIMIT 1";
 						$result=db_query($sql);
 						$row=db_fetch_assoc($result);
-						$whoname=addslashes(sanitize($row['name']));
+						// No addslashes: injectrawcomment() in the core is a prepared insert, so escaping would be stored literally.
+						$whoname=sanitize($row['name']);
 						clanlog_insert($session['user']['clanid'],"/me`3 changed rank of `%{$whoname}`3 to `^".$ranks[$setrank]."`3 (`^{$setrank}`3).",$session['user']['acctid']);
 					} elseif ($remove!=0) {
 						$sql="SELECT name,login from ".db_prefix("accounts")." WHERE acctid=$remove LIMIT 1";

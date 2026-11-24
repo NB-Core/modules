@@ -12,12 +12,14 @@ if (httppost("editchecked")) {
         output("Edit the selected texts below:");
         tw_form_open("list&ns=".rawurlencode($namespace));
 	addnav("", "runmodule.php?module=translationwizard&op=list&ns=".rawurlencode($namespace));
-	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
-	$result = db_query($sql);
+	$result = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative(
+		"SELECT namespace,count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE language = :language GROUP BY namespace ORDER BY namespace ASC",
+		['language' => $languageschema]
+	);
 	rawoutput("<input type='hidden' name='op' value='list'>");
 	output("Known Namespaces:");
 	rawoutput("<select name='ns' onChange='this.form.submit()'>");
-	while ($row = db_fetch_assoc($result))
+	foreach ($result as $row)
 		{
 		rawoutput("<option value=\"".htmlentities($row['namespace'],ENT_COMPAT,$coding)."\"".((htmlentities($row['namespace'],ENT_COMPAT,$coding) == $namespace) ? "selected" : "").">".htmlentities($row['namespace'],ENT_COMPAT,$coding)." ({$row['c']})</option>");
 		}
@@ -80,9 +82,11 @@ case "edit": //for one translation via the edit button
         break;
 case "del": //to delete one via the delete button
 	$intext=rawurldecode(httpget('intext'));
-	$sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$intext' AND language = '$languageschema' AND namespace = '$namespace'";
-	//debug($sql); break;
-	db_query($sql);
+	// The old SQL put these values unescaped into the literals; MySQL saw them without the request slashes.
+	\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+		"DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE intext = :intext AND language = :language AND namespace = :namespace",
+		['intext' => stripslashes($intext), 'language' => stripslashes($languageschema), 'namespace' => stripslashes($namespace)]
+	);
 	$mode=""; //reset
 	redirect("runmodule.php?module=translationwizard&op=list&ns=".$namespace); //just redirecting so you go back to the previous page after the deletion
 	break;
@@ -90,12 +94,14 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
         output("Select texts to translate or delete:");
         tw_form_open('list');
 	addnav("", "runmodule.php?module=translationwizard&op=list");
-	$sql = "SELECT namespace,count(*) AS c FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' GROUP BY namespace ORDER BY namespace ASC";
-	$result = db_query($sql);
+	$result = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative(
+		"SELECT namespace,count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE language = :language GROUP BY namespace ORDER BY namespace ASC",
+		['language' => $languageschema]
+	);
 	rawoutput("<input type='hidden' name='op' value='list'>");
 	output("Known Namespaces:");
 	rawoutput("<select name='ns' onChange='this.form.submit()' >");
-	while ($row = db_fetch_assoc($result))
+	foreach ($result as $row)
 		{
 			if ($namespace=="") $namespace=$row['namespace'];
 			rawoutput("<option value=\"".htmlentities($row['namespace'],ENT_COMPAT,$coding)."\"".((htmlentities($row['namespace'],ENT_COMPAT,$coding) == $namespace) ? "selected" : "").">".htmlentities($row['namespace'],ENT_COMPAT,$coding)." ({$row['c']})</option>");
@@ -110,11 +116,14 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
             translate_inline("Text"),
             translate_inline("Actions"),
         ]);
-	$sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE language='".$languageschema."' AND namespace='".$namespace."'";
-	$result = db_query($sql);
-	if (db_num_rows($result)>0){
+	// $namespace is the request value (slashed) or a DB value, both used unescaped in the old SQL.
+	$result = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative(
+		"SELECT * FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE language = :language AND namespace = :namespace",
+		['language' => stripslashes($languageschema), 'namespace' => stripslashes($namespace)]
+	);
+	if (count($result)>0){
 		$i = 0;
-		while ($row = db_fetch_assoc($result))
+		foreach ($result as $row)
 		{
 			$i++;
                         $checkbox = "<input type='checkbox' name='transtext[]' value='".rawurlencode($row['intext'])."' >";
@@ -166,7 +175,7 @@ default: //if there is any other mode, i.e. "" go on and display what's necessar
 output_notl("`n`n");
 if (!$mode=="save" && $namespace<>"")
 	{
-	if (db_num_rows($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
+	if (count($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
 	output_notl("`n`n");
 	rawoutput("<input type='submit' name='copychecked' value='". translate_inline("Copy checked to translation table") ."' class='button'>");
 	rawoutput("<input type='submit' name='editchecked' value='". translate_inline("Edit selected") ."' class='button'>");

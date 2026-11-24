@@ -5,21 +5,18 @@ $currentdate=$datum['mon']."-".$datum['mday']."-".$datum['year'];
 $currenttime=$datum['hours'].":".$datum['minutes'].":".$datum['seconds'];
 $selectedlanguage=httppost('pushlanguage');
 if (!$selectedlanguage) $selectedlanguage=$languageschema;
-$namespaceEsc = addslashes($namespace);
-$selectedEsc  = addslashes($selectedlanguage);
+$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
 if (httppost('pushall')||httppost('pushselected')) $mode="pushall"; //set in order to get the switch right... hard because no get reasonable
 switch($mode)
 {
 case "push":
         if (httpget('pushlanguage')) $selectedlanguage=httpget('pushlanguage');
-        $namespaceEsc = addslashes($namespace);
-        $selectedEsc  = addslashes($selectedlanguage);
-        $sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$namespaceEsc."' AND language='".$selectedEsc."' ORDER BY intext;";
-	$result=db_query($sql);
+        $sql="SELECT intext,outtext,author,version FROM ".\Lotgd\MySQL\Database::prefix("translations")." where uri=:uri AND language=:language ORDER BY intext;";
+	$result=$conn->fetchAllAssociative($sql, ['uri' => $namespace, 'language' => $selectedlanguage]);
 	output("Please copy the following code to a file named `b`^%s.sql`0`b and give it to the admin for your language:",$namespace);
 	output_notl("`n`n");
-        $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
-        $res=db_query($sql);
+        $sql = "SELECT uri,count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("translations") . " WHERE language=:language GROUP BY uri ORDER BY uri ASC";
+        $res=$conn->fetchAllAssociative($sql, ['language' => $selectedlanguage]);
         output("Select the namespace to push:");
         tw_form_open("push&mode=push");
 	addnav("", "runmodule.php?module=translationwizard&op=push&mode=push");
@@ -27,7 +24,7 @@ case "push":
 	rawoutput("<input type='hidden' name='mode' value='push'>");
 	rawoutput("<input type='hidden' name='pushlanguage' value='$selectedlanguage'>");	
 	rawoutput("<select name='ns' onChange='this.form.submit()' >");
-	while ($row = db_fetch_assoc($res))
+	foreach ($res as $row)
 		{
 		rawoutput("<option value=\"".htmlentities($row['uri'],ENT_COMPAT,$coding)."\"".((htmlentities($row['uri'],ENT_COMPAT,$coding) == $namespace) ? "selected" : "").">".htmlentities($row['uri'],ENT_COMPAT,$coding)." ({$row['c']})</option>");
 		}
@@ -39,8 +36,8 @@ case "push":
 	$middle="','";
 	$end="'),";
 	$i=0;
-	$numend=db_num_rows($result);
-	while($row=db_fetch_assoc($result))
+	$numend=count($result);
+	foreach($result as $row)
 		{
 		$i++;
 		output_notl("`n");
@@ -62,10 +59,8 @@ case "push":
 					else $pusharray = array();
                                 }
                         }
-                $namespaceEsc = addslashes($namespace);
-                $selectedEsc  = addslashes($selectedlanguage);
-                $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
-                $res=db_query($sql);
+                $sql = "SELECT uri,count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("translations") . " WHERE language=:language GROUP BY uri ORDER BY uri ASC";
+                $res=$conn->fetchAllAssociative($sql, ['language' => $selectedlanguage]);
 		$firstrow=$currentdate." Verified "."Uploader:".$session['user']['login']." Time:".$currenttime.chr(13).chr(10);
 		$start="('";
 		$middle="','";
@@ -77,7 +72,7 @@ case "push":
 		if (!$pusharray)
 			{
 			$pusharray=array();
-			while ($rows = db_fetch_assoc($res))
+			foreach ($res as $rows)
 				{
 				array_push($pusharray,$rows['uri']);
 				}
@@ -85,14 +80,15 @@ case "push":
 		foreach($pusharray as $key=>$rowspace)
 			{
                         $end="'),".chr(13).chr(10);
-                        $sql="SELECT intext,outtext,author,version FROM ".db_prefix("translations")." where uri='".$rowspace."' AND language='".$selectedEsc."' ORDER BY intext;";
-                        $result=db_query($sql);
+                        // $rowspace: rawurlencoded POST value or DB value; bound raw
+                        $sql="SELECT intext,outtext,author,version FROM ".\Lotgd\MySQL\Database::prefix("translations")." where uri=:uri AND language=:language ORDER BY intext;";
+                        $result=$conn->fetchAllAssociative($sql, ['uri' => $rowspace, 'language' => $selectedlanguage]);
 			$i=0;
-			$numend=db_num_rows($result);
+			$numend=count($result);
 			$filename=$dir."/".$rowspace.'.sql';
 			$file=fopen($filename,'w-');
 			fwrite($file,$firstrow);
-			while($row=db_fetch_assoc($result))
+			foreach($result as $row)
 				{
 				$i++;
 				output_notl("`n");
@@ -104,24 +100,22 @@ case "push":
 			}
 		break;
 default:
-        $namespaceEsc = addslashes($namespace);
-        $selectedEsc  = addslashes($selectedlanguage);
         output("Choose the language you want to push:");
         output_notl("`n");
         output("Select language and namespaces to push:");
         tw_form_open('push');
 	addnav("", "runmodule.php?module=translationwizard&op=push");	
 	rawoutput("<select name='pushlanguage' onChange='this.form.submit()'>");
-	$sql = "SELECT language,count(*) AS c FROM " . db_prefix("translations") . " GROUP BY language ORDER BY language ASC";
-	$result=db_query($sql);
-	while ($row = db_fetch_assoc($result))
+	$sql = "SELECT language,count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("translations") . " GROUP BY language ORDER BY language ASC";
+	$result=$conn->fetchAllAssociative($sql);
+	foreach ($result as $row)
 		{
 		rawoutput("<option value=\"".htmlentities($row['language'],ENT_COMPAT,$coding)."\"".((htmlentities($row['language'],ENT_COMPAT,$coding) == $selectedlanguage) ? "selected" : "").">".htmlentities($row['language'],ENT_COMPAT,$coding)." ({$row['c']}) </option>");
 		}
 	rawoutput("</select>");
 	output_notl("`n");	
-        $sql = "SELECT uri,count(*) AS c FROM " . db_prefix("translations") . " WHERE language='".$selectedEsc."' GROUP BY uri ORDER BY uri ASC";
-        $result=db_query($sql);
+        $sql = "SELECT uri,count(*) AS c FROM " . \Lotgd\MySQL\Database::prefix("translations") . " WHERE language=:language GROUP BY uri ORDER BY uri ASC";
+        $result=$conn->fetchAllAssociative($sql, ['language' => $selectedlanguage]);
 	output("Following namespace were found on your LotGD:`n");
 	output_notl("`n`n");
 	rawoutput("<input type='submit' name='pushall' value='". translate_inline("Push entire translations") ."' class='button'>");
@@ -139,7 +133,7 @@ default:
             translate_inline("Actions"),
         ]);
         $i=0;
-        while ($row = db_fetch_assoc($result))
+        foreach ($result as $row)
                 {
 		$i++;
                 $checkbox = "<input type='checkbox' name='pusharray[]' value='".rawurlencode($row['uri'])."' >";

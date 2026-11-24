@@ -313,8 +313,12 @@ class TranslationWizard {
             if($serialized) {
                 $val = unserialize(rawurldecode($val));
             }
-            $sql = "Insert IGNORE INTO ".db_prefix("untranslated")." Values ('".addslashes($val['text'])."','$languageschema','".addslashes($val['schema'])."');";
-            db_query($sql);
+            $sql = "Insert IGNORE INTO ".\Lotgd\MySQL\Database::prefix("untranslated")." Values (:text,:language,:schema);";
+            \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+                'text' => $val['text'],
+                'language' => $languageschema,
+                'schema' => $val['schema'],
+            ]);
         }
     }
 

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 //debug($session['user']['specialmisc']);
 $p="";
+$params=array(); //bound values for the search query (request values are stored slashed, so they are unslashed here)
 switch ($mode)
 {
 	case "select":
@@ -10,13 +11,13 @@ switch ($mode)
 			$sql="Select * from ".db_prefix("translations")." WHERE";
 			$sql2=$sql;
 			if (!httppost('exactly')) $p="%";
-			if (httppost('tid')) $sql.=" tid LIKE '$p".httppost('tid')."$p' AND";
-			if (httppost('language')) $sql.=" language LIKE '$p".httppost('language')."$p' AND";
-			if (httppost('uri')) $sql.=" uri LIKE '$p".httppost('uri')."$p' AND";
-			if (httppost('intext')) $sql.=" intext LIKE '$p".httppost('intext')."$p' AND";
-			if (httppost('outtext')) $sql.=" outtext LIKE '$p".httppost('outtext')."$p' AND";
-			if (httppost('author')) $sql.=" author LIKE '$p".httppost('author')."$p' AND";
-			if (httppost('version')) $sql.=" version LIKE '$p".httppost('version')."$p' AND";
+			if (httppost('tid')) { $sql.=" tid LIKE :tid AND"; $params['tid']=$p.stripslashes(httppost('tid')).$p; }
+			if (httppost('language')) { $sql.=" language LIKE :language AND"; $params['language']=$p.stripslashes(httppost('language')).$p; }
+			if (httppost('uri')) { $sql.=" uri LIKE :uri AND"; $params['uri']=$p.stripslashes(httppost('uri')).$p; }
+			if (httppost('intext')) { $sql.=" intext LIKE :intext AND"; $params['intext']=$p.stripslashes(httppost('intext')).$p; }
+			if (httppost('outtext')) { $sql.=" outtext LIKE :outtext AND"; $params['outtext']=$p.stripslashes(httppost('outtext')).$p; }
+			if (httppost('author')) { $sql.=" author LIKE :author AND"; $params['author']=$p.stripslashes(httppost('author')).$p; }
+			if (httppost('version')) { $sql.=" version LIKE :version AND"; $params['version']=$p.stripslashes(httppost('version')).$p; }
 			if ($sql==$sql2) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=1'); //back to the roots if nothing was entered
 			if ((!httppost('rlanguage')&&httppost('rlanguage2'))||(!httppost('ruri')&&httppost('ruri2'))||(!httppost('rintext')&&httppost('rintext2'))||(!httppost('routtext')&&httppost('routtext2'))||(!httppost('rauthor')&&httppost('rauthor2'))||(!httppost('rversion')&&httppost('rversion2'))) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=2'); //back to the roots if nothing was entered
 			$session['user']['specialmisc']=serialize(array("number"=>httppost('number'),"orderbyascdesc"=>httppost('orderbyascdesc'),"orderby"=>httppost('orderby'),"exactly"=>httppost('exactly'),"tid"=>httppost('tid'),"language"=>httppost('language'),"uri"=>httppost('uri'),"intext"=>httppost('intext'),"outtext"=>httppost('outtext'),"author"=>httppost('author'),"version"=>httppost('version'),"rlanguage"=>httppost('rlanguage'),"ruri"=>httppost('ruri'),"rintext"=>httppost('rintext'),"routtext"=>httppost('routtext'),"rauthor"=>httppost('rauthor'),"rversion"=>httppost('rversion'),"rlanguage2"=>httppost('rlanguage2'),"ruri2"=>httppost('ruri2'),"rintext2"=>httppost('rintext2'),"routtext2"=>httppost('routtext2'),"rauthor2"=>httppost('rauthor2'),"rversion2"=>httppost('rversion2'))); //serialize to let the user return to his results and continue
@@ -28,13 +29,13 @@ switch ($mode)
 			$sql="Select * from ".db_prefix("translations")." WHERE";
 			$sql2=$sql;
 			if (!$query['exactly']) $p="%";
-			if ($query['tid']) $sql.=" tid LIKE '$p".$query['tid']."$p' AND";
-			if ($query['language']) $sql.=" language LIKE '$p".$query['language']."$p' AND";
-			if ($query['uri']) $sql.=" uri LIKE '$p".$query['uri']."$p' AND";
-			if ($query['intext']) $sql.=" intext LIKE '$p".$query['intext']."$p' AND";
-			if ($query['outtext']) $sql.=" outtext LIKE '$p".$query['outtext']."$p' AND";
-			if ($query['author']) $sql.=" author LIKE '$p".$query['author']."$p' AND";
-			if ($query['version']) $sql.=" version LIKE '$p".$query['version']."$p' AND";
+			if ($query['tid']) { $sql.=" tid LIKE :tid AND"; $params['tid']=$p.stripslashes($query['tid']).$p; }
+			if ($query['language']) { $sql.=" language LIKE :language AND"; $params['language']=$p.stripslashes($query['language']).$p; }
+			if ($query['uri']) { $sql.=" uri LIKE :uri AND"; $params['uri']=$p.stripslashes($query['uri']).$p; }
+			if ($query['intext']) { $sql.=" intext LIKE :intext AND"; $params['intext']=$p.stripslashes($query['intext']).$p; }
+			if ($query['outtext']) { $sql.=" outtext LIKE :outtext AND"; $params['outtext']=$p.stripslashes($query['outtext']).$p; }
+			if ($query['author']) { $sql.=" author LIKE :author AND"; $params['author']=$p.stripslashes($query['author']).$p; }
+			if ($query['version']) { $sql.=" version LIKE :version AND"; $params['version']=$p.stripslashes($query['version']).$p; }
 			$orderbyascdesc=(!$query['orderbyascdesc']?"ASC":"DESC");
 			$forswitch=$query['orderby'];
 			$numberof=$query['number'];
@@ -69,11 +70,14 @@ switch ($mode)
 		}
 		$start=httpget('pageop');
 		if (!$start) $start=0;
-		$result=db_query($presql.";");
-		$numberofallrows=db_num_rows($result);
-		$sql.=$start.",".round($numberof).";";
-		$result=db_query($sql);
-		$rownumber=db_num_rows($result);
+		$conn=\Lotgd\MySQL\Database::getDoctrineConnection();
+		$result=$conn->fetchAllAssociative($presql.";",$params);
+		$numberofallrows=count($result);
+		$sql.=":startrow,:rowlimit;";
+		$params['startrow']=(int)$start;
+		$params['rowlimit']=(int)round((float)$numberof);
+		$result=$conn->fetchAllAssociative($sql,$params,array('startrow'=>\Doctrine\DBAL\ParameterType::INTEGER,'rowlimit'=>\Doctrine\DBAL\ParameterType::INTEGER));
+		$rownumber=count($result);
 		if ($rownumber==0) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=2'); //back to the roots if nothing was found
                 output("Select translations to replace:");
                 tw_form_open('searchandreplace&mode=replace');
@@ -105,7 +109,7 @@ switch ($mode)
                     ''
                 ]);
                 $i=0;
-                while($row=db_fetch_assoc($result))
+                foreach($result as $row)
                 {
                         $i++;
                         $checkbox = "<input type='checkbox' name='replacetext[]' value='" . rawurlencode(serialize($row)) . "' >";
@@ -147,17 +151,17 @@ switch ($mode)
 				//  End -->
 				</script>");
 				//end		
-				if (db_num_rows($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
+				if (count($result)>1) rawoutput("<input type='button' onClick='this.value=check()' name='allcheck' value='". $all ."' class='button'>");
 				rawoutput("<input type='submit' name='replacechecked' value='". translate_inline("Replace in selected") ."' class='button'>");
                                 tw_form_close();
 				break;
 
 	case "edit":
 				if (!httpget('tid')) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=3'); //back to the roots 
-				$sql="SELECT * FROM ".db_prefix("translations")." WHERE tid=".httpget('tid').";";
-				$result=db_query($sql);
-				if (db_num_rows($result)>1) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=3'); //back to the roots 
-				$row=db_fetch_assoc($result);
+				$sql="SELECT * FROM ".\Lotgd\MySQL\Database::prefix("translations")." WHERE tid=:tid;";
+				$result=\Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative($sql,array('tid'=>stripslashes(httpget('tid'))));
+				if (count($result)>1) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=3'); //back to the roots 
+				$row=$result[0] ?? false;
 				output("Please edit the following row. If you hit save, all values will be saved.");
 				output_notl(" ");
 				output("If you want to abort, just click abort (or any other navigation except 'save'.");
@@ -194,8 +198,18 @@ switch ($mode)
 
 	case "save":
 				if (httppost('abort')) redirect('runmodule.php?module=translationwizard&op=searchandreplace'); //back to the roots
-				$sql="UPDATE ".db_prefix("translations")." set language='".httppost('language')."', uri='".httppost('uri')."', intext='".httppost('intext')."', outtext='".httppost('outtext')."', author='".httppost('author')."', version='".httppost('version')."' WHERE tid=".httppost('tid').";";
-				$result=db_query($sql);
+				$sql="UPDATE ".\Lotgd\MySQL\Database::prefix("translations")." set language=:language, uri=:uri, intext=:intext, outtext=:outtext, author=:author, version=:version WHERE tid=:tid;";
+				//request values (slashed) that the old SQL used unescaped
+				\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql,array(
+					'language'=>stripslashes(httppost('language')),
+					'uri'=>stripslashes(httppost('uri')),
+					'intext'=>stripslashes(httppost('intext')),
+					'outtext'=>stripslashes(httppost('outtext')),
+					'author'=>stripslashes(httppost('author')),
+					'version'=>stripslashes(httppost('version')),
+					'tid'=>stripslashes(httppost('tid')),
+				));
+				$result=true;
 				invalidatedatacache("translations-".$namespace."-".$languageschema);
                                 if (!$result) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=4&mode=select'); //back to the roots
 				redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=5&mode=select'); //back to the roots, no error but success
@@ -221,14 +235,22 @@ switch ($mode)
 				foreach($replacerows as $key=>$val) {
 					$earlyexit=true;
 					$query=unserialize(rawurldecode($val));
-					if ($formerquery['rlanguage']) $query['language']=str_replace($formerquery['rlanguage'],$formerquery['rlanguage2'],$query['language']);
-					if ($formerquery['ruri']) $query['uri']=str_replace($formerquery['ruri'],$formerquery['ruri2'],$query['uri']);
+					if ($formerquery['rlanguage']) $query['language']=str_replace($formerquery['rlanguage'],stripslashes($formerquery['rlanguage2']),$query['language']);
+					if ($formerquery['ruri']) $query['uri']=str_replace($formerquery['ruri'],stripslashes($formerquery['ruri2']),$query['uri']);
 					if ($formerquery['rintext'])  $query['intext']=str_replace($formerquery['rintext'],$formerquery['rintext2'],$query['intext']);
 					if ($formerquery['routtext']) $query['outtext']=str_replace($formerquery['routtext'],$formerquery['routtext2'],$query['outtext']);
-					if ($formerquery['rauthor']) $query['author']=str_replace($formerquery['rauthor'],$formerquery['rauthor2'],$query['author']);
-					if ($formerquery['rversion']) $query['version']=str_replace($formerquery['rversion'],$formerquery['rversion2'],$query['version']);
-					$sql="Replace into ".db_prefix("translations")." values (".$query['tid'].",'".$query['language']."','".$query['uri']."','".addslashes($query['intext'])."','".addslashes($query['outtext'])."','".$query['author']."','".$query['version']."');";
-					db_query($sql);
+					if ($formerquery['rauthor']) $query['author']=str_replace($formerquery['rauthor'],stripslashes($formerquery['rauthor2']),$query['author']);
+					if ($formerquery['rversion']) $query['version']=str_replace($formerquery['rversion'],stripslashes($formerquery['rversion2']),$query['version']);
+					$sql="Replace into ".\Lotgd\MySQL\Database::prefix("translations")." values (:tid,:language,:uri,:intext,:outtext,:author,:version);";
+					\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql,array(
+						'tid'=>$query['tid'],
+						'language'=>$query['language'],
+						'uri'=>$query['uri'],
+						'intext'=>$query['intext'],
+						'outtext'=>$query['outtext'],
+						'author'=>$query['author'],
+						'version'=>$query['version'],
+					));
 					//debug($sql);//debug($val);debug($query);
 				}
 				if ($earlyexit) redirect('runmodule.php?module=translationwizard&op=searchandreplace&error=9&mode=select'); //back to the roots, no error but success

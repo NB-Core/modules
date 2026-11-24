@@ -6,9 +6,10 @@ switch ($mode)
 	{
 	case "del": //single delete action
 		$tid=httpget('tid');
-		$sql = "DELETE FROM " . db_prefix("translations") . " WHERE tid = '$tid'";
+		$sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("translations") . " WHERE tid = :tid";
 		debug($tid);
-		if ($tid<>0) db_query($sql);
+		// request value (slashed) that the old SQL used unescaped
+		if ($tid<>0) \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, ['tid' => stripslashes($tid)]);
 		$mode=""; //reset
 		redirect("runmodule.php?module=translationwizard&op=check&mode=listing"); //just redirecting so you go back to the previous page after the deletion
 	break;
@@ -26,8 +27,8 @@ switch ($mode)
 			{
 			while ($row = db_fetch_assoc($result))    //doing this step by step, rather than one BIG query
 				{
-				$sql= "DELETE FROM ".db_prefix("translations")." WHERE tid=".$row['tid'].";";
-				db_query($sql);
+				$sql= "DELETE FROM ".\Lotgd\MySQL\Database::prefix("translations")." WHERE tid=:tid;";
+				\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, ['tid' => $row['tid']]);
 				//$res=db_fetch_assoc(db_query($sql));               //just test code if the delete would be a select to check if this routine works
 				//output_notl(" ".$res['tid']);
 				}
@@ -41,8 +42,9 @@ switch ($mode)
 
 	case "listing":  //if the user hits the button to work on a list, one by one
 		$sql= "SELECT count(  tid  )  AS counter, min(tid) as tid, intext, uri,language FROM  ".db_prefix("translations")." GROUP  BY intext, uri, language HAVING counter >1;";
-		$result = db_query($sql);
-		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",db_num_rows($result));
+		$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+		$result = $conn->fetchAllAssociative($sql);
+		output("`n`n %s rows have been found not to be unique within your translations table.`n`n",count($result));
 		$i = 0;
 		output("`n`nFollowing rows are non-unique:");
                 tw_table_open([
@@ -54,11 +56,15 @@ switch ($mode)
                     translate_inline("Version"),
                     translate_inline("Actions"),
                 ]);
-                while ($row = db_fetch_assoc($result))
+                foreach ($result as $row)
                         {
-                        $sql="SELECT * FROM ".db_prefix("translations")." WHERE intext='".addslashes($row['intext'])."' AND language='".$row['language']."' AND uri='".$row['uri']."';";
-                        $result2 = db_query($sql);
-                                while ($row2 = db_fetch_assoc($result2))
+                        $sql="SELECT * FROM ".\Lotgd\MySQL\Database::prefix("translations")." WHERE intext=:intext AND language=:language AND uri=:uri;";
+                        $result2 = $conn->fetchAllAssociative($sql, [
+                                'intext' => $row['intext'],
+                                'language' => $row['language'],
+                                'uri' => $row['uri'],
+                        ]);
+                                foreach ($result2 as $row2)
                                 {
                                     $i++;
                                     $actions = "<a href='runmodule.php?module=translationwizard&op=check&mode=del&tid=". $row2['tid'] ."'>". translate_inline("Delete") ."</a>";

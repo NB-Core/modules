@@ -181,28 +181,34 @@ function dag_manage(){
 		rawoutput("</form>");
 		addnav("","runmodule.php?module=dag&manage=true&op=addbounty&admin=true");
 	}else if ($op == "addbounty") {
+		$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+		$dagSelect = "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . \Lotgd\MySQL\Database::prefix("accounts");
 		if (httpget('subfinal')==1){
-			$sql = "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . db_prefix("accounts") . " WHERE name='".addslashes(rawurldecode(stripslashes(httppost('contractname'))))."' AND locked=0";
+			$rows = $conn->fetchAllAssociative(
+				$dagSelect . " WHERE name = :name AND locked=0",
+				['name' => rawurldecode(stripslashes(httppost('contractname')))]
+			);
 		}else{
 			$contractname = stripslashes(rawurldecode(httppost('contractname')));
 			$name="%";
 			for ($x=0;$x<strlen($contractname);$x++){
 				$name.=substr($contractname,$x,1)."%";
 			}
-			$sql = "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . db_prefix("accounts") . " WHERE name LIKE '".addslashes($name)."' AND locked=0";
+			$rows = $conn->fetchAllAssociative(
+				$dagSelect . " WHERE name LIKE :name AND locked=0",
+				['name' => $name]
+			);
 		}
-		$result = db_query($sql);
-		if (db_num_rows($result) == 0) {
+		if (count($rows) == 0) {
 			output("No one by that name!");
-		} elseif(db_num_rows($result) > 100) {
+		} elseif(count($rows) > 100) {
 			output("Too many names!");
-		} elseif(db_num_rows($result) > 1) {
+		} elseif(count($rows) > 1) {
 			output("Select the correct name:`n");
 			rawoutput("<form action='runmodule.php?module=dag&manage=true&op=addbounty&subfinal=1&admin=true' method='POST'>".dag_tokenfield());
 			output("`2Target: ");
 			rawoutput("<select name='contractname'>");
-			for ($i=0;$i<db_num_rows($result);$i++){
-				$row = db_fetch_assoc($result);
+			foreach ($rows as $row){
 				rawoutput("<option value=\"".rawurlencode($row['name'])."\">".full_sanitize($row['name'])."</option>");
 			}
 			rawoutput("</select>");
@@ -217,7 +223,7 @@ function dag_manage(){
 			addnav("","runmodule.php?module=dag&manage=true&op=addbounty&subfinal=1&admin=true");
 		} else {
 			// Now, we have just the one, so check it.
-			$row  = db_fetch_assoc($result);
+			$row  = $rows[0];
 			if ($row['locked']) {
 				output("Target is a locked user.");
 			}

@@ -112,11 +112,16 @@ function racesystem_dohook($hookname,$args){
 			// Ignore anything other than villagename setting changes for myself
 			if (isset($args['setting']) && $args['setting'] == "worldname" && $args['module']=="racesystem") {
 				if ($session['user']['location'] == $args['old']) $session['user']['location'] = $args['new'];
-				$sql = "UPDATE ".db_prefix('accounts')." SET location='".addslashes($args['new'])."' WHERE location='".addslashes($args['old'])."'";
-				db_query($sql);
+				$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+				$conn->executeStatement(
+					"UPDATE ".\Lotgd\MySQL\Database::prefix('accounts')." SET location = :new WHERE location = :old",
+					['new' => $args['new'], 'old' => $args['old']]
+				);
 				if (is_module_active("cities")) {
-					$sql = "UPDATE ".db_prefix('module_userprefs')." SET value='".addslashes($args['new'])."' WHERE modulename='cities' AND setting='homecity' AND value='" . addslashes($args['old'])."'";
-					db_query($sql);
+					$conn->executeStatement(
+						"UPDATE ".\Lotgd\MySQL\Database::prefix('module_userprefs')." SET value = :new WHERE modulename='cities' AND setting='homecity' AND value = :old",
+						['new' => $args['new'], 'old' => $args['old']]
+					);
 				}
 			}
 			break;

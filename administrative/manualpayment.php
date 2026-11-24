@@ -94,10 +94,28 @@ function manualpayment_run(){
 				"item-number"=>translate_inline("Manual Payment"),
 				"payment_status"=>"completed",
 				);				
-			$sendinfo=addslashes(serialize($info));	
-			$sql="INSERT INTO ".db_prefix('paylog')." VALUES ";
-			$sql.="(0,'$sendinfo','No response as this is a manual entry via module manualpayment.php','{$info['txn-id']}','$amount','$name','$acctid','$processed',0,'$fee','".date("Y-m-d H:i:s")."');";
-			$result=db_query($sql);
+			// serialize() output is bound raw (addslashes() inside the old quoted literal was undone by MySQL).
+			$sendinfo=serialize($info);
+			// $name came straight from httppost() (slashed) into a literal, so MySQL saw it unslashed: bind stripslashes($name).
+			try {
+				\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+					"INSERT INTO ".\Lotgd\MySQL\Database::prefix('paylog')." VALUES (0, :info, :response, :txnid, :amount, :name, :acctid, :processed, 0, :fee, :processdate)",
+					[
+						'info' => $sendinfo,
+						'response' => 'No response as this is a manual entry via module manualpayment.php',
+						'txnid' => $info['txn-id'],
+						'amount' => $amount,
+						'name' => stripslashes($name),
+						'acctid' => (int)$acctid,
+						'processed' => $processed,
+						'fee' => $fee,
+						'processdate' => date("Y-m-d H:i:s"),
+					]
+				);
+				$result=1;
+			} catch (\Doctrine\DBAL\Exception $e) {
+				$result=false;
+			}
 			if ($result==1)
 				output("`7The Entry has been generated.");
 				else

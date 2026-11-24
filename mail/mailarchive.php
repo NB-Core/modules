@@ -74,13 +74,18 @@ function mailarchive_dohook($hookname, $args){
 	switch ($hookname)	{
 		case "delete_character":
 			$oldacctid = $args['acctid'];
-			$sql="SELECT * FROM ".db_prefix('mailarchive')." WHERE msgto=$oldacctid;";
-			$result=db_query($sql);
+			$rows = Database::getDoctrineConnection()->fetchAllAssociative(
+				"SELECT * FROM ".Database::prefix('mailarchive')." WHERE msgto = :acctid",
+				['acctid' => (int) $oldacctid],
+				['acctid' => ParameterType::INTEGER]
+			);
 			$fields = "";
+			// $save is only SQL text that is built here and never executed or stored (dead code):
+			// escape each value, not the separators.
 			$save = "";
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($rows as $row) {
 				if ($fields=='') $fields=array_keys($row); // why? crude...
-				$save.="INSERT INTO ".db_prefix('mailarchive')." (".implode(",",$fields)." VALUES ('".addslashes(implode("','",$row))."');";
+				$save.="INSERT INTO ".db_prefix('mailarchive')." (".implode(",",$fields).") VALUES ('".implode("','",array_map('addslashes',$row))."');";
 			}
 			set_module_pref("store",1,"mailarchive",$oldacctid);
 			break;
