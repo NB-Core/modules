@@ -4,7 +4,7 @@ use Lotgd\Security\Csrf;
 function clanmail_getmoduleinfo(){
 	$info = array(
 		"name"=>"Clan Mail",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"author"=>"`2Oliver Brendel",
 		"category"=>"Clan",
 		"download"=>"",

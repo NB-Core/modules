@@ -1,18 +1,19 @@
 <?php
 switch($op) {
 	case "write":
-		$subject=httppost('subject');
-		$body=httppost('body');
+		// httppost() values are addslashes()d; systemmail() stores what it gets, so work with the plain text.
+		$subject=stripslashes((string) httppost('subject'));
+		$body=stripslashes((string) httppost('body'));
 		$limit=(int)getsetting('mailsizelimit',1024);
 		$sent=false;
 		// Only the posted form with its token sends; anything else is a preview.
 		if (httppost('submit') && clanmail_validpost()) {
 			//send
-			$subject=str_replace("`n","",httppost('subject'));
-			$body=str_replace("`n","\n",httppost('body'));
+			$subject=str_replace("`n","",$subject);
+			$body=str_replace("`n","\n",$body);
 			$body=str_replace("\r\n","\n",$body);
 			$body=str_replace("\r","\n",$body);
-			$body=addslashes(substr(stripslashes($body),0,$limit));
+			$body=substr($body,0,$limit);
 			require_once("lib/systemmail.php");
 			$sql="SELECT acctid FROM ".db_prefix('accounts')." WHERE clanid=".$session['user']['clanid']." AND clanrank>".CLAN_APPLICANT.";";
 			$result=db_query($sql);
@@ -57,10 +58,10 @@ switch($op) {
 		addnav("","runmodule.php?module=clanmail&op=write");
 		output("`7From: %s`0`n`n",$session['user']['name']);
 		output("`7Subject:`n");
-		rawoutput("<input type='input' class='input' length=255 name='subject' value='$subject'><br>");
+		rawoutput("<input type='input' class='input' length=255 name='subject' value='".htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, getsetting("charset", "ISO-8859-1"))."'><br>");
 		output("`7Body:`n");
 		//taken from mail.php for laziness and convenience and coherence
-		rawoutput("<textarea name='body' id='textarea' class='input' cols='60' rows='9' onKeyUp='sizeCount(this);'>".HTMLEntities(stripslashes($body), ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
+		rawoutput("<textarea name='body' id='textarea' class='input' cols='60' rows='9' onKeyUp='sizeCount(this);'>".HTMLEntities($body, ENT_COMPAT, getsetting("charset", "ISO-8859-1"))."</textarea><br>");
 		$send = translate_inline("Send");
 		$preview=translate_inline("Preview");
 		rawoutput("<table border='0' cellpadding='0' cellspacing='0' width='100%'><tr><td><input type='submit' class='button' name='submit' value='$send'></td><td><input type='submit' class='button' name='preview' value='$preview'><td align='right'><div id='sizemsg'></div></td></tr></table>");
