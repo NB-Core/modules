@@ -162,7 +162,7 @@ function inventory_showform($layout,$row){
 	$unequip = translate_inline("Unequip");
 	$activate = translate_inline("Activate");
 	$show = translate_inline("Description");
-	while(list($key,$val)=each($layout)){
+	foreach ($layout as $key => $val) {
 		if (is_array($val)) {
 			$v = $val[0];
 			$info = explode(",", $v);
@@ -194,7 +194,7 @@ function inventory_showform($layout,$row){
 				rawoutput("<tr class='".($i%2?'trlight':'trdark')."'><td valign='top'>");
 				output_notl("%s ->", $wheres[$info[0]],true);
 				rawoutput("</td><td valign='top'>");
-				while(list($itskey, $itsval) = each($item)) {
+				foreach ($item as $itskey => $itsval) {
 					output_notl("%s`7%s`7 (%s)", $itsval['equipped']?"`^*":"", $itsval['name'], $itsval['quantity']);
 					if ($itsval['equipped'] && $itsval['equippable']) {
 						rawoutput("[ <a href='runmodule.php?module=inventory&op=charstat&op2=unequip&id={$itsval['itemid']}'>$unequip</a> ]");
@@ -278,7 +278,7 @@ function inventory_showform($layout,$row){
 		rawoutput("<script language='JavaScript'>");
 		rawoutput("formSections[$showform_id] = new Array();");
 		reset($formSections);
-		while (list($key,$val)=each($formSections)){
+		foreach ($formSections as $key => $val) {
 			rawoutput("formSections[$showform_id][$key] = '".addslashes($val)."';");
 		}
 		rawoutput("

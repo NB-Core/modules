@@ -11,7 +11,7 @@
 			// Save module prefs
 			$post = httpallpost();
 			reset($post);
-			while(list($key, $val) = each($post)) {
+			foreach ($post as $key => $val) {
 				set_module_objpref("dwellings", $dwid, $key, $val, $mdule);
 			}
 			output("`^Saved!`0`n");
