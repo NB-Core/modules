@@ -30,7 +30,7 @@ function showflow($number) {
 	output_notl("`n`n");
 	$array=unserialize($alldata['gamedata']);
 	if (!$array) $array=array();
-	while (list($key,$val)=each($array)) {
+	foreach ($array as $key => $val) {
 		output_notl(stripslashes($val['sentence'])."`n"); //strip because of the serialize/insert...if " in a userpost, there is \"
 	}
 }
@@ -126,7 +126,7 @@ function madmax_getvalidnext($number) {
 	//debug($players);
 	//debug($lifearray);
 	$id=false;
-	while (list($key,$id_player)=each($players)) {
+	foreach ($players as $key => $id_player) {
 		if ($lifearray["s".$id_player]>0) {
 			$id=$id_player;
 			break;
@@ -143,10 +143,12 @@ function madmax_getvalidnext($number) {
 		output("Error: not found an alive player but also did not close game.`n");
 		output("Selected current player.`n");
 		output("L-Array:`n");
-		while (list($key,$val)=each($lifearray)) {
+		foreach ($lifearray as $key => $val) {
 			output_notl("Key: %s, Val: %s`n",$key,$val);
 		}
-		while (list($key,$val)=each($players)) {
+		// NOTE: originally each() on $players here, whose internal pointer was already exhausted by the search loop above (which only falls through
+		// here when it ran to the end), so the dump of the players printed nothing. foreach prints the intended debug output.
+		foreach ($players as $key => $val) {
 			output_notl("KeyS: %s, ValS: %s`n",$key,$val);
 		}
 		$id=$session['user']['acctid'];
