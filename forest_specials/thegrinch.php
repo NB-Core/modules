@@ -92,6 +92,7 @@ function thegrinch_dohook(string $hookname, array $args): array
                 Grinch::showHallOfFame();
             } else {
                 output(Texts::VILLAGE, Grinch::name());
+                addnav(Texts::NAV_HEADER);
                 addnav(Texts::NAV_HOF, Grinch::URL . '&op=hof');
             }
             break;
@@ -148,8 +149,9 @@ function thegrinch_run(): void
     addnav('Back to the Forest', 'forest.php');
     addnav('Actions');
 
-    // Out of season only a fight already under way may be finished.
-    if (!Grinch::inSeason() && (string) $session['user']['badguy'] === '') {
+    // Out of season only a Grinch fight already under way may be finished.
+    $inSeason = Grinch::inSeason();
+    if (!$inSeason && !(in_array($op, ['fight', 'run', 'newtarget'], true) && Grinch::fightUnderWay())) {
         output(Texts::CLOSED);
         page_footer();
         return;
@@ -262,7 +264,11 @@ function thegrinch_run(): void
     }
 
     if ($op === '') {
-        thegrinch_nav($dontdisplayforestmessage);
+        if ($inSeason) {
+            thegrinch_nav($dontdisplayforestmessage);
+        } else {
+            output(Texts::CLOSED);
+        }
     }
     page_footer();
 }

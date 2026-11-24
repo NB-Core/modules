@@ -38,7 +38,11 @@ final class Grinch
         if (\is_file('modules/datemanager.php')) {
             require_once 'modules/datemanager.php';
             if (\function_exists('datemanager_datecheck')) {
-                return \datemanager_datecheck($start, $end, 0) > 0;
+                $check = \datemanager_datecheck($start, $end, 0);
+                // -1: a date datemanager does not understand; fall back to the plain comparison below.
+                if ($check >= 0) {
+                    return $check > 0;
+                }
             }
         }
         $md = static function (string $date): string {
@@ -61,6 +65,31 @@ final class Grinch
     {
         $type = (int) \httpget('enemytype');
         return ($type >= 0 && $type < self::TYPES) ? $type : 0;
+    }
+
+    /**
+     * Whether a Grinch fight is under way: the stored enemies are Grinch
+     * enemies and one of them is still standing. (battle.php keeps the last
+     * enemies after every fight, so a non-empty badguy alone means nothing.)
+     */
+    public static function fightUnderWay(): bool
+    {
+        global $session;
+        $stored = (string) $session['user']['badguy'];
+        if ($stored === '') {
+            return false;
+        }
+        $stack = \unserialize($stored, ['allowed_classes' => false]);
+        $enemies = \is_array($stack) ? ($stack['enemies'] ?? $stack) : [];
+        if (!\is_array($enemies)) {
+            return false;
+        }
+        foreach ($enemies as $enemy) {
+            if (\is_array($enemy) && isset($enemy['creaturegrinch']) && (int) ($enemy['creaturehealth'] ?? 0) > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Whether today's fights are used up. */
