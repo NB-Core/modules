@@ -29,17 +29,23 @@ function cityprefs_install(){
     synctable(db_prefix('cityprefs'), $cityprefs, true);
     if (!is_module_active('cityprefs')){
         if ($session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO) output_notl("`4Installing cityprefs Module.`n");
-		$sql = "INSERT INTO ".db_prefix("cityprefs")." (module,cityname) VALUES ('none','".getsetting("villagename",LOCATION_FIELDS)."')";
-		db_query($sql); 
+		$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+		$conn->executeStatement(
+			"INSERT INTO ".\Lotgd\MySQL\Database::prefix("cityprefs")." (module,cityname) VALUES ('none', :cityname)",
+			['cityname' => (string) getsetting("villagename",LOCATION_FIELDS)]
+		);
 		$vloc = array();
 		$vloc = modulehook("validlocation", $vloc);
 		ksort($vloc);
 		foreach($vloc as $loc=>$val) {
-			$sql = "select modulename from ".db_prefix("module_settings")." where value='$loc' and setting='villagename'";
-			$result=db_query($sql);
-			$row = db_fetch_assoc($result);
-			$sql = "INSERT INTO ".db_prefix("cityprefs")." (module,cityname) VALUES ('".$row['modulename']."','$loc')";
-			db_query($sql);  
+			$modulename = $conn->fetchOne(
+				"select modulename from ".\Lotgd\MySQL\Database::prefix("module_settings")." where value = :loc and setting='villagename'",
+				['loc' => (string) $loc]
+			);
+			$conn->executeStatement(
+				"INSERT INTO ".\Lotgd\MySQL\Database::prefix("cityprefs")." (module,cityname) VALUES (:module, :loc)",
+				['module' => $modulename === false ? '' : (string) $modulename, 'loc' => (string) $loc]
+			);
 		}
     }else{
         if ($session['user']['superuser']&~SU_DOESNT_GIVE_GROTTO) output("`4Updating cityprefs Module.`n");
@@ -55,7 +61,7 @@ function cityprefs_uninstall(){
     $sql = "DROP TABLE ".db_prefix("cityprefs");
     db_query($sql);
     $sql = "delete from ".db_prefix("module_objprefs")." where objtype='city'";
-    db_query($sql);
+    db_query($sql); // static
 	return true;
 }
 
@@ -64,8 +70,11 @@ function cityprefs_dohook($hookname,$args){
 	switch ($hookname) {
         case "changesetting":
    			if ($args['setting'] == "villagename") {
-				$sql = "UPDATE ".db_prefix("cityprefs")." SET cityname='".addslashes($args['new'])."' WHERE cityname='".addslashes($args['old'])."'";
-                db_query($sql);
+				// $args values come from settings (not slashed): bind raw.
+				\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+					"UPDATE ".\Lotgd\MySQL\Database::prefix("cityprefs")." SET cityname = :new WHERE cityname = :old",
+					['new' => (string) $args['new'], 'old' => (string) $args['old']]
+				);
             }
 			break;
         case "superuser":
@@ -106,11 +115,12 @@ function cityprefs_run() {
             $name=translate_inline("City Name");
             $module=translate_inline("Module");
             $edit=translate_inline("Edit");
-            $sql = "select * from ".db_prefix("cityprefs");
-            $result=db_query($sql);
+            $cityrows = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative(
+                "select * from ".\Lotgd\MySQL\Database::prefix("cityprefs")
+            );
             rawoutput("<table border='0' cellpadding='3' cellspacing='0' align='center'><tr class='trhead'><td style=\"width:50px\">$id</td><td style='width:150px' align=center>$name</td><td align=center>$module</td><td align=center>$edit</td></tr>"); 
-            for ($i = 0; $i < db_num_rows($result); $i++){
-                $row = db_fetch_assoc($result);
+            for ($i = 0; $i < count($cityrows); $i++){
+                $row = $cityrows[$i];
                 $vloc = array();
                 $vname = getsetting("villagename", LOCATION_FIELDS);
                 $vloc[$vname] = "village";
@@ -135,15 +145,21 @@ function cityprefs_run() {
             $vloc = modulehook("validlocation", $vloc);
             ksort($vloc);
             $out=0;
+            $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
             foreach($vloc as $loc=>$val) {
-                $sql = "select cityname from ".db_prefix("cityprefs")." where cityname='$loc'";
-                $result=db_query($sql);
-                if(db_num_rows($result)==0){
-                    $sql = "select modulename from ".db_prefix("module_settings")." where value='$loc' and setting='villagename'";
-                    $result=db_query($sql);
-                    $row = db_fetch_assoc($result);           
-                    $sql = "INSERT INTO ".db_prefix("cityprefs")." (module,cityname) VALUES ('".$row['modulename']."','$loc')";
-                    db_query($sql);
+                $existing = $conn->fetchAllAssociative(
+                    "select cityname from ".\Lotgd\MySQL\Database::prefix("cityprefs")." where cityname = :loc",
+                    ['loc' => (string) $loc]
+                );
+                if(count($existing)==0){
+                    $modulename = $conn->fetchOne(
+                        "select modulename from ".\Lotgd\MySQL\Database::prefix("module_settings")." where value = :loc and setting='villagename'",
+                        ['loc' => (string) $loc]
+                    );
+                    $conn->executeStatement(
+                        "INSERT INTO ".\Lotgd\MySQL\Database::prefix("cityprefs")." (module,cityname) VALUES (:module, :loc)",
+                        ['module' => $modulename === false ? '' : (string) $modulename, 'loc' => (string) $loc]
+                    );
                     $out=1;
                     output("`n`@%s`0 was added.",$loc);
                 }
@@ -184,16 +200,17 @@ function cityprefs_run() {
 			output("Changing these values will not affect the city itself, just what city is associated with the preferences.  This is useful if you want to preserve prefs after removing a city.");
 			addnav("Navigation");
 			addnav("Back to city properties","runmodule.php?module=cityprefs&op=editmodule&cityid=$cityid");
-            $sql = "select * from ".db_prefix("cityprefs")." where cityid=$cityid";
-            $result=db_query($sql);
-            $row = db_fetch_assoc($result);
-            $module=$row['module'];
-            $city=$row['cityname'];
+            $row = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAssociative(
+                "select * from ".\Lotgd\MySQL\Database::prefix("cityprefs")." where cityid = :cityid",
+                ['cityid' => (int) $cityid]
+            );
+            $module=$row['module'] ?? null;
+            $city=$row['cityname'] ?? null;
             $submit=translate_inline("Submit");
             rawoutput("<form action='runmodule.php?module=cityprefs&op=editcity2&cityid=$cityid' method='POST'>");
             addnav("","runmodule.php?module=cityprefs&op=editcity2&cityid=$cityid");
-            rawoutput("<input name='cityname' id='cityname' value='$city' size='40' maxlength='255'><br>");
-            rawoutput("<input name='modulename' id='modulename' value='$module' size='40' maxlength='255'><br>");
+            rawoutput("<input name='cityname' id='cityname' value='".htmlspecialchars((string) $city, ENT_QUOTES | ENT_SUBSTITUTE, getsetting('charset', 'UTF-8'))."' size='40' maxlength='255'><br>");
+            rawoutput("<input name='modulename' id='modulename' value='".htmlspecialchars((string) $module, ENT_QUOTES | ENT_SUBSTITUTE, getsetting('charset', 'UTF-8'))."' size='40' maxlength='255'><br>");
             rawoutput("<input type='submit' class='button' value='$submit'></form>");              
         break;
         
@@ -219,7 +236,10 @@ function cityprefs_run() {
         break;
 
         case "delcity2":
-            db_query("delete from ".db_prefix("cityprefs")." where cityid=$cityid");
+            \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+                "delete from ".\Lotgd\MySQL\Database::prefix("cityprefs")." where cityid = :cityid",
+                ['cityid' => (int) $cityid]
+            );
             output("The city has been deleted.");
         break;
         }

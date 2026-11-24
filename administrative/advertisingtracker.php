@@ -125,9 +125,41 @@ function advertisingtracker_validpost(){
 	return Csrf::validatePostRequest("module:advertisingtracker");
 }
 
+/**
+ * Build the "who" exclusion list (account ids configured in the module setting) from the setting text.
+ * Every entry is cast to int, so the list is safe to inline into an IN (...) clause.
+ */
+function advertisingtracker_wholist(){
+	return implode(',',array_map('intval',explode(',',(string)get_module_setting('who'))));
+}
+
+/**
+ * Build the mail filter shared by the mail tracker views.
+ *
+ * @param string $mail   prefixed mail table name
+ * @param mixed  $track  search text from httpget() (slashed)
+ * @param mixed  $length max body length from httpget()
+ * @param array  $params receives the bound parameters
+ */
+function advertisingtracker_mailcond($mail,$track,$length,array &$params){
+	if (get_module_setting('who')!='') {
+		$who=advertisingtracker_wholist();
+		$cond=" AND $mail.msgfrom NOT IN ($who) ";
+		$cond.=" AND $mail.msgto NOT IN ($who) ";
+	} else $cond='';
+	// httpget() values are addslashes()d; the old query used the original text.
+	if ($track!='') {
+		$cond.=" AND body LIKE :track";
+		$params['track']='%'.stripslashes((string)$track).'%';
+	}
+	if ($length!='') $cond.= " AND LENGTH(body)<=".(int)$length;
+	return $cond;
+}
+
 function advertisingtracker_run(){
 	global $session;
 	$op=httpget('op');
+	$conn=Database::getDoctrineConnection();
 	// The navs below are shown by rank; require the same rank for the action itself.
 	$needed=SU_EDIT_USERS;
 	if ($op=="") $needed=SU_EDIT_COMMENTS;
@@ -181,18 +213,12 @@ function advertisingtracker_run(){
 			switch ($action) {
 				case "reallywipe":
 					$target=(int)httpget('target');
-					$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1";
-					$result=db_query($sql);
-					$account=db_fetch_assoc($result);
-					$sql="INSERT INTO ".db_prefix('abusemail')." SELECT * FROM ".db_prefix('mail')." WHERE msgto=$target OR msgfrom=$target;";
-					db_query($sql);
-					$sql="DELETE FROM ".db_prefix('mail')." WHERE msgto=$target OR msgfrom=$target;";
-					$result=db_query($sql);
-					$number=db_affected_rows($result);
-					$sql="DESCRIBE ".db_prefix('abuseuser').";";
-					$result=db_query($sql);
+					$account=$conn->fetchAssociative("SELECT * FROM ".db_prefix('accounts')." WHERE acctid = :target LIMIT 1",array('target'=>$target));
+					$conn->executeStatement("INSERT INTO ".db_prefix('abusemail')." SELECT * FROM ".db_prefix('mail')." WHERE msgto = :target OR msgfrom = :target2",array('target'=>$target,'target2'=>$target));
+					$number=$conn->executeStatement("DELETE FROM ".db_prefix('mail')." WHERE msgto = :target OR msgfrom = :target2",array('target'=>$target,'target2'=>$target));
+					$result=$conn->fetchAllAssociative("DESCRIBE ".db_prefix('abuseuser'));
 					$array=array();
-					while ($row=db_fetch_assoc($result)) {
+					foreach ($result as $row) {
 						$array[]=$row['Field'];
 					}
 					// The account's own fields (bio, title, ...) are player text, so they are bound, not pasted.
@@ -204,8 +230,7 @@ function advertisingtracker_run(){
 					Database::getDoctrineConnection()->insert(db_prefix('abuseuser'), $abuserow); //insert infos
 					require_once("lib/charcleanup.php");
 					char_cleanup($target,"CHAR_DELETE_MANUAL"); //finish prefs
-					$sql="DELETE FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1;";
-					db_query($sql); //gone
+					$conn->executeStatement("DELETE FROM ".db_prefix('accounts')." WHERE acctid = :target LIMIT 1",array('target'=>$target)); //gone
 					output("`4User %s`4 has been deleted, %s mails have been moved to the abusemail table.`n`n",$account['name'],$number);
 					
 					//automatically revoke him to make a new char by email if the blocker is installed
@@ -226,9 +251,7 @@ function advertisingtracker_run(){
 					
 				case "confirm":
 					$target=(int)httpget('target');
-					$sql="SELECT * FROM ".db_prefix('accounts')." WHERE acctid=$target LIMIT 1";
-					$result=db_query($sql);
-					$row=db_fetch_assoc($result);
+					$row=$conn->fetchAssociative("SELECT * FROM ".db_prefix('accounts')." WHERE acctid = :target LIMIT 1",array('target'=>$target));
 					output("`\$Do you really want to delete the user %s`\$, record his mails and so on?`n(Note: Mails displayed below to/from him)`%`n`n",$row['name']);
 					$wipeurl="runmodule.php?module=advertisingtracker&op=wipe&action=reallywipe&target=$target";
 					$wipelabel=sprintf_translate("Wipe user %s",full_sanitize($row['name']));
@@ -239,15 +262,15 @@ function advertisingtracker_run(){
 					
 					$ac=db_prefix("accounts");
 					$mail=db_prefix("mail");
-					$sql="SELECT $ac.name AS name,$mail.body AS body,$mail.sent AS date FROM $mail INNER JOIN $ac ON $mail.msgfrom=$ac.acctid WHERE msgto=$target OR msgfrom=$target ORDER BY $mail.messageid DESC LIMIT 200"; //acctid 7 = neji
-					$result = db_query ($sql);
+					$sql="SELECT $ac.name AS name,$mail.body AS body,$mail.sent AS date FROM $mail INNER JOIN $ac ON $mail.msgfrom=$ac.acctid WHERE msgto = :target OR msgfrom = :target2 ORDER BY $mail.messageid DESC LIMIT 200"; //acctid 7 = neji
+					$result = $conn->fetchAllAssociative($sql,array('target'=>$target,'target2'=>$target));
 					$date=translate_inline("Postdate");
 					$author=translate_inline("Author");
 					$body=translate_inline("Message");
 					rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999' align=center>");
 					rawoutput("<tr class='trhead' height=30px><td><b>$date</b></td><td><b>$author</b></td><td><b>$body</b></td></tr>");
 					$class="trlight";
-					while ($row=db_fetch_assoc($result)) {
+					foreach ($result as $row) {
 						$class=($class=='trlight'?'trdark':'trlight');
 						rawoutput("<tr height=30px class='$class'>");
 						rawoutput("<td>");
@@ -265,14 +288,15 @@ function advertisingtracker_run(){
 					output("`4Pick the user -click the name- (still confirmation to wipe him after the click on the following page):`n`n");
 					$class="trlight";
 					$target=httppost('target');
-					$sql="SELECT name, login, acctid FROM ".db_prefix('accounts')." WHERE (name LIKE '$target' OR login like '$target')";
-					$result=db_query($sql);
+					// httppost() value is addslashes()d; the old query used the original text.
+					$sql="SELECT name, login, acctid FROM ".db_prefix('accounts')." WHERE (name LIKE :target OR login like :target2)";
+					$result=$conn->fetchAllAssociative($sql,array('target'=>stripslashes((string)$target),'target2'=>stripslashes((string)$target)));
 					$acctid=translate_inline("Acctid");
 					$name=translate_inline("Name");
 					$login=translate_inline("Login");
 					rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999' align=center>");
 					rawoutput("<tr class='trhead' height=30px><td><b>$acctid</b></td><td><b>$name</b></td><td><b>$login</b></td></tr>");
-					while ($row=db_fetch_assoc($result)) {
+					foreach ($result as $row) {
 						$class=($class=='trlight'?'trdark':'trlight');
 						rawoutput("<tr height=30px class='$class'>");
 						rawoutput("<td>");
@@ -314,14 +338,10 @@ function advertisingtracker_run(){
 			addnav("Refresh","runmodule.php?module=advertisingtracker&op=mail&track=$track");
 			$ac=db_prefix("accounts");
 			$mail=db_prefix("mail");
-			if (get_module_setting('who')!='') {
-				$cond=" AND $mail.msgfrom NOT IN (".get_module_setting('who').") ";
-				$cond.=" AND $mail.msgto NOT IN (".get_module_setting('who').") ";
-			} else $cond='';
-			if ($track!='') $cond.=" AND body LIKE '%$track%'";
-			if ($length!='') $cond.= " AND LENGTH(body)<=$length";
+			$params=array();
+			$cond=advertisingtracker_mailcond($mail,$track,$length,$params);
 			$sql="SELECT $ac.name AS name,$mail.body AS body,$mail.sent AS date FROM $mail INNER JOIN $ac ON $mail.msgfrom=$ac.acctid WHERE (body like '%http://%' OR body like '%www.%' OR body like '%.com%') $cond ORDER BY $mail.messageid DESC LIMIT 200"; //acctid 7 = neji
-			$result = db_query ($sql);
+			$result = $conn->fetchAllAssociative($sql,$params);
 			$date=translate_inline("Postdate");
 			$author=translate_inline("Author");
 			$body=translate_inline("Message");
@@ -330,7 +350,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&"; //not used
 			output("Since bans here should be done either permanently or people normally only warned, no ban options are offered here`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$class=($class=='trlight'?'trdark':'trlight');
 				rawoutput("<tr height=30px class='$class'>");
 				rawoutput("<td>");
@@ -353,10 +373,10 @@ function advertisingtracker_run(){
 			$ac=db_prefix("accounts");
 			$mp=db_prefix("module_userprefs");
 			if (get_module_setting('who')!='') {
-				$cond="AND acctid NOT IN (".get_module_setting('who').") ";
+				$cond="AND acctid NOT IN (".advertisingtracker_wholist().") ";
 			} else $cond='';
 			$sql="SELECT $ac.name AS name,$mp.value AS bio FROM $ac INNER JOIN $mp ON $ac.acctid=$mp.userid WHERE (bio !='') AND modulename='perws' AND setting='user_link' $cond ORDER BY $ac.acctid DESC LIMIT $limit"; 
-			$result = db_query ($sql);debug($sql);
+			$result = $conn->fetchAllAssociative($sql);debug($sql);
 			$author=translate_inline("Author");
 			$body=translate_inline("Message");
 			rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999' align=center>");
@@ -364,7 +384,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&"; //not used
 			output("Now checking if we have accessible lotgd games here...`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$content=advertisingtracker_geturl($row['bio']);
 				$check=advertisingtracker_checklotgd($content);
 				if ($check==0) continue;
@@ -388,10 +408,10 @@ function advertisingtracker_run(){
 			$ac=db_prefix("accounts");
 			$mp=db_prefix("module_userprefs");
 			if (get_module_setting('who')!='') {
-				$cond="AND acctid NOT IN (".get_module_setting('who').") ";
+				$cond="AND acctid NOT IN (".advertisingtracker_wholist().") ";
 			} else $cond='';
 			$sql="SELECT $ac.name AS name,$mp.value AS bio FROM $ac INNER JOIN $mp ON $ac.acctid=$mp.userid WHERE (bio like '%http://%' OR bio like '%www.%' OR bio like '%.com%') AND modulename='additionalbioinfos' AND setting='user_additionalbioinfo' $cond ORDER BY $ac.acctid DESC LIMIT $limit"; 
-			$result = db_query ($sql);
+			$result = $conn->fetchAllAssociative($sql);
 			$author=translate_inline("Author");
 			$body=translate_inline("Message");
 			rawoutput("<table border=0 cellpadding=2 cellspacing=1 bgcolor='#999999' align=center>");
@@ -399,7 +419,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&"; //not used
 			output("Now checking if we have accessible lotgd games here...`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$content=advertisingtracker_geturl($row['bio']);
 				$check=advertisingtracker_checklotgd($content);
 				if ($check==0) continue;
@@ -423,10 +443,10 @@ function advertisingtracker_run(){
 			$ac=db_prefix("accounts");
 			
 			if (get_module_setting('who')!='') {
-				$cond="AND acctid NOT IN (".get_module_setting('who').") ";
+				$cond="AND acctid NOT IN (".advertisingtracker_wholist().") ";
 			} else $cond='';
 			$sql="SELECT $ac.name AS name,$ac.bio AS bio FROM $ac WHERE (bio like '%http://%' OR bio like '%www.%' OR bio like '%.com%') $cond ORDER BY $ac.acctid DESC LIMIT $limit"; 
-			$result = db_query ($sql);
+			$result = $conn->fetchAllAssociative($sql);
 			$date=translate_inline("Postdate");
 			$author=translate_inline("Author");
 			$body=translate_inline("Message");
@@ -435,7 +455,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&"; //not used
 			output("Now checking if we have accessible lotgd games here...`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$content=advertisingtracker_geturl($row['bio']);
 				$check=advertisingtracker_checklotgd($content);
 				if ($check==0) continue;
@@ -457,14 +477,10 @@ function advertisingtracker_run(){
 			addnav("Refresh","runmodule.php?module=advertisingtracker&op=automail&track=$track");
 			$ac=db_prefix("accounts");
 			$mail=db_prefix("mail");
-			if (get_module_setting('who')!='') {
-				$cond=" AND $mail.msgfrom NOT IN (".get_module_setting('who').") ";
-				$cond.=" AND $mail.msgto NOT IN (".get_module_setting('who').") ";
-			} else $cond='';
-			if ($track!='') $cond.=" AND body LIKE '%$track%'";
-			if ($length!='') $cond.= " AND LENGTH(body)<=$length";
+			$params=array();
+			$cond=advertisingtracker_mailcond($mail,$track,$length,$params);
 			$sql="SELECT $ac.name AS name,$mail.body AS body,$mail.sent AS date FROM $mail INNER JOIN $ac ON $mail.msgfrom=$ac.acctid WHERE (body like '%http://%' OR body like '%www.%' OR body like '%.com%') $cond ORDER BY $mail.messageid DESC LIMIT 200"; //acctid 7 = neji
-			$result = db_query ($sql);
+			$result = $conn->fetchAllAssociative($sql,$params);
 			$date=translate_inline("Postdate");
 			$author=translate_inline("Author");
 			$body=translate_inline("Message");
@@ -473,7 +489,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&"; //not used
 			output("Now checking if we have accessible lotgd games here...`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$content=advertisingtracker_geturl($row['body']);
 				$check=advertisingtracker_checklotgd($content);
 				if ($check==0) continue;
@@ -496,7 +512,7 @@ function advertisingtracker_run(){
 			$ac=db_prefix("accounts");
 			$cm=db_prefix("commentary");
 			$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE (comment like '%http://%' OR comment like '%www.%'  OR comment like '%.com%') AND section != 'AvatarVal' ORDER BY $cm.commentid DESC LIMIT 50";
-			$result = db_query ($sql);
+			$result = $conn->fetchAllAssociative($sql);
 			$date=translate_inline("Postdate");
 			$author=translate_inline("Author");
 			$section=translate_inline("Section");
@@ -506,7 +522,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&";
 			output("Since bans here should be done either permanently or people normally only warned, no ban options are offered here`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$class=($class=='trlight'?'trdark':'trlight');
 				rawoutput("<tr height=30px class='$class'>");
 				rawoutput("<td>");
@@ -552,21 +568,30 @@ function advertisingtracker_run(){
 			$section=httppost('section');
 			$ac=db_prefix("accounts");
 			$cm=db_prefix("commentary");
+			$params=array();
 			if ($section=='') $searchsection='';
-				else $searchsection="AND $cm.section LIKE '$section'";
+			else {
+				$searchsection="AND $cm.section LIKE :section";
+				// httppost() values are addslashes()d; the old query used the original text.
+				$params['section']=stripslashes((string)$section);
+			}
 			if ($limit=='') $limit=50;
+			$limit=(int)$limit;
 			addnav("Actions");
 			addnav("Clear Mask","runmodule.php?module=advertisingtracker&op=search&track=$track&target=$target");
 			switch ($track) {
 				case "user":
-					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $ac.login like '$target' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
+					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $ac.login like :target $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
+					$params['target']=stripslashes((string)$target);
 					break;
 				case "string":
-					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $cm.comment like '$target' $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
+					$sql="SELECT $ac.name AS name,$cm.section AS section, $cm.postdate AS postdate, $cm.comment AS comment FROM $cm INNER JOIN $ac ON $cm.author=$ac.acctid WHERE $cm.comment like :target $searchsection ORDER BY $cm.commentid DESC LIMIT $limit";
+					$params['target']=stripslashes((string)$target);
 					break;
 			}
 
-			$result = db_query ($sql);
+			// An unknown track left $sql undefined before (the query failed); show no rows instead.
+			$result = isset($sql) ? $conn->fetchAllAssociative($sql,$params) : array();
 			$date=translate_inline("Postdate");
 			$author=translate_inline("Author");
 			$section=translate_inline("Section");
@@ -576,7 +601,7 @@ function advertisingtracker_run(){
 			$class="trlight";
 			$col="`&";
 			output("Since bans here should be done either permanently or people normally only warned, no ban options are offered here`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$class=($class=='trlight'?'trdark':'trlight');
 				rawoutput("<tr height=30px class='$class'>");
 				rawoutput("<td>");
@@ -630,15 +655,19 @@ function advertisingtracker_run(){
 			} else {
 				$mail=db_prefix("mail");
 			}
+			$params=array();
 			if (!isset($section) || $section=='') $searchsection='';
-				else $searchsection="AND $mail.section LIKE '$section'";
+			else {
+				$searchsection="AND $mail.section LIKE :section";
+				$params['section']=stripslashes((string)$section);
+			}
 			if ($limit=='') $limit=50;
+			$limit=(int)$limit;
 			addnav("Actions");
 			addnav("Clear Mask","runmodule.php?module=advertisingtracker&op=search&track=$track&target=$target");
-			$sql="SELECT acctid,name FROM ".db_prefix('accounts')." WHERE login LIKE '$target'";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
-			if (((int)$row['acctid']) == 0) {
+			// httppost() values are addslashes()d; the old queries used the original text.
+			$row=$conn->fetchAssociative("SELECT acctid,name FROM ".db_prefix('accounts')." WHERE login LIKE :target",array('target'=>stripslashes((string)$target)));
+			if (((int)($row['acctid'] ?? 0)) == 0) {
 				output("`2`cNo users found!`c");
 				break;
 			} else {
@@ -649,18 +678,22 @@ function advertisingtracker_run(){
 			switch ($track) {
 				case "user":
 					if ($target2) {
-						$sql="SELECT acctid FROM ".db_prefix('accounts')." WHERE login LIKE '$target2';";
-						$row=db_fetch_assoc(db_query($sql));
-						$targetadd=" AND $mail.msgto='".$row['acctid']."' ";
+						$row=$conn->fetchAssociative("SELECT acctid FROM ".db_prefix('accounts')." WHERE login LIKE :target2",array('target2'=>stripslashes((string)$target2)));
+						$targetadd=" AND $mail.msgto = :msgto ";
+						$params['msgto']=(int)($row['acctid'] ?? 0);
 					} else $targetadd='';
-					$sql="SELECT $ac.name AS name, $mail.* FROM $mail INNER JOIN $ac ON $mail.msgto=$ac.acctid WHERE $mail.msgfrom=$acctid $searchsection $targetadd ORDER BY $mail.messageid DESC LIMIT $limit";
+					$sql="SELECT $ac.name AS name, $mail.* FROM $mail INNER JOIN $ac ON $mail.msgto=$ac.acctid WHERE $mail.msgfrom = :msgfrom $searchsection $targetadd ORDER BY $mail.messageid DESC LIMIT $limit";
+					$params['msgfrom']=$acctid;
 					break;
 				case "string":
-					$sql="SELECT $ac.name AS name, $mail.* FROM $mail INNER JOIN $ac ON $mail.msgto=$ac.acctid WHERE $mail.body like '$search' $searchsection ORDER BY $mail.messageid DESC LIMIT $limit";
+					$sql="SELECT $ac.name AS name, $mail.* FROM $mail INNER JOIN $ac ON $mail.msgto=$ac.acctid WHERE $mail.body like :search $searchsection ORDER BY $mail.messageid DESC LIMIT $limit";
+					// $search was never defined in the old code (empty pattern); kept as is.
+					$params['search']='';
 					break;
 			}
 debug($sql);
-			$result = db_query ($sql);
+			// An unknown track left $sql undefined before (the query failed); show no rows instead.
+			$result = isset($sql) ? $conn->fetchAllAssociative($sql,$params) : array();
 			$date=translate_inline("Postdate");
 			$author=translate_inline("Recipient");
 			$subject=translate_inline("Subject");
@@ -670,7 +703,7 @@ debug($sql);
 			$class="trlight";
 			$col="`&";
 			output("Since bans here should be done either permanently or people normally only warned, no ban options are offered here`n`n");
-			while ($row=db_fetch_assoc($result)) {
+			foreach ($result as $row) {
 				$class=($class=='trlight'?'trdark':'trlight');
 				rawoutput("<tr height=30px class='$class'>");
 				rawoutput("<td>");

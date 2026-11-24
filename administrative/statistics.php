@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Lotgd\SafeEscape;
 
 function statistics_getmoduleinfo(): array
 {
@@ -51,6 +50,17 @@ function statistics_uninstall(): bool
     return true;
 }
 
+/**
+ * Increment the usage counter for a statistics entry.
+ */
+function statistics_record(string $type, string $value, string $date): void
+{
+    \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+        "INSERT INTO " . \Lotgd\MySQL\Database::prefix('statistics') . " (type, value, date, count) VALUES (:type, :value, :date, '1') ON DUPLICATE KEY UPDATE count = count+1",
+        ['type' => $type, 'value' => $value, 'date' => $date]
+    );
+}
+
 function statistics_dohook(string $hookname, array $args): array
 {
     if ($hookname === 'footer-wayofthehero') {
@@ -76,12 +86,7 @@ function statistics_dohook(string $hookname, array $args): array
                     $id = 15;
                 }
                 $date = date('Ymd');
-                $sql  = sprintf(
-                    "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('weapon', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
-                    SafeEscape::escape((string) $id),
-                    SafeEscape::escape($date)
-                );
-                db_query($sql);
+                statistics_record('weapon', (string) $id, $date);
             }
 
             break;
@@ -94,12 +99,7 @@ function statistics_dohook(string $hookname, array $args): array
                     $id = 15;
                 }
                 $date = date('Ymd');
-                $sql  = sprintf(
-                    "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('armor', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
-                    SafeEscape::escape((string) $id),
-                    SafeEscape::escape($date)
-                );
-                db_query($sql);
+                statistics_record('armor', (string) $id, $date);
             }
 
             break;
@@ -110,12 +110,7 @@ function statistics_dohook(string $hookname, array $args): array
                 $id = httpget('id');
                 if ($id !== false && ctype_digit($id)) {
                     $date = date('Ymd');
-                    $sql  = sprintf(
-                        "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('drinks', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
-                        SafeEscape::escape($id),
-                        SafeEscape::escape($date)
-                    );
-                    db_query($sql);
+                    statistics_record('drinks', (string) $id, $date);
                 }
             }
 
@@ -123,14 +118,11 @@ function statistics_dohook(string $hookname, array $args): array
 
         case 'footer-kitchen':
             $op = httpget('op');
-            if ($op !== '' && $op !== 'food') {
+            if ($op !== false && $op !== '' && $op !== 'food') {
                 $date = date('Ymd');
-                $sql  = sprintf(
-                    "INSERT INTO " . db_prefix('statistics') . " (type, value, date, count) VALUES ('kitchen', '%s', '%s', '1') ON DUPLICATE KEY UPDATE count = count+1",
-                    SafeEscape::escape($op),
-                    SafeEscape::escape($date)
-                );
-                db_query($sql);
+                // httpget() values carry legacy addslashes() escaping, which SafeEscape::escape()
+                // left untouched; the stored value was the original text, so bind the unslashed value.
+                statistics_record('kitchen', stripslashes((string) $op), $date);
             }
 
             break;
@@ -176,8 +168,12 @@ function statistics_run(): void
     $month = ($monthParam !== null && ctype_digit($monthParam) && strlen($monthParam) === 2) ? (int) $monthParam : null;
     $day   = ($dayParam !== null && ctype_digit($dayParam) && strlen($dayParam) === 2) ? (int) $dayParam : null;
 
-    $typeEscaped  = is_string($typeParam) && $typeParam !== '' ? SafeEscape::escape($typeParam) : null;
-    $valueEscaped = is_string($valueParam) && $valueParam !== '' ? SafeEscape::escape($valueParam) : null;
+    // httpget() values carry legacy addslashes() escaping (SafeEscape::escape() left them as is, so the
+    // query compared the original text); bind the unslashed values.
+    $typeKey  = is_string($typeParam) && $typeParam !== '' ? stripslashes($typeParam) : null;
+    $valueKey = is_string($valueParam) && $valueParam !== '' ? stripslashes($valueParam) : null;
+    $conn     = \Lotgd\MySQL\Database::getDoctrineConnection();
+    $statsTable = \Lotgd\MySQL\Database::prefix('statistics');
 
     $safeEncode = static function ($value, ?int $length = null): string {
         if ($value === null || $value === false) {
@@ -200,13 +196,12 @@ function statistics_run(): void
     };
 
     $years = [];
-    $sql    = 'SELECT DISTINCT SUBSTRING(date,1,4) AS year FROM ' . db_prefix('statistics') . ' ORDER BY year DESC';
-    $result = db_query($sql);
-    while ($row = db_fetch_assoc($result)) {
+    $sql    = "SELECT DISTINCT SUBSTRING(date,1,4) AS year FROM {$statsTable} ORDER BY year DESC";
+    foreach ($conn->fetchAllAssociative($sql) as $row) {
         $years[] = (int) $row['year'];
     }
     $selectedYear = in_array($year, $years, true) ? $year : ($years[0] ?? null);
-    $yearEscaped  = $selectedYear !== null ? SafeEscape::escape(sprintf('%04d', $selectedYear)) : null;
+    $yearKey  = $selectedYear !== null ? sprintf('%04d', $selectedYear) : null;
 
     addnav('Choose a year...');
     foreach ($years as $yearOption) {
@@ -223,13 +218,12 @@ function statistics_run(): void
 
     $months = [];
     if ($selectedYear !== null) {
-        $sql    = "SELECT DISTINCT SUBSTRING(date,5,2) AS month FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' ORDER BY month DESC";
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+        $sql    = "SELECT DISTINCT SUBSTRING(date,5,2) AS month FROM {$statsTable} WHERE SUBSTRING(date,1,4) = :year ORDER BY month DESC";
+        foreach ($conn->fetchAllAssociative($sql, ['year' => $yearKey]) as $row) {
             $months[] = (int) $row['month'];
         }
         $selectedMonth = ($month !== null && in_array($month, $months, true)) ? $month : null;
-        $monthEscaped  = $selectedMonth !== null ? SafeEscape::escape(sprintf('%02d', $selectedMonth)) : null;
+        $monthKey  = $selectedMonth !== null ? sprintf('%02d', $selectedMonth) : null;
 
         addnav('Choose a month...');
         foreach ($months as $monthOption) {
@@ -254,18 +248,17 @@ function statistics_run(): void
         }
     } else {
         $selectedMonth = null;
-        $monthEscaped  = null;
+        $monthKey  = null;
     }
 
     $days = [];
     if ($selectedYear !== null && $selectedMonth !== null) {
-        $sql    = "SELECT DISTINCT SUBSTRING(date,7,2) AS day FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}' ORDER BY day DESC";
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+        $sql    = "SELECT DISTINCT SUBSTRING(date,7,2) AS day FROM {$statsTable} WHERE SUBSTRING(date,1,4) = :year AND SUBSTRING(date,5,2) = :month ORDER BY day DESC";
+        foreach ($conn->fetchAllAssociative($sql, ['year' => $yearKey, 'month' => $monthKey]) as $row) {
             $days[] = (int) $row['day'];
         }
         $selectedDay = ($day !== null && in_array($day, $days, true)) ? $day : null;
-        $dayEscaped  = $selectedDay !== null ? SafeEscape::escape(sprintf('%02d', $selectedDay)) : null;
+        $dayKey  = $selectedDay !== null ? sprintf('%02d', $selectedDay) : null;
 
         addnav('Choose a day...');
         foreach ($days as $dayOption) {
@@ -294,7 +287,7 @@ function statistics_run(): void
         }
     } else {
         $selectedDay = null;
-        $dayEscaped  = null;
+        $dayKey  = null;
     }
 
     // Content
@@ -324,19 +317,21 @@ function statistics_run(): void
         );
 
         $date        = sprintf('%04d%02d%02d', $selectedYear, $selectedMonth, $selectedDay);
-        $dateEscaped = SafeEscape::escape($date);
-        $sql         = "SELECT * FROM " . db_prefix('statistics') . " WHERE date='{$dateEscaped}'";
-        if ($typeEscaped !== null && $valueEscaped !== null) {
-            $sql .= " AND type='{$typeEscaped}' AND value='{$valueEscaped}'";
+        $sql         = "SELECT * FROM {$statsTable} WHERE date = :date";
+        $params      = ['date' => $date];
+        if ($typeKey !== null && $valueKey !== null) {
+            $sql .= " AND type = :type AND value = :value";
+            $params['type']  = $typeKey;
+            $params['value'] = $valueKey;
         }
         $sql    .= ' ORDER BY type ASC, value+0 ASC';
-        $result  = db_query($sql);
+        $dayRows = $conn->fetchAllAssociative($sql, $params);
         $currentType = null;
         $typeTotal   = 0;
         $i           = 0;
         rawoutput('<div class="stats-table"><table style="margin-bottom:1em;">');
         rawoutput("<tr class='trhead'><td>Type</td><td>Value</td><td>Count</td></tr>");
-        while ($row = db_fetch_assoc($result)) {
+        foreach ($dayRows as $row) {
             if ($currentType !== null && $row['type'] !== $currentType) {
                 rawoutput("<tr class='trhead'><td>");
                 output('%s', $currentType);
@@ -366,16 +361,16 @@ function statistics_run(): void
         }
         rawoutput('</table></div>');
     } elseif ($selectedYear !== null && $selectedMonth !== null) {
-        if ($typeEscaped !== null && $valueEscaped !== null) {
-            $sql = "SELECT SUBSTRING(date,7,2) AS day, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}'";
-            $sql .= " AND type='{$typeEscaped}' AND value='{$valueEscaped}'";
+        if ($typeKey !== null && $valueKey !== null) {
+            $sql = "SELECT SUBSTRING(date,7,2) AS day, SUM(CAST(count AS UNSIGNED)) AS total FROM {$statsTable} WHERE SUBSTRING(date,1,4) = :year AND SUBSTRING(date,5,2) = :month";
+            $sql .= " AND type = :type AND value = :value";
             $sql .= ' GROUP BY day ORDER BY day';
-            $result = db_query($sql);
+            $monthRows = $conn->fetchAllAssociative($sql, ['year' => $yearKey, 'month' => $monthKey, 'type' => $typeKey, 'value' => $valueKey]);
             rawoutput('<div class="stats-table"><table style="margin-bottom:1em;">');
             rawoutput("<tr class='trhead'><td>Value</td><td>Count</td></tr>");
             $i          = 0;
             $monthTotal = 0;
-            while ($row = db_fetch_assoc($result)) {
+            foreach ($monthRows as $row) {
                 $link      = 'runmodule.php?module=statistics';
                 $yearPart  = $safeEncode($selectedYear, 4);
                 $monthPart = $safeEncode($selectedMonth, 2);
@@ -408,14 +403,14 @@ function statistics_run(): void
             rawoutput('</td></tr>');
             rawoutput('</table></div>');
         } else {
-            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND SUBSTRING(date,5,2)='{$monthEscaped}' GROUP BY type,value ORDER BY type ASC, value+0 ASC";
-            $result = db_query($sql);
+            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM {$statsTable} WHERE SUBSTRING(date,1,4) = :year AND SUBSTRING(date,5,2) = :month GROUP BY type,value ORDER BY type ASC, value+0 ASC";
+            $monthTypeRows = $conn->fetchAllAssociative($sql, ['year' => $yearKey, 'month' => $monthKey]);
             rawoutput('<div class="stats-table"><table style="margin-bottom:1em;">');
             rawoutput("<tr class='trhead'><td>Type</td><td>Value</td><td>Count</td></tr>");
             $currentType = null;
             $typeTotal   = 0;
             $i           = 0;
-            while ($row = db_fetch_assoc($result)) {
+            foreach ($monthTypeRows as $row) {
                 if ($currentType !== null && $row['type'] !== $currentType) {
                     rawoutput("<tr class='trhead'><td>");
                     output('%s', $currentType);
@@ -462,12 +457,12 @@ function statistics_run(): void
             rawoutput('</table></div>');
         }
     } elseif ($selectedYear !== null) {
-        if ($typeEscaped !== null && $valueEscaped !== null) {
-            $sql    = "SELECT SUBSTRING(date,5,2) AS month, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' AND type='{$typeEscaped}' AND value='{$valueEscaped}' GROUP BY month ORDER BY month ASC";
-            $result = db_query($sql);
+        if ($typeKey !== null && $valueKey !== null) {
+            $sql    = "SELECT SUBSTRING(date,5,2) AS month, SUM(CAST(count AS UNSIGNED)) AS total FROM {$statsTable} WHERE SUBSTRING(date,1,4) = :year AND type = :type AND value = :value GROUP BY month ORDER BY month ASC";
+            $yearMonthRows = $conn->fetchAllAssociative($sql, ['year' => $yearKey, 'type' => $typeKey, 'value' => $valueKey]);
 
             $months = [];
-            while ($row = db_fetch_assoc($result)) {
+            foreach ($yearMonthRows as $row) {
                 $month            = sprintf('%02d', (int) $row['month']);
                 $months[$month] = (int) $row['total'];
             }
@@ -515,15 +510,15 @@ function statistics_run(): void
             rawoutput('</tr>');
             rawoutput('</table></div>');
         } else {
-            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM " . db_prefix('statistics') . " WHERE SUBSTRING(date,1,4)='{$yearEscaped}' GROUP BY type, value ORDER BY type ASC, value+0 ASC";
-            $result = db_query($sql);
+            $sql    = "SELECT type, value, SUM(CAST(count AS UNSIGNED)) AS total FROM {$statsTable} WHERE SUBSTRING(date,1,4) = :year GROUP BY type, value ORDER BY type ASC, value+0 ASC";
+            $yearTypeRows = $conn->fetchAllAssociative($sql, ['year' => $yearKey]);
 
             rawoutput('<div class="stats-table"><table style="margin-bottom:1em;">');
             rawoutput("<tr class='trhead'><td>Type</td><td>Value</td><td>Total</td></tr>");
             $currentType = null;
             $typeTotal   = 0;
             $i           = 0;
-            while ($row = db_fetch_assoc($result)) {
+            foreach ($yearTypeRows as $row) {
                 if ($currentType !== null && $row['type'] !== $currentType) {
                     rawoutput("<tr class='trhead'><td>");
                     output('%s', $currentType);
@@ -565,9 +560,8 @@ function statistics_run(): void
             rawoutput('</table></div>');
         }
     } else {
-        $sql    = 'SELECT * FROM ' . db_prefix('statistics') . ' ORDER BY type ASC, value+0 ASC';
-        $result = db_query($sql);
-        while ($row = db_fetch_assoc($result)) {
+        $sql    = "SELECT * FROM {$statsTable} ORDER BY type ASC, value+0 ASC";
+        foreach ($conn->fetchAllAssociative($sql) as $row) {
             $type  = $row['type'];
             $value = $row['value'];
             $stats[$type][$value]['count'] = ($stats[$type][$value]['count'] ?? 0) + (int) $row['count'];

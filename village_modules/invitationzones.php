@@ -78,6 +78,7 @@ function invitationzones_run(){
 	else $link="runmodule.php?module=invitationzones&";
 	$prefb=db_prefix('fightingzones_battles');
 	$preac=db_prefix('accounts');
+	$conn=\Lotgd\MySQL\Database::getDoctrineConnection();
 	$name=get_module_setting('name');
 	$goldcost=get_module_setting('goldcost')*$u['dragonkills'];
 
@@ -115,14 +116,23 @@ function invitationzones_run(){
 						if ($prefix==1) $arrive=sprintf_translate("in %s hours",$prefix);
 						else $arrive=sprintf_translate("in %s hour",$prefix);					
 					}
-					$sql="SELECT name FROM $preac WHERE acctid=$target;";
-					$result=db_query($sql);
-					$row=db_fetch_assoc($result);
-					$enemy=$row['name'];
+					$row=$conn->fetchAssociative("SELECT name FROM $preac WHERE acctid = :target",array('target'=>$target));
+					$enemy=$row===false?null:$row['name'];
 					output("`kYou pay the amount of `^%s gold pieces`k and %s`k starts to call a messenger to send a letter of challenge to %s`k.`n`n",$goldcost,$name,$enemy);
 					output("\"`lThank you for using the facility. You may enter the arena %s and wait for your challenger to arrive.`k\"",$arrive);
-					$sql="INSERT INTO $prefb (battleid,challenger,opponent,date,length,zonetype,spectators,spectatorcanpost,individualname) VALUES (0,".$u['acctid'].",".$target.",'".date("Y-m-d H:i:s",strtotime("+$prefix days"))."',".$length.",".$zonetype.",".$spectators.",".$spectatorpost.",'".$individualname."');";
-					db_query($sql);
+					// httppost() values are addslashes()d; the old code put the value straight into a quoted
+					// literal (stored the original text), so bind the unslashed text.
+					$sql="INSERT INTO $prefb (battleid,challenger,opponent,date,length,zonetype,spectators,spectatorcanpost,individualname) VALUES (0,:challenger,:target,:date,:length,:zonetype,:spectators,:spectatorpost,:individualname)";
+					$conn->executeStatement($sql,array(
+						'challenger'=>(int)$u['acctid'],
+						'target'=>$target,
+						'date'=>date("Y-m-d H:i:s",strtotime("+$prefix days")),
+						'length'=>$length,
+						'zonetype'=>$zonetype,
+						'spectators'=>$spectators,
+						'spectatorpost'=>$spectatorpost,
+						'individualname'=>stripslashes((string)$individualname),
+					));
 					debug($sql);
 
 					$subject = translate_mail(array("Letter of Challenge from %s",$u['name']),0);
@@ -150,10 +160,8 @@ function invitationzones_run(){
 						rawoutput("<input type='submit' class='button' value='$submit'></from><br><br>");
 					} elseif (is_numeric($target)) {
 						//found
-						$sql="SELECT name FROM $preac WHERE acctid=$target;";
-						$result=db_query($sql);
-						$row=db_fetch_assoc($result);
-						$enemy=$row['name'];							
+						$row=$conn->fetchAssociative("SELECT name FROM $preac WHERE acctid = :target",array('target'=>(int)$target));
+						$enemy=$row===false?null:$row['name'];
 						output("`\$So you want to challenge %s`\$ to a fight?`n`n`^This costs you %s gold.`n",$enemy,$goldcost);
 						rawoutput("<form action='".$link."op=invite&subop=pay' method='POST'>");
 						addnav("",$link."op=invite&subop=pay");
@@ -217,9 +225,8 @@ function invitationzones_run(){
 		case "view":
 			addnav("Refresh",$link."op=view");
 			//specific fight chosen
-			$sql="SELECT a.*,a.challenger as cacctid, a.opponent as oacctid,b.name as challenger,c.name as opponent,a.zonetype as zonetype from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.battleid=$id;";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
+			$sql="SELECT a.*,a.challenger as cacctid, a.opponent as oacctid,b.name as challenger,c.name as opponent,a.zonetype as zonetype from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.battleid = :id";
+			$row=$conn->fetchAssociative($sql,array('id'=>$id));
 			if ($row==false) {
 				output("Error 0x01, notify your admin about battle id %s!",$id);
 				break;
@@ -239,11 +246,11 @@ function invitationzones_run(){
 
 			if ($id==0) {
 				output("`b`i`c`!Fighting Zone`c`i`b`n`n");
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date asc;";
-				$result=db_query($sql);
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE (a.opponent = :acctid1 OR a.challenger = :acctid2) AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date asc";
+				$rows=$conn->fetchAllAssociative($sql,array('acctid1'=>(int)$u['acctid'],'acctid2'=>(int)$u['acctid']));
 				addnav("Private Active Fights");
 				$olddate = '';
-				while ($row=db_fetch_assoc($result)){
+				foreach ($rows as $row){
 					$date=$row['olddate'];
 					if ($olddate!=$date) {
 						addnav_notl($date);
@@ -252,15 +259,15 @@ function invitationzones_run(){
 					addnav(array("%s`4 VS %s`4 (%s)",$row['challenger'],$row['opponent'],$row['time']),$link."op=spectate&battleid=".((int)$row['battleid']));
 				}			
 
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND NOT (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].")AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date desc;";
-				$result=db_query($sql);
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND NOT (a.opponent = :acctid1 OR a.challenger = :acctid2) AND DATE_ADD(date, INTERVAL length+14 DAY)>=NOW() ORDER BY a.date desc";
+				$rows=$conn->fetchAllAssociative($sql,array('acctid1'=>(int)$u['acctid'],'acctid2'=>(int)$u['acctid']));
 				addnav("Active Fights");
-				while ($row=db_fetch_assoc($result)){
+				foreach ($rows as $row){
 					addnav(array("%s`4 VS %s`4",$row['challenger'],$row['opponent']),$link."op=spectate&battleid=".((int)$row['battleid']));
 				}
 
-				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators=0 AND (a.opponent=".$u['acctid']." OR a.challenger=".$u['acctid'].") AND DATE_ADD(date, INTERVAL length+14 DAY)<NOW() ORDER BY a.date desc;";
-				$result=db_query($sql);
+				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators=0 AND (a.opponent = :acctid1 OR a.challenger = :acctid2) AND DATE_ADD(date, INTERVAL length+14 DAY)<NOW() ORDER BY a.date desc";
+				$rows=$conn->fetchAllAssociative($sql,array('acctid1'=>(int)$u['acctid'],'acctid2'=>(int)$u['acctid']));
 				output("`c`b`lPrivate Archived Fights`c`b`0");
 				$notrans = translate_inline("Battle");
 				rawoutput("<center>");
@@ -270,7 +277,7 @@ function invitationzones_run(){
 				rawoutput("<tr class='trhead'><td>".translate_inline("Date")."</td><td>".translate_inline("Challenger")."</td><td>".translate_inline("Opponent")."</td><td>".translate_inline("Link to Fight")."</td>");
 				rawoutput("</tr>");
 				$light=true;
-				while ($row=db_fetch_assoc($result)){
+				foreach ($rows as $row){
 					$date=$row['olddate'];
 					rawoutput("<tr class='".($light?"trdark":"trlight")."'><td>");
 					$light=!$light;
@@ -292,7 +299,7 @@ function invitationzones_run(){
 				/*				
 				 */				
 				$sql="SELECT a.battleid,b.name as challenger,c.name as opponent,DATE_FORMAT(a.date,'%W, %M %D %Y') as olddate, DATE_FORMAT(a.date,'%h:%i %p GMT+1') as time from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.spectators!=0 AND DATE_ADD(date, INTERVAL length+14 DAY)<NOW() ORDER BY a.date desc;";
-				$result=db_query($sql);
+				$rows=$conn->fetchAllAssociative($sql,array());
 
 				output("`c`b`lPublic Archived Fights`c`b`0");
 				$notrans = translate_inline("Battle");
@@ -303,7 +310,7 @@ function invitationzones_run(){
 				rawoutput("<tr class='trhead'><td>".translate_inline("Date")."</td><td>".translate_inline("Challenger")."</td><td>".translate_inline("Opponent")."</td><td>".translate_inline("Link to Fight")."</td>");
 				rawoutput("</tr>");
 				$light=true;
-				while ($row=db_fetch_assoc($result)){
+				foreach ($rows as $row){
 					$date=$row['olddate'];
 					rawoutput("<tr class='".($light?"trdark":"trlight")."'><td>");
 					$light=!$light;
@@ -336,9 +343,8 @@ function invitationzones_run(){
 			}
 			addnav("Refresh",$link."op=spectate");
 			//specific fight chosen
-			$sql="SELECT a.*,a.challenger as cacctid, a.opponent as oacctid,b.name as challenger,c.name as opponent,a.zonetype as zonetype from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.battleid=$id;";
-			$result=db_query($sql);
-			$row=db_fetch_assoc($result);
+			$sql="SELECT a.*,a.challenger as cacctid, a.opponent as oacctid,b.name as challenger,c.name as opponent,a.zonetype as zonetype from $prefb as a inner join $preac as b on a.challenger=b.acctid inner join $preac as c on a.opponent=c.acctid WHERE a.battleid = :id";
+			$row=$conn->fetchAssociative($sql,array('id'=>$id));
 			if ($row==false) {
 				output("Error 0x01, notify your admin about battle id %s!",$id);
 				break;

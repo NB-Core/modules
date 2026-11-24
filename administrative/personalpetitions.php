@@ -29,9 +29,9 @@ function personalpetitions_install() {
         );
         synctable($table, $petition_desc, true);
 
-        $result = db_query("SELECT COUNT(*) AS c FROM $table");
-        $row = db_fetch_assoc($result);
-        if ($row['c'] == 0) {
+        $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+        $count = $conn->fetchOne("SELECT COUNT(*) AS c FROM $table");
+        if ((int) $count == 0) {
                 $core = array(
                         0=>"`bUnhandled`b",
                         1=>"In-Progress",
@@ -46,14 +46,20 @@ function personalpetitions_install() {
                 // MySQL does not allow direct insertion of id=0 into an AUTO_INCREMENT column,
                 // as it treats 0 as a trigger to auto-generate the next value. Therefore, we
                 // first insert the row without specifying the id, then update it to set id=0.
-                db_query("INSERT INTO $table (name,active) VALUES ('".db_real_escape_string($core[0])."',1)");
-                $zeroid = db_insert_id();
-                db_query("UPDATE $table SET id=0 WHERE id=".(int)$zeroid);
+                $conn->executeStatement(
+                        "INSERT INTO $table (name,active) VALUES (:name,1)",
+                        ['name' => $core[0]]
+                );
+                $zeroid = (int) $conn->lastInsertId();
+                $conn->executeStatement("UPDATE $table SET id=0 WHERE id=".$zeroid);
 
                 // Insert remaining core statuses with explicit ids
                 foreach ($core as $id=>$name) {
                         if ($id == 0) continue;
-                        db_query("INSERT INTO $table (id,name,active) VALUES (".(int)$id.",'".db_real_escape_string($name)."',1)");
+                        $conn->executeStatement(
+                                "INSERT INTO $table (id,name,active) VALUES (:id,:name,1)",
+                                ['id' => (int) $id, 'name' => $name]
+                        );
                 }
 
                 // The previous version kept custom categories in this setting and
@@ -67,7 +73,10 @@ function personalpetitions_install() {
                         foreach (explode(',', $list) as $cat) {
                                 $cat = trim($cat);
                                 if ($cat != '') {
-                                        db_query("INSERT INTO $table (id,name,active) VALUES (".$id.",'".db_real_escape_string($cat)."',1)");
+                                        $conn->executeStatement(
+                                                "INSERT INTO $table (id,name,active) VALUES (:id,:name,1)",
+                                                ['id' => (int) $id, 'name' => $cat]
+                                        );
                                         $customIds[] = $id;
                                 }
                                 $id++;
@@ -75,20 +84,25 @@ function personalpetitions_install() {
                 }
 
                 // Reset auto increment to next available id
-                $max = db_fetch_assoc(db_query("SELECT MAX(id) AS maxid FROM $table"));
-                $next = (int)$max['maxid'] + 1;
-                db_query("ALTER TABLE $table AUTO_INCREMENT=".$next);
+                $maxid = $conn->fetchOne("SELECT MAX(id) AS maxid FROM $table");
+                $next = (int)$maxid + 1;
+                db_query("ALTER TABLE $table AUTO_INCREMENT=".$next); // DDL, int-only
 
-                db_query("DELETE FROM ".db_prefix('module_settings')." WHERE modulename='personalpetitions' AND setting='categories'");
+                $conn->executeStatement(
+                        "DELETE FROM ".\Lotgd\MySQL\Database::prefix('module_settings')." WHERE modulename='personalpetitions' AND setting='categories'"
+                );
 
                 // Ensure seeded rows have default values for new columns. The
                 // petition counter only lists categories with a sortOrder, so give
                 // every seeded one a position, in the order the counter of the
                 // previous version used (custom categories first).
-                db_query("UPDATE $table SET important = 0, sortOrder = NULL");
+                $conn->executeStatement("UPDATE $table SET important = 0, sortOrder = NULL");
                 $order = array_merge($customIds, array(5, 4, 0, 1, 3, 7, 6, 2));
                 foreach ($order as $pos => $statusId) {
-                        db_query("UPDATE $table SET sortOrder = ".(int)$pos." WHERE id = ".(int)$statusId);
+                        $conn->executeStatement(
+                                "UPDATE $table SET sortOrder = :pos WHERE id = :id",
+                                ['pos' => (int) $pos, 'id' => (int) $statusId]
+                        );
                 }
         }
         return true;
@@ -176,32 +190,38 @@ function personalpetitions_run(){
         $id = (int)httpget('id');
         $table = db_prefix('petition_categories');
         $msg = '';
+        $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
         invalidatedatacache('petition_counts');
 
        switch ($op) {
                case 'save':
+                       // httppost() value is already slashed; the old code escaped it again, so the
+                       // stored name carries one level of slashes. Bound unchanged to keep stored bytes identical.
                        $name = httppost('name');
                        $order = (int)httppost('order');
                        if ($name !== '') {
-                               $sql = "UPDATE $table SET name='" . db_real_escape_string($name) . "', sortOrder=" . (int)$order . " WHERE id=$id";
+                               $conn->executeStatement(
+                                       "UPDATE $table SET name = :name, sortOrder = :order WHERE id = :id",
+                                       ['name' => $name, 'order' => $order, 'id' => $id]
+                               );
                        } else {
-                               $sql = "UPDATE $table SET sortOrder=" . (int)$order . " WHERE id=$id";
+                               $conn->executeStatement(
+                                       "UPDATE $table SET sortOrder = :order WHERE id = :id",
+                                       ['order' => $order, 'id' => $id]
+                               );
                        }
-                       db_query($sql);
                        invalidatedatacache('petition_categories');
                        invalidatedatacache('petition_counts');
                        redirect("runmodule.php?module=personalpetitions");
                        break;
                case 'toggle':
-                       $sql = "UPDATE $table SET active = 1 - active WHERE id=" . (int)$id;
-                       db_query($sql);
+                       $conn->executeStatement("UPDATE $table SET active = 1 - active WHERE id = :id", ['id' => (int) $id]);
                        invalidatedatacache('petition_categories');
                        invalidatedatacache('petition_counts');
                        redirect("runmodule.php?module=personalpetitions");
                        break;
                case 'toggleimp':
-                       $sql = "UPDATE $table SET important = 1 - important WHERE id=" . (int)$id;
-                       db_query($sql);
+                       $conn->executeStatement("UPDATE $table SET important = 1 - important WHERE id = :id", ['id' => (int) $id]);
                        invalidatedatacache('petition_categories');
                        invalidatedatacache('petition_counts');
                        redirect("runmodule.php?module=personalpetitions");
@@ -209,15 +229,12 @@ function personalpetitions_run(){
                case 'del':
                        // Check if the status is in use before deleting
                        $petitions_table = db_prefix('petitions');
-                       $sql_check = "SELECT COUNT(*) AS cnt FROM $petitions_table WHERE status = $id";
-                       $result = db_query($sql_check);
-                       $row = db_fetch_assoc($result);
-                       if ($row['cnt'] > 0) {
+                       $cnt = $conn->fetchOne("SELECT COUNT(*) AS cnt FROM $petitions_table WHERE status = :id", ['id' => $id]);
+                       if ((int) $cnt > 0) {
                                $msg = "`4Error:`0 This status cannot be deleted because it is in use by one or more petitions.";
                                break;
                        }
-                       $sql = "DELETE FROM $table WHERE id=$id"; 
-                       db_query($sql);
+                       $conn->executeStatement("DELETE FROM $table WHERE id = :id", ['id' => $id]);
                        invalidatedatacache('petition_categories');
                        invalidatedatacache('petition_counts');
                        redirect("runmodule.php?module=personalpetitions");
@@ -227,8 +244,11 @@ function personalpetitions_run(){
                        $order = (int)httppost('order');
                        $important = httppost('important') ? 1 : 0;
                        if ($name !== '') {
-                               $sql = "INSERT INTO $table (name,active,important,sortOrder) VALUES ('" . db_real_escape_string($name) . "',1," . db_real_escape_string($important) . "," . db_real_escape_string($order) . ")"; 
-                               db_query($sql);
+                               // Slashed httppost value bound unchanged (old code escaped it a second time).
+                               $conn->executeStatement(
+                                       "INSERT INTO $table (name,active,important,sortOrder) VALUES (:name,1,:important,:order)",
+                                       ['name' => $name, 'important' => $important, 'order' => $order]
+                               );
                                invalidatedatacache('petition_categories');
                                invalidatedatacache('petition_counts');
                        }
@@ -252,10 +272,10 @@ function personalpetitions_run(){
                $escname = htmlentities($row['name'], ENT_COMPAT, getsetting('charset', 'ISO-8859-1'));
                $escorder = (int)$row['sortOrder'];
                // Determine if any petition currently uses this status ID
-               $count_sql = "SELECT COUNT(*) AS cnt FROM " . db_prefix('petitions') . " WHERE status=" . (int)$cid;
-               $count_res = db_query($count_sql);
-               $count = db_fetch_assoc($count_res);
-               $in_use = (int)$count['cnt'];
+               $in_use = (int) $conn->fetchOne(
+                       "SELECT COUNT(*) AS cnt FROM " . \Lotgd\MySQL\Database::prefix('petitions') . " WHERE status = :cid",
+                       ['cid' => $cid]
+               );
 
                rawoutput("<tr class='trlight'>");
                rawoutput("<td>$cid</td>");
