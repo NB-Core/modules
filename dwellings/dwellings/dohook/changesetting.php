@@ -1,11 +1,15 @@
 <?php
 	if ($args['setting'] == "villagename") {
-		$sql = "UPDATE ".db_prefix("dwellings")." SET location='".addslashes($args['new'])."' WHERE location='".addslashes($args['old'])."'";
-		db_query($sql);
+		\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+			"UPDATE ".\Lotgd\MySQL\Database::prefix("dwellings")." SET location = :new WHERE location = :old",
+			['new' => $args['new'], 'old' => $args['old']]
+		);
 	}
 // Added this because of a new setting...
 	if ($args['setting'] == "logoutlocation") {
-		$sql = "UPDATE ".db_prefix("accounts")." SET location='".addslashes($args['new'])."' WHERE location='".addslashes($args['old'])."'";
-		db_query($sql);
+		\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+			"UPDATE ".\Lotgd\MySQL\Database::prefix("accounts")." SET location = :new WHERE location = :old",
+			['new' => $args['new'], 'old' => $args['old']]
+		);
 	}
 ?>

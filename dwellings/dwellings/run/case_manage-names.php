@@ -43,9 +43,17 @@
 						output("`2The public description has been changed to:`n%s",$newname2);
 						break;
 				}
-				$newname_esc = addslashes($newname);
-				$sql2 = "UPDATE ".db_prefix("dwellings")." SET $change = '$newname_esc' WHERE dwid = $dwid";
-				db_query($sql2);
+				// $newname comes from httppost() and is therefore already addslashes()d.
+				// The old code addslashes()d it again, so MySQL un-escaped one level and
+				// stored the single-slashed text, i.e. exactly the httppost() value.
+				// Bind $newname unchanged to keep the stored bytes identical.
+				// $change is a column name (cannot be bound): only allow the known ones.
+				if (in_array($change, array("name", "description", "windowpeer"), true)) {
+					\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+						"UPDATE ".\Lotgd\MySQL\Database::prefix("dwellings")." SET $change = :newname WHERE dwid = :dwid",
+						['newname' => $newname, 'dwid' => (int)$dwid]
+					);
+				}
 				$session['user']['gems']-=$gemcost;
 				$session['user']['gold']-=$goldcost;
 				debuglog("spent $gemcost gems and $goldcost gold for changing the $change of their dwelling $dwid.");

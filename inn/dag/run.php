@@ -118,37 +118,44 @@ function dag_run_private(){
 			addnav("","runmodule.php?module=dag&op=finalize");
 		}
 	}elseif ($op=="finalize") {
+		$conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+		$dagSelect = "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . \Lotgd\MySQL\Database::prefix("accounts");
 		if (httpget('subfinal')==1){
-			$sql = "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . db_prefix("accounts") . " WHERE name='".addslashes(rawurldecode(stripslashes(httppost('contractname'))))."' AND locked=0";
-			$result = db_query($sql);
+			$rows = $conn->fetchAllAssociative(
+				$dagSelect . " WHERE name = :name AND locked=0",
+				['name' => rawurldecode(stripslashes(httppost('contractname')))]
+			);
 		}else{
 			$contractname = stripslashes(rawurldecode(httppost('contractname')));
-			$sql =  "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . db_prefix("accounts") . " WHERE login LIKE '".addslashes($contractname)."' AND locked=0";
-			$result=db_query($sql);
-			if (db_num_rows($result)==0) {
+			$rows = $conn->fetchAllAssociative(
+				$dagSelect . " WHERE login LIKE :login AND locked=0",
+				['login' => $contractname]
+			);
+			if (count($rows)==0) {
 				$name="%";
 				for ($x=0;$x<strlen($contractname);$x++){
 					$name.=substr($contractname,$x,1)."%";
 				}
-				$sql = "SELECT acctid,name,login,level,locked,age,dragonkills,pk,experience FROM " . db_prefix("accounts") . " WHERE name LIKE '".addslashes($name)."' AND locked=0";
-				$result = db_query($sql);
+				$rows = $conn->fetchAllAssociative(
+					$dagSelect . " WHERE name LIKE :name AND locked=0",
+					['name' => $name]
+				);
 			}
 		}
 		if (isset($contractname) && $contractname == "Chuck Norris") {
 			output("`7\"You cannot find him. He will find YOU! Don't mess with him.`n`nI won't take a risky contract like that!");
 			page_footer();
 		}
-		if (db_num_rows($result) == 0) {
+		if (count($rows) == 0) {
 			output("Dag Durnick sneers at you, `7\"There not be anyone I be knowin' of by that name.  Maybe ye should come back when ye got a real target in mind?\"");
-		} elseif(db_num_rows($result) > 100) {
+		} elseif(count($rows) > 100) {
 			output("Dag Durnick scratches his head in puzzlement, `7\"Ye be describing near half th' town, ye fool?  Why don't ye be giving me a better name now?\"");
-		} elseif(db_num_rows($result) > 1) {
+		} elseif(count($rows) > 1) {
 			output("Dag Durnick searches through his list for a moment, `7\"There be a couple of 'em that ye could be talkin' about.  Which one ye be meaning?\"`n");
 			rawoutput("<form action='runmodule.php?module=dag&op=finalize&subfinal=1' method='POST'>");
 			output("`2Target: ");
 			rawoutput("<select name='contractname'>");
-			for ($i=0;$i<db_num_rows($result);$i++){
-				$row = db_fetch_assoc($result);
+			foreach ($rows as $row){
 				rawoutput("<option value=\"".rawurlencode($row['name'])."\">".full_sanitize($row['name'])."</option>");
 			}
 			rawoutput("</select>");
@@ -163,7 +170,7 @@ function dag_run_private(){
 			addnav("","runmodule.php?module=dag&op=finalize&subfinal=1");
 		} else {
 			// Now, we have just the one, so check it.
-			$row  = db_fetch_assoc($result);
+			$row  = $rows[0];
 			if ($row['locked']) {
 				output("Dag Durnick sneers at you, `7\"There not be anyone I be knowin' of by that name.  Maybe ye should come back when ye got a real target in mind?\"");
 			} elseif ($row['login'] == $session['user']['login']) {

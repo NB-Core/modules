@@ -37,22 +37,29 @@ case "picked": //save the picked one
                 $version=$logd_version;
                 }
 
-        $eintext = addslashes($intext);
-        $enamespc = addslashes($namespace);
-        $elangschema = addslashes($languageschema);
-        $elogin = addslashes($login);
-        $eversion = addslashes($version);
-
-        $sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$eintext' AND language = '$elangschema' AND namespace = '$enamespc'";
-        $query=db_query($sql);
-        $result=db_num_rows($query);
+        $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+        $whereParams = [
+                'intext' => $intext,
+                'language' => $languageschema,
+                'namespace' => $namespace,
+        ];
+        $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE BINARY intext = :intext AND language = :language AND namespace = :namespace";
+        $result=count($conn->fetchAllAssociative($sql, $whereParams));
         if ($result==1)
                 {
-                $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$eintext' AND language = '$elangschema' AND namespace = '$enamespc'";
+                $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE BINARY intext = :intext AND language = :language AND namespace = :namespace";
                 //debug($sql); break;
-                $result=db_query($sql);
-                $sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$elangschema','$enamespc','$eintext','$outtext','$elogin','$eversion')";
-                $result2=db_query($sql2);
+                $conn->executeStatement($sql, $whereParams);
+                $sql2 = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " (:language,:uri,:intext,:outtext,:author,:version)";
+                $conn->executeStatement($sql2, [
+                        'language' => $languageschema,
+                        'uri' => $namespace,
+                        'intext' => $intext,
+                        // request value that the old SQL used unescaped
+                        'outtext' => stripslashes($outtext),
+                        'author' => $login,
+                        'version' => $version,
+                ]);
                 redirect("runmodule.php?module=translationwizard&op=known$redirect&error=5"); //just redirecting so you go back to the previous page after the choice
                 } else
                 {
@@ -74,12 +81,13 @@ case "delete": //to delete one via the delete button
         //$intext= stripslashes(rawurldecode(httpget('intext')));
         //$intext = str_replace("%", "%%", rawurldecode(httpget('intext')));
         $intext=rawurldecode(httpget('intext'));
-        $eintext = addslashes($intext);
-        $enamespc = addslashes($namespace);
-        $elangschema = addslashes($languageschema);
-        $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE intext = '$eintext' AND language = '$elangschema' AND namespace = '$enamespc'";
+        $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE intext = :intext AND language = :language AND namespace = :namespace";
         //debug($sql); break;
-        db_query($sql);
+        \Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement($sql, [
+                'intext' => $intext,
+                'language' => $languageschema,
+                'namespace' => $namespace,
+        ]);
 	$mode=""; //reset
 	redirect("runmodule.php?module=translationwizard&op=known$redirect"); //just redirecting so you go back to the previous page after the deletion
 break;
@@ -95,26 +103,35 @@ case "radioinsert": //insert all first occurrences
                 //debug($translation);
                 $lang=$original[0];
                 $namespace=$original[1];
-                $enamespc = addslashes($namespace);
                 //$intext=(($original[2]));  //this won't be passed over correct, due to blanks you have to rawurlencode, yet the dot becomes an underline, so it's not correct
-                $sql = "SELECT intext,outtext FROM " . db_prefix($table) . " WHERE BINARY tid=".$val.";";
-                $query=db_query($sql);
-                $row=db_fetch_assoc($query);
-                $outtext=addslashes($row['outtext']);
-                $intext=addslashes($row['intext']);
+                $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+                $sql = "SELECT intext,outtext FROM " . \Lotgd\MySQL\Database::prefix($table) . " WHERE BINARY tid = :tid;";
+                $row=$conn->fetchAssociative($sql, ['tid' => (int)$val]);
+                $outtext=$row['outtext'];
+                $intext=$row['intext'];
                 //security check
-                $sql = "SELECT * FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$lang' AND namespace = '$enamespc'";
-                $query=db_query($sql);
-                $result=db_num_rows($query);
+                // $lang comes from the (unslashed) POST key and was used unescaped in the old SQL
+                $whereParams = [
+                        'intext' => $intext,
+                        'language' => stripslashes($lang),
+                        'namespace' => $namespace,
+                ];
+                $sql = "SELECT * FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE BINARY intext = :intext AND language = :language AND namespace = :namespace";
+                $result=count($conn->fetchAllAssociative($sql, $whereParams));
                 if ($result==1)
                         {
-                        $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '$intext' AND language = '$lang' AND namespace = '$enamespc'";
+                        $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE BINARY intext = :intext AND language = :language AND namespace = :namespace";
                         debug($sql);
-                        $result=db_query($sql);
-                        $elogin = addslashes($login);
-                        $eversion = addslashes($version);
-                        $sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$lang','$enamespc','$intext','$outtext','$elogin','$eversion')";
-                        $result2=db_query($sql2);
+                        $conn->executeStatement($sql, $whereParams);
+                        $sql2 = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " (:language,:uri,:intext,:outtext,:author,:version)";
+                        $conn->executeStatement($sql2, [
+                                'language' => stripslashes($lang),
+                                'uri' => $namespace,
+                                'intext' => $intext,
+                                'outtext' => $outtext,
+                                'author' => $login ?? '',
+                                'version' => $version ?? '',
+                        ]);
 			//debug($sql2);
 			} else
 			{
@@ -140,26 +157,26 @@ if (!$start) $start=0;
 
 if ($central) 
 	{
-	$sql= "SELECT intext AS counter FROM  ".db_prefix("temp_translations").";";
-	$result = db_query($sql);
-	output("%s rows are in your pulled translations table.`n`n",db_num_rows($result));
+	$sql= "SELECT COUNT(*) FROM  ".\Lotgd\MySQL\Database::prefix("temp_translations").";";
+	$rowcount = (int)\Lotgd\MySQL\Database::getDoctrineConnection()->fetchOne($sql);
+	output("%s rows are in your pulled translations table.`n`n",$rowcount);
 	//setup the new query
 	$sql="Select ".db_prefix("untranslated").".intext, ".db_prefix("temp_translations").".language as t, ".db_prefix("untranslated").".language as u, ".db_prefix("temp_translations").".tid, ".db_prefix("temp_translations").".outtext,".db_prefix("temp_translations").".author,".db_prefix("untranslated").".namespace,".db_prefix("temp_translations").".version  from ".db_prefix("temp_translations").",".db_prefix("untranslated")." where ".db_prefix("temp_translations").".intext=".db_prefix("untranslated").".intext AND ".db_prefix("temp_translations").".language=".db_prefix("untranslated").".language ORDER BY ".db_prefix("untranslated").".intext";
 	} else {
-	$sql= "SELECT intext AS counter FROM ".db_prefix("untranslated").";";
-	$result = db_query($sql);
-	output("%s rows are in your untranslated table.`n",db_num_rows($result));
+	$sql= "SELECT COUNT(*) FROM ".\Lotgd\MySQL\Database::prefix("untranslated").";";
+	$rowcount = (int)\Lotgd\MySQL\Database::getDoctrineConnection()->fetchOne($sql);
+	output("%s rows are in your untranslated table.`n",$rowcount);
 	//set up the new query
 	$sql="Select ".db_prefix("untranslated").".intext, ".db_prefix("translations").".language as t, ".db_prefix("untranslated").".language as u, ".db_prefix("translations").".tid,".db_prefix("translations").".outtext,".db_prefix("translations").".author,".db_prefix("untranslated").".namespace  from ".db_prefix("translations").",".db_prefix("untranslated")." where ".db_prefix("translations").".intext=".db_prefix("untranslated").".intext AND ".db_prefix("translations").".language=".db_prefix("untranslated").".language ORDER BY ".db_prefix("untranslated").".intext";
 	}
-if (db_num_rows($result)==0) //table is fine, no redundant rows
+if ($rowcount==0) //table is fine, no redundant rows
 	{
 	output("There are no untranslated texts in the database!");
 	output("Congratulations!!!");
 	break;
 	}
-$result=db_query($sql);
-$numberofallrows=db_num_rows($result);	
+$result=\Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative($sql);
+$numberofallrows=count($result);
 if ($numberofallrows==0)
 	{
 	if (!$central) output("`nSorry, all rows in the untranslated table have no match in any intext in your translations table.");
@@ -185,11 +202,15 @@ if (!httppost('quickinsert'))
 	}
 tw_form_close();
 $fastinsert=$result; //use the full result for insert purposes if the user wishes for, related to button -quick insert-
-$sql.=" LIMIT $start,$page;";
+$sql.=" LIMIT :start,:page;";
 //debug("Start: $start and $page and $numberofallrows");
 //debug($result);
-if ($numberofallrows>$page) $result = db_query($sql);
-$rownumber=db_num_rows($result);
+if ($numberofallrows>$page) $result = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative(
+	$sql,
+	['start' => (int)$start, 'page' => (int)$page],
+	['start' => \Doctrine\DBAL\ParameterType::INTEGER, 'page' => \Doctrine\DBAL\ParameterType::INTEGER]
+);
+$rownumber=count($result);
 rawoutput("<h4 align='left'>");
 if ($start>=$page && !httppost('quickinsert')) { //just display the pages if necessary and not quick insert selected
 	rawoutput("<a href='runmodule.php?module=translationwizard&op=known$redirect&pageop=".($start-$page)."'>". translate_inline("Previous Page")."</a>");
@@ -203,7 +224,7 @@ rawoutput("</h4>");
 $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to translate ;) as the first text
 	if (httppost('quickinsert')) {
 		if (httppost('quickinsertexecute')) {
-			while($row=db_fetch_assoc($fastinsert))
+			foreach($fastinsert as $row)
 				{
 				if ($row['t']==$row['u'] && $row['t']==$languageschema && $alttext<>$row['intext'])
 				{
@@ -212,14 +233,23 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
 					} else {
 					$version=$logd_version;
 					}
-                                $elangschema = addslashes($languageschema);
-                                $elogin = addslashes($login);
-                                $eversion = addslashes($version);
-                                $sql = "DELETE FROM " . db_prefix("untranslated") . " WHERE BINARY intext = '".addslashes($row['intext'])."' AND language = '$elangschema' AND namespace = '{$row['namespace']}'";
+                                $conn = \Lotgd\MySQL\Database::getDoctrineConnection();
+                                $sql = "DELETE FROM " . \Lotgd\MySQL\Database::prefix("untranslated") . " WHERE BINARY intext = :intext AND language = :language AND namespace = :namespace";
                                 //debug($sql);
-                                $result=db_query($sql);
-                                $sql2 = "INSERT INTO " . db_prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " ('$elangschema','{$row['namespace']}','".addslashes($row['intext'])."','".addslashes($row['outtext'])."','$elogin','$eversion')";
-                                $result2=db_query($sql2);
+                                $conn->executeStatement($sql, [
+                                        'intext' => $row['intext'],
+                                        'language' => $languageschema,
+                                        'namespace' => $row['namespace'],
+                                ]);
+                                $sql2 = "INSERT INTO " . \Lotgd\MySQL\Database::prefix("translations") . " (language,uri,intext,outtext,author,version) VALUES" . " (:language,:uri,:intext,:outtext,:author,:version)";
+                                $conn->executeStatement($sql2, [
+                                        'language' => $languageschema,
+                                        'uri' => $row['namespace'],
+                                        'intext' => $row['intext'],
+                                        'outtext' => $row['outtext'],
+                                        'author' => $login ?? '',
+                                        'version' => $version,
+                                ]);
 				//debug($sql2);
 				$alttext=$row['intext'];
 				}
@@ -233,7 +263,7 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
                             translate_inline('Translation'),
                             translate_inline('Author')
                         ]);
-                        while($row=db_fetch_assoc($fastinsert))
+                        foreach($fastinsert as $row)
                                 {
                                 if ($row['t']==$row['u'] && $row['t']==$languageschema && $alttext<>$row['intext'])
                                 {
@@ -251,7 +281,7 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
                         }
                         tw_table_close();
 		
-	    } else if (db_num_rows($result)>0) {
+	    } else if (count($result)>0) {
                 tw_form_open("known&mode=radioinsert$redirect");
 		addnav("", "runmodule.php?module=translationwizard&op=known&mode=radioinsert$redirect");
                 tw_table_open([
@@ -262,7 +292,7 @@ $alttext= "abcdefgh-dummy-dummy-dummy"; //hopefully this text is in no module to
                     translate_inline('Actions'),
                     ''
                 ]);
-		while($row=db_fetch_assoc($result))	{
+		foreach($result as $row)	{
 			if ($row['t']==$row['u'] && $row['t']==$languageschema)	{
 				if ($alttext<>$row['intext']) {
                                           $delete = "<a href='runmodule.php?module=translationwizard&op=known$redirect&mode=delete&ns=". rawurlencode($row['namespace']) ."&intext=". rawurlencode($row['intext']) ."'>" . translate_inline('Delete') . "</a>";

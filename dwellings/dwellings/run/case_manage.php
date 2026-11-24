@@ -70,12 +70,15 @@
 					$res = db_query($sql);
 					$invalsections = array();
 					while ($row = db_fetch_assoc($res)){
-						$sql = "INSERT LOW_PRIORITY INTO ".db_prefix("moderatedcomments").
-								" (moderator,moddate,comment) 
-								VALUES ('{$session['user']['acctid']}',
-										'".date("Y-m-d H:i:s")."',
-										'".addslashes(serialize($row))."')";
-						db_query($sql);
+						\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+							"INSERT LOW_PRIORITY INTO ".\Lotgd\MySQL\Database::prefix("moderatedcomments").
+							" (moderator,moddate,comment) VALUES (:moderator, :moddate, :comment)",
+							[
+								'moderator' => $session['user']['acctid'],
+								'moddate' => date("Y-m-d H:i:s"),
+								'comment' => serialize($row),
+							]
+						);
 						$invalsections[$row['section']] = 1;
 					}
 					foreach($invalsections as $key=>$dummy) {

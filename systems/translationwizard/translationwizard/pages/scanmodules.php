@@ -120,31 +120,30 @@ tw_table_open([
     translate_inline('Translated')
 ]);
 //prepare sql
-$sql="SELECT tid,outtext FROM ".db_prefix("translations")." WHERE ";
+$sql="SELECT tid,outtext FROM ".\Lotgd\MySQL\Database::prefix("translations")." WHERE intext=:intext AND language=:language AND uri=:uri;";
 $wasthereanuntranslated=0;
 //end
 foreach($ausgabe as $key=>$row) {
-                $result=db_query(
-                        $sql
-                        . "intext='" . addslashes($row['text']) . "'"
-                        . " AND language='" . addslashes($languageschema) . "'"
-                        . " AND uri='" . addslashes($row['schema']) . "';"
-                );
-		if (db_num_rows($result)==0) {
+                $result=\Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative($sql, [
+                        'intext' => $row['text'],
+                        'language' => $languageschema,
+                        'uri' => $row['schema'],
+                ]);
+		if (count($result)==0) {
 			$alreadytranslated=translate_inline("No");
 			$trans=0;
 			$outtext='';
 			$tid=0;
 			$wasthereanuntranslated=1;
-		}elseif (db_num_rows($result)==1) {
+		}elseif (count($result)==1) {
 			$alreadytranslated=translate_inline("Yes");
-			$rownow=db_fetch_assoc($result);
+			$rownow=$result[0];
 			$tid=$rownow['tid'];
 			$outtext=rawurlencode($rownow['outtext']);
 			$trans=1;
 		} else {
 			$alreadytranslated=translate_inline("`\$Multiple found! Clean your stuff up!`0");
-			$rownow=db_fetch_assoc($result);
+			$rownow=$result[0];
 			$tid=$rownow['tid'];
 			$outtext=rawurlencode($rownow['outtext']);
 			$trans=1;

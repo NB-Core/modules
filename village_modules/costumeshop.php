@@ -280,22 +280,30 @@ function costumeshop_dohook($hookname,$args){
 		break;
 	case "validateprefs":
 		$userid=httpget("userid");
-		$sql = "SELECT name,title,ctitle,weapon,armor FROM " .
-			db_prefix("accounts") . " WHERE acctid=$userid";
-		$result = db_query($sql);
-		$row = db_fetch_assoc($result);
+		$row = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAssociative(
+			"SELECT name,title,ctitle,weapon,armor FROM " .
+			\Lotgd\MySQL\Database::prefix("accounts") . " WHERE acctid = :acctid",
+			['acctid' => (int)$userid]
+		);
 		$oldprefs=get_all_module_prefs("costumeshop",$userid);
 		if ($args['rentleft']<1) {
 			//Remove the player's costume
 			output("Removing player's costume.`n");
 			if ($oldprefs['oldweapon']) {
 				$newname=change_player_ctitle($oldprefs['oldtitle'],$row);
-				$sql = "UPDATE " . db_prefix("accounts") .
-					" SET ctitle=\"" .  $oldprefs['oldtitle'] .
-					"\", name=\"$newname\", weapon=\"" .
-					$oldprefs['oldweapon'] . "\", armor=\"" .
-					$oldprefs['oldarmor'] . "\" WHERE acctid=$userid";
-				db_query($sql);
+				// The old* prefs hold addslashes()d text (see below) that used to sit inside a quoted
+				// literal, so MySQL stored the unescaped text: bind stripslashes() of them.
+				\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+					"UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") .
+					" SET ctitle = :ctitle, name = :name, weapon = :weapon, armor = :armor WHERE acctid = :acctid",
+					[
+						'ctitle' => stripslashes($oldprefs['oldtitle']),
+						'name' => stripslashes($newname),
+						'weapon' => stripslashes($oldprefs['oldweapon']),
+						'armor' => stripslashes($oldprefs['oldarmor']),
+						'acctid' => (int)$userid,
+					]
+				);
 				if ($session['user']['acctid']==$userid) {
 					$session['user']['ctitle']=$oldprefs['oldtitle'];
 					$session['user']['name']=$newname;
@@ -328,11 +336,19 @@ function costumeshop_dohook($hookname,$args){
 				$args['oldarmor']=addslashes($row['armor']);
 			}
 			$newname = change_player_ctitle($args['newtitle'],$row);
-			$sql = "UPDATE " . db_prefix("accounts") .
-				" SET ctitle=\"" . $args['newtitle'] .
-				"\", name=\"$newname\", weapon=\"" . $args['weapon'] .
-				"\", armor=\"" . $args['armor'] . "\" WHERE acctid=$userid";
-			db_query($sql);
+			// $args comes from the core's validateprefs hook with the raw (unslashed) POST, and the
+			// old code put it directly in a quoted literal: bind the values as they are.
+			\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+				"UPDATE " . \Lotgd\MySQL\Database::prefix("accounts") .
+				" SET ctitle = :ctitle, name = :name, weapon = :weapon, armor = :armor WHERE acctid = :acctid",
+				[
+					'ctitle' => $args['newtitle'],
+					'name' => $newname,
+					'weapon' => $args['weapon'],
+					'armor' => $args['armor'],
+					'acctid' => (int)$userid,
+				]
+			);
 			if ($session['user']['acctid']==$userid) {
 				$session['user']['ctitle']=stripslashes($args['newtitle']);
 				$session['user']['name']=stripslashes($newname);

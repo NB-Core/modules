@@ -100,15 +100,20 @@ $subop = httpget('subop');
             for ($x = 0; $x < strlen(httppost('name')); $x++){
                 $string .= substr(httppost('name'),$x,1)."%";
             }
-            $sql = "SELECT login,name,level,acctid FROM ".db_prefix("accounts")."
-					WHERE (login LIKE '".addslashes($string)."' OR name LIKE '".addslashes($string)."') 
-					AND acctid != ".$session['user']['acctid']." 
-					AND locked=0 
-					ORDER BY level,login";
-            $result = db_query($sql);
-            if (db_num_rows($result)<=0){
+            // $string is built from httppost('name'), which is already addslashes()d.
+            // The old code addslashes()d it again, so MySQL matched the single-slashed
+            // text, i.e. $string as it is. Bind it unchanged.
+            $rows = \Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative(
+                "SELECT login,name,level,acctid FROM ".\Lotgd\MySQL\Database::prefix("accounts")."
+					WHERE (login LIKE :pattern OR name LIKE :pattern)
+					AND acctid != :acctid
+					AND locked=0
+					ORDER BY level,login",
+                ['pattern' => $string, 'acctid' => (int)$session['user']['acctid']]
+            );
+            if (count($rows)<=0){
                 output("`2There is no one with that name.");
-            }elseif(db_num_rows($result)>100){
+            }elseif(count($rows)>100){
                 output("Found over 100 players that fit that description. Please try to be more exact.`n`n");
                 rawoutput("<form action='runmodule.php?module=dwellingseditor&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid' method='POST'>");
                 addnav("","runmodule.php?module=dwellingseditor&op=keys&subop=givekey2&keyid=$keyid&dwid=$dwid");
@@ -120,8 +125,7 @@ $subop = httpget('subop');
                 output("Which player did you mean?`n`n");
                 rawoutput("<table cellpadding='3' cellspacing='0' border='0'>");
                 rawoutput("<tr class='trhead'><td>Name</td><td>Level</td></tr>");
-                for ($i = 0; $i < db_num_rows($result); $i++){
-                    $row = db_fetch_assoc($result);
+                foreach ($rows as $i => $row){
                     rawoutput("<tr class='".($i%2?"trlight":"trdark")."'><td>");
                     rawoutput("<a href='runmodule.php?module=dwellingseditor&op=keys&subop=givekey3&keyid=$keyid&dwid=$dwid&keyowner=".HTMLEntities($row['acctid'])."'>");
                     output_notl($row['name']);
