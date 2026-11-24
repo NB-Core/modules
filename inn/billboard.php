@@ -228,10 +228,10 @@ function billboard_run(){
 				rawoutput("</div>");
 				rawoutput("<div class='billboard_head'>");
 					rawoutput("<div class='billboard_subject'>");
-						rawoutput("<textarea name='subject' cols='50' rows='1' maxlength='$subjectlimit'>".addslashes($subject)."</textarea>"); 
+						rawoutput("<textarea name='subject' cols='50' rows='1' maxlength='$subjectlimit'>".htmlspecialchars(stripslashes((string)$subject), ENT_QUOTES)."</textarea>"); 
 					rawoutput("</div>");
 					rawoutput("<div class='billboard_body'>");
-						rawoutput("<textarea name='body' cols='50' rows='5' maxlength='$bodylimit'>".addslashes($body)."</textarea>"); 
+						rawoutput("<textarea name='body' cols='50' rows='5' maxlength='$bodylimit'>".htmlspecialchars(stripslashes((string)$body), ENT_QUOTES)."</textarea>"); 
 					rawoutput("</div>");
 				rawoutput("</div>");
 			rawoutput("</div>");

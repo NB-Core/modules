@@ -33,10 +33,14 @@
 		
 			$email=rawurldecode(httppost('email'));
 			$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
-			$reason=addslashes(httppost('reason'));
-			$sql="INSERT INTO ".$table_emails." (emailaddress,reason) VALUES ('$email','$reason')";
-			$result=db_query($sql);
-			if (db_affected_rows($result)>0) {
+			// Bound as it was stored before (httppost() already adds slashes; the old
+			// extra addslashes() only undid itself in the SQL string).
+			$reason=(string)httppost('reason');
+			$affected=\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+				"INSERT INTO ".$table_emails." (emailaddress,reason) VALUES (:email,:reason)",
+				array('email'=>$email,'reason'=>$reason)
+			);
+			if ($affected>0) {
 				output("%s inserted...`n`n",$email);
 			} else {
 				output("`\$Error for %s, no row affected!",$email);
@@ -44,9 +48,13 @@
 			break;
 	
 		case "delsave":
-			$email=rawurldecode(httpget('email'));
-			$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
-			$reason=addslashes(httppost('reason'));
+			// The list links to the stored (already salted and hashed) address; hashing
+			// it again never matched a row. A plain address is still hashed.
+			$email=rawurldecode((string)httpget('email'));
+			if (!preg_match('/^[0-9a-f]{128}$/', $email)) {
+				$email=hash('sha512',$email.get_module_setting('email_hash_salt','charrestore')); //salt and hash
+			}
+			$reason=(string)httppost('reason');
 
 			if (httppost('delete')) {
 				$sql="DELETE FROM ".$table_emails." WHERE emailaddress='$email'";
@@ -60,9 +68,12 @@
 			}
 				
 		
-			$sql="UPDATE ".$table_emails." SET reason='$reason' WHERE emailaddress='$email'";
-			$result=db_query($sql);
-			if (db_affected_rows($result)>0) {
+			// Bound as it was stored before (httppost() already adds slashes).
+			$affected=\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+				"UPDATE ".$table_emails." SET reason=:reason WHERE emailaddress=:email",
+				array('reason'=>$reason,'email'=>$email)
+			);
+			if ($affected>0) {
 				output("%s has a new reason now...`n`n",$email);
 			} else {
 				output("`\$Error changing reason for %s, no row affected!",$email);
@@ -152,12 +163,12 @@
 			$i=!$i;
 			$class=($i?"trlight":"trdark");
 			rawoutput("<tr class='$class'><td>");
-			rawoutput($row['emailaddress']);
+			rawoutput(htmlspecialchars((string)$row['emailaddress'], ENT_QUOTES));
 			rawoutput("</td><td>");
 			rawoutput("<form action='runmodule.php?module=blocker&subop=delsave&email=".rawurlencode($row['emailaddress'])."' method='POST'>");
-			addnav("runmodule.php?module=blocker&subop=delsave&email=".rawurlencode($row['emailaddress']));
+			addnav("","runmodule.php?module=blocker&subop=delsave&email=".rawurlencode($row['emailaddress']));
 			rawoutput("<textarea name='reason' cols='40' rows='2'>");
-			rawoutput($row['reason']);
+			rawoutput(htmlspecialchars(stripslashes((string)$row['reason']), ENT_QUOTES));
 			rawoutput("</textarea><br/><input type='submit' name='delete' class='button' value='$delete'>&nbsp;&nbsp;&nbsp;<input type='submit' class='button' value='$submit'></form>");
 			rawoutput("</td></tr>");
 		}
