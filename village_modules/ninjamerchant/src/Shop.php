@@ -125,8 +125,9 @@ final class Shop
                 'Secret Scroll' => 10,
                 default => 0,
             };
-            // The store has a single special (non-Loot) item a day.
-            if (\e_rand(1, 100) > $chance || ($this->store && $special && $item['class'] !== 'Loot')) {
+            // The store has a single special (non-Loot) item a day; as before, once
+            // it is chosen, nothing after it in the (random) order is on offer.
+            if (\e_rand(1, 100) > $chance || ($this->store && $special)) {
                 $off[] = (int) $item['itemid'];
             } elseif ($this->store && $item['class'] !== 'Loot') {
                 $special = true;
@@ -174,7 +175,7 @@ final class Shop
 
     /**
      * Buys one item. Returns null on success, or the reason it failed:
-     * limit, unavailable, unique, funds, special-had, special-soldout, full.
+     * limit, unavailable, unique, funds, special-had, special-soldout, refused.
      */
     public function buy(int $itemid, string $class): ?string
     {
@@ -197,9 +198,10 @@ final class Shop
         if ($session['user']['gold'] < $gold || $session['user']['gems'] < $gems) {
             return 'funds';
         }
-        // Hand over the item first: if the inventory is full, nothing is paid.
+        // Hand over the item first: if the inventory refuses it (full, or an item
+        // unique on the server), nothing is paid.
         if (!\add_item_by_id((int) $item['itemid'])) {
-            return 'full';
+            return 'refused';
         }
         $session['user']['gold'] -= $gold;
         $session['user']['gems'] -= $gems;
@@ -348,8 +350,8 @@ final class Shop
             case 'unique':
                 \output("`^\"You already have one of these. One is all anybody needs, believe me.\"`2");
                 break;
-            case 'full':
-                \output("`^\"Your pockets are full, my friend. Make some room first, then we talk.\"`2");
+            case 'refused':
+                \output("`^\"Hmm, I can't hand that one over to you right now. Maybe your pockets are full, maybe it's spoken for. Come back later.\"`2");
                 break;
             case 'special-had':
                 \output("`n`\$Sadly, you have had your special today. You know, others might want it too, you don't need to hog stuff... sorry.`^\"");

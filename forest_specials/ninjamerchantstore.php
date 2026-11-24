@@ -69,7 +69,7 @@ function ninjamerchantstore_dohook(string $hookname, array $args): array
             break;
         case 'changesetting':
             // Follow the village when it is renamed.
-            if ($args['setting'] == 'villagename' && $args['old'] == get_module_setting('storeloc')) {
+            if (($args['module'] ?? '') == 'core' && $args['setting'] == 'villagename' && $args['old'] == get_module_setting('storeloc')) {
                 set_module_setting('storeloc', $args['new']);
             }
             break;
