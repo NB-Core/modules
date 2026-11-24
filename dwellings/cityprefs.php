@@ -209,8 +209,8 @@ function cityprefs_run() {
             $submit=translate_inline("Submit");
             rawoutput("<form action='runmodule.php?module=cityprefs&op=editcity2&cityid=$cityid' method='POST'>");
             addnav("","runmodule.php?module=cityprefs&op=editcity2&cityid=$cityid");
-            rawoutput("<input name='cityname' id='cityname' value='".htmlspecialchars((string) $city, ENT_QUOTES)."' size='40' maxlength='255'><br>");
-            rawoutput("<input name='modulename' id='modulename' value='".htmlspecialchars((string) $module, ENT_QUOTES)."' size='40' maxlength='255'><br>");
+            rawoutput("<input name='cityname' id='cityname' value='".htmlspecialchars((string) $city, ENT_QUOTES | ENT_SUBSTITUTE)."' size='40' maxlength='255'><br>");
+            rawoutput("<input name='modulename' id='modulename' value='".htmlspecialchars((string) $module, ENT_QUOTES | ENT_SUBSTITUTE)."' size='40' maxlength='255'><br>");
             rawoutput("<input type='submit' class='button' value='$submit'></form>");              
         break;
         
