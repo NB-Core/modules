@@ -10,11 +10,13 @@
 						AND (laston < '$last' OR loggedin=0) AND modulename='dwellings'	AND setting='dwelling_saver' AND value='{$args['dwid']}'";
 						$res = db_query_cached($sql,"pvp-".$args['dwid'],60);
 						$row = db_fetch_assoc($res);
-						$dwid = $args['dwid'];
+						$dwid = (int) $args['dwid'];
+						// The list page number goes back into the links: an int, never raw request text.
+						$returnpage = (int) httpget('page');
 						if ($row['count'] > 0){
 							$temp = sprintf_translate("Slay (%s)",$row['count']);
-							rawoutput("<a href='runmodule.php?module=dwellings_pvp&op=attack_list&dwid=$dwid&typeid=$typeid&returnpage=".httpget('page')."'>$temp</a><br>");  				
-							addnav("","runmodule.php?module=dwellings_pvp&op=attack_list&dwid=$dwid&typeid=$typeid&returnpage=".httpget('page'));
+							rawoutput("<a href='runmodule.php?module=dwellings_pvp&op=attack_list&dwid=$dwid&typeid=$typeid&returnpage=$returnpage'>$temp</a><br>");  				
+							addnav("","runmodule.php?module=dwellings_pvp&op=attack_list&dwid=$dwid&typeid=$typeid&returnpage=$returnpage");
 						}
 				}
 	}
