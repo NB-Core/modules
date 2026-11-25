@@ -4,13 +4,15 @@ function easteregg_getmoduleinfo(){
 	$info = array(
 		"name"=>"Easteregg",
 		"author"=>"`2Oliver Brendel",
-		"version"=>"1.0",
+		"version"=>"1.1",
 		"category"=>"Holidays|Easter Holiday",
 		"settings"=>array(
 			"Easteregg - Settings,title",
 			"x"=>"How many columns?,int|6",
 			"y"=>"How many rows?,int|4",
 			"tries"=>"How many maxtries?,int|3",
+			"daysbefore"=>"Days before Easter Sunday the bunny appears,int|13",
+			"daysafter"=>"Days after Easter Sunday he is still around,int|13",
 			"eggitem"=>"Inventory item ID of the rare red egg (0: give a gem instead),int|0",
 		),
 		"prefs"=>array(
@@ -23,11 +25,46 @@ function easteregg_getmoduleinfo(){
 	return $info;
 }
 function easteregg_install(){
-	//date hardcoded, because it will be set on install/reinstall of module
-debug("days left: ".datedifference_events("04-14",true));
-debug((datedifference_events('04-14',true)<14?100:0));
-	module_addeventhook("forest","return (datedifference_events('04-14',true)<14?100:0);");
+	// Easter moves every year; the chance is worked out from the real date (reinstall after updating from 1.0).
+	module_addeventhook("forest","require_once('modules/easteregg.php'); return easteregg_chance();");
 	return true;
+}
+
+/** Midnight (server time) of Easter Sunday in the given year (Gregorian computus). */
+function easteregg_easter(int $year): int {
+	$a = $year % 19;
+	$b = intdiv($year, 100);
+	$c = $year % 100;
+	$d = intdiv($b, 4);
+	$e = $b % 4;
+	$f = intdiv($b + 8, 25);
+	$g = intdiv($b - $f + 1, 3);
+	$h = (19 * $a + $b - $d - $g + 15) % 30;
+	$i = intdiv($c, 4);
+	$k = $c % 4;
+	$l = (32 + 2 * $e + 2 * $i - $h - $k) % 7;
+	$m = intdiv($a + 11 * $h + 22 * $l, 451);
+	$month = intdiv($h + $l - 7 * $m + 114, 31);
+	$day = (($h + $l - 7 * $m + 114) % 31) + 1;
+	return (int) mktime(0, 0, 0, $month, $day, $year);
+}
+
+/** Whether today is within the days around Easter Sunday. */
+function easteregg_inseason(?int $now = null): bool {
+	$now = $now ?? time();
+	// Unset until the settings are saved once after the update: use the defaults.
+	$before = get_module_setting('daysbefore', 'easteregg');
+	$after = get_module_setting('daysafter', 'easteregg');
+	$before = ($before === null || $before === '') ? 13 : max(0, (int) $before);
+	$after = ($after === null || $after === '') ? 13 : max(0, (int) $after);
+	$easter = easteregg_easter((int) date('Y', $now));
+	$start = (int) strtotime("-$before days", $easter);
+	$end = (int) strtotime('+' . ($after + 1) . ' days', $easter);
+	return $now >= $start && $now < $end;
+}
+
+function easteregg_chance(): int {
+	return easteregg_inseason() ? 100 : 0;
 }
 function easteregg_uninstall(){
 	return true;
