@@ -1,4 +1,14 @@
 <?php
+if (!function_exists('circulum_editor_account_columns')) {
+	/** Column names of the accounts table, in table order. */
+	function circulum_editor_account_columns(): array
+	{
+		return array_column(
+			\Lotgd\MySQL\Database::getDoctrineConnection()->fetchAllAssociative("DESCRIBE " . \Lotgd\MySQL\Database::prefix("accounts")),
+			'Field'
+		);
+	}
+}
 page_header("Circulum Vitae Editor");
 require_once("lib/superusernav.php");
 superusernav();
@@ -8,13 +18,10 @@ addnav("Operations");
 require_once("./modules/circulum/func/circulum_nochange.php");
 switch ($mode) {
 	case "savefields":
-		$sql="SELECT * from ".db_prefix("accounts")." LIMIT 1"; //get one row
-		$result=db_query($sql);
+		// The column names of the accounts table (the mysqli field functions do not work on the core's DBAL results).
 		$fields=array();
-		for ($i=0;$i<mysqli_num_fields($result);$i++) {
-			$field = mysqli_fetch_field_direct($result,$i);
-			$t=array($field->name=>httppost($field->name));
-			$fields=array_merge($fields,$t);
+		foreach (circulum_editor_account_columns() as $column) {
+			$fields[$column]=httppost($column);
 		}
 		circulum_save_account_nochanges($fields);
 		output("`%Saved!");
@@ -22,14 +29,9 @@ switch ($mode) {
 	case "editreset":
 		$set=circulum_get_account_nochanges();
 		require_once('lib/showform.php');
-		$sql="SELECT * from ".db_prefix('accounts')." LIMIT 1"; //get one row
-		$result=db_query($sql);
 		$fields=array("justafield"=>"Name of the field - You want to keep it?,note");
-		$numberoffields=mysqli_num_fields($result);
-		for ($i=0;$i<$numberoffields;$i++) {
-			$field = mysqli_fetch_field_direct($result,$i);
-			$t=array($field->name=>$field->name.",bool");
-			$fields=array_merge($fields,$t);
+		foreach (circulum_editor_account_columns() as $column) {
+			$fields[$column]=$column.",bool";
 		}
 		output("Select the fields you want to keep in your accounts table. The rest will be set to a default value.");
 		output_notl("`n`n");
@@ -60,20 +62,20 @@ switch ($mode) {
 				if (circulum_get_title($titleid,"male")) {
 					$note="`^Title already exists. Nothing saved, choose a number that is not occupied`0";
 					} else {
-					circulum_set_title($titleid,$male,$male);
 					circulum_set_title($titleid,$male,$female);
 					$note = "`^New title added.`0";
 					}
 				}else {
-					circulum_set_title($titleid,$male,$male);
 					circulum_set_title($titleid,$male,$female);
 					$note = "`^Title modified.`0";
 				}
 				output($note);
 				$title = "";
 		} elseif ($title=="delete") {
-			$sql = "DELETE FROM ".db_prefix("module_objprefs")." WHERE modulename='circulum' AND objtype='circulum_title' AND objid=$id";
-			db_query($sql);
+			\Lotgd\MySQL\Database::getDoctrineConnection()->executeStatement(
+				"DELETE FROM ".\Lotgd\MySQL\Database::prefix("module_objprefs")." WHERE modulename='circulum' AND objtype='circulum_title' AND objid = :id",
+				['id' => (int) $id]
+			);
 			output("`^Title deleted.`0");
 			$title = "";
 		}
@@ -140,7 +142,4 @@ switch ($mode) {
 		break;
 }
 page_footer();
-
-
-
 ?>

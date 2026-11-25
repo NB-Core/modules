@@ -9,7 +9,7 @@ function circulum_getmoduleinfo(){
 	$info = array(
 	    "name"=>"Circulum Vitae",
 		"description"=>"This gives players the opportunity to start anew with benefits",
-		"version"=>"1.01",
+		"version"=>"1.02",
 		"author"=>"`4Oliver Brendel`0",
 		"category"=>"Circulum Vitae",
 		"download"=>"http://lotgd-downloads.com",
